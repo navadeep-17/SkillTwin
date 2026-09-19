@@ -1,0 +1,46 @@
+import { getRequestId } from "@/lib/api/request-context";
+import { ok } from "@/lib/api/responses";
+import { getServerEnv } from "@/lib/config/env";
+import { getSql } from "@/lib/db/postgres";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function GET() {
+  const requestId = await getRequestId();
+  const env = getServerEnv();
+
+  let database: "ready" | "missing_config" | "unreachable" = "missing_config";
+  let databaseError: string | null = null;
+
+  if (env.SUPABASE_DB_URL) {
+    try {
+      const sql = getSql();
+      await sql.unsafe("select 1 as ready");
+      database = "ready";
+    } catch (error) {
+      database = "unreachable";
+      databaseError = error instanceof Error ? error.message.slice(0, 180) : "Database check failed";
+    }
+  }
+
+  const aiConfigured =
+    env.AI_PROVIDER === "gemini"
+      ? Boolean(env.GEMINI_API_KEY)
+      : Boolean(env.OPENAI_API_KEY);
+
+  const requiredReady = database === "ready";
+
+  return ok(requestId, {
+    status: requiredReady ? "ready" : "not_ready",
+    service: "skilltwin-web",
+    version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? "local",
+    checks: {
+      publicSupabase: "configured",
+      database,
+      aiEnhancement: aiConfigured ? "configured" : "optional_not_configured",
+      deterministicFallback: env.DEMO_FALLBACK_ENABLED === "true" ? "enabled" : "disabled"
+    },
+    notes: databaseError ? ["Database check failed: " + databaseError] : []
+  });
+}

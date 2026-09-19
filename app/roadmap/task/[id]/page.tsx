@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TaskExecutionPanel } from "@/components/roadmap/task-execution-panel";
+import { ResourceFeedbackButtons } from "@/components/roadmap/resource-feedback-buttons";
 
 export default async function LearningTaskPage({params}:{params:Promise<{id:string}>}) {
   const supabase=await createClient();
@@ -16,7 +17,7 @@ export default async function LearningTaskPage({params}:{params:Promise<{id:stri
   if(!task) notFound();
 
   const [{data:assignment,error:assignmentError},{data:gap,error:gapError}] = await Promise.all([
-    supabase.from("task_resource_assignments").select("explanation,learning_resources!inner(title,provider,url,format,duration_minutes,quality)").eq("task_id",id).limit(1).maybeSingle(),
+    supabase.from("task_resource_assignments").select("resource_id,explanation,learning_resources!inner(title,provider,url,format,duration_minutes,quality)").eq("task_id",id).limit(1).maybeSingle(),
     supabase.from("skill_gap_results").select("target_score,current_score,current_confidence,reason_codes").eq("skill_id",task.skill_id).order("created_at",{ascending:false}).limit(1).maybeSingle()
   ]);
   if(assignmentError) throw assignmentError;
@@ -36,7 +37,9 @@ export default async function LearningTaskPage({params}:{params:Promise<{id:stri
       <section className="mt-5 rounded-2xl border bg-white p-6"><h2 className="font-semibold">Why are you learning this?</h2><p className="mt-2 text-sm leading-6 text-slate-600">Target score: {Number(gap?.target_score ?? objective?.target_score ?? 0).toFixed(1)}/4. Current validated score: {gap?.current_score==null?"unknown":Number(gap.current_score).toFixed(1)+"/4"}. Confidence: {Math.round(Number(gap?.current_confidence ?? 0)*100)}%.</p>{Array.isArray(gap?.reason_codes)?<p className="mt-2 text-xs text-slate-400">Reason codes: {gap.reason_codes.join(" · ")}</p>:null}</section>
 
       {resource?.url?(
-        <section className="mt-5 rounded-2xl border bg-white p-6"><h2 className="font-semibold">Verified resource</h2><p className="mt-2 font-medium">{resource.title}</p><p className="text-sm text-slate-500">{resource.provider} · {resource.format}{resource.duration_minutes?" · "+resource.duration_minutes+" min":""}</p><p className="mt-3 text-sm text-slate-600">{assignment?.explanation}</p><a href={resource.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white">Open resource</a></section>
+        <section className="mt-5 rounded-2xl border bg-white p-6"><h2 className="font-semibold">Verified resource</h2><p className="mt-2 font-medium">{resource.title}</p><p className="text-sm text-slate-500">{resource.provider} · {resource.format}{resource.duration_minutes?" · "+resource.duration_minutes+" min":""}</p><p className="mt-3 text-sm text-slate-600">{assignment?.explanation}</p><a href={resource.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white">Open resource</a>
+        {assignment?.resource_id?<ResourceFeedbackButtons resourceId={String(assignment.resource_id)} taskId={task.id} />:null}
+        </section>
       ):null}
 
       {(task.type==="PRACTICE"||task.type==="BUILD")?<section className="mt-5 rounded-2xl border bg-white p-6"><h2 className="font-semibold">Success criteria</h2><p className="mt-2 text-sm leading-6 text-slate-600">{objective?.success_criteria}</p><Link href="/journey" className="mt-4 inline-flex text-sm font-medium text-brand-700">Ask SkillTwin for a hint →</Link></section>:null}

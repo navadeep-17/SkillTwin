@@ -41,10 +41,16 @@ export async function POST(
       evidence?: { deltas?: unknown[] };
       outcome?: { weaknesses?: unknown; strengths?: unknown };
       gapAnalysis?: { readiness?: number } | null;
+      replan?: {
+        changed?: boolean;
+        diff?: unknown;
+      } | null;
+      warnings?: string[];
     } : null;
 
     return ok(requestId, result, completed ? {
       skill_delta: finalResult?.evidence?.deltas ?? [],
+      plan_diff: finalResult?.replan?.changed ? finalResult.replan.diff : undefined,
       notifications: [{
         title: "Validation committed",
         message: finalResult?.gapAnalysis?.readiness != null
@@ -52,11 +58,17 @@ export async function POST(
           : "Assessment evidence was processed by SkillTwin.",
         tone: "success"
       }],
-      next_action: {
-        type: "OPEN_ASSESSMENT_RESULT",
-        label: "View result",
-        href: "/practice/" + id
-      }
+      next_action: finalResult?.replan?.changed && finalResult.replan.diff && typeof finalResult.replan.diff === "object" && "diffId" in finalResult.replan.diff
+        ? {
+            type: "OPEN_PLAN_DIFF",
+            label: "See what changed",
+            href: "/roadmap/changes/" + String((finalResult.replan.diff as { diffId: unknown }).diffId)
+          }
+        : {
+            type: "OPEN_ASSESSMENT_RESULT",
+            label: "View result",
+            href: "/practice/" + id
+          }
     } : undefined);
   } catch (error) {
     if (error instanceof UnauthenticatedError) {

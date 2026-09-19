@@ -135,7 +135,7 @@ After deployment:
 9. Confirm SkillDelta + PlanDiff + Plan v2.
 10. Open See What Changed.
 11. Ask Journey Chat: “Why did my roadmap change?”
-12. Verify Agent Activity contains the corresponding committed events.
+12. Verify Agent Activity contains the corresponding committed events.\n\nFor repeated demo rehearsals, `POST /api/demo/reset` can clear only the signed-in learner's SkillTwin state. It requires the `x-skilltwin-demo-secret` header matching `DEMO_RESET_SECRET`. It preserves the Auth user and all global taxonomy/role/resource/question-bank seed data.
 
 ## Database
 

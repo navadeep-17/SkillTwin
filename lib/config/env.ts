@@ -13,7 +13,8 @@ const serverSchema = publicSchema.extend({
   OPENAI_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().min(1).default("gemini-3.8-flash"),
-  DEMO_FALLBACK_ENABLED: z.enum(["true", "false"]).default("true")
+  DEMO_FALLBACK_ENABLED: z.enum(["true", "false"]).default("true"),
+  DEMO_RESET_SECRET: z.string().min(16).optional()
 });
 
 export function getPublicEnv() {
@@ -35,6 +36,7 @@ export function getServerEnv() {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     GEMINI_MODEL: process.env.GEMINI_MODEL,
-    DEMO_FALLBACK_ENABLED: process.env.DEMO_FALLBACK_ENABLED
+    DEMO_FALLBACK_ENABLED: process.env.DEMO_FALLBACK_ENABLED,
+    DEMO_RESET_SECRET: process.env.DEMO_RESET_SECRET
   });
 }

@@ -8,6 +8,8 @@ import { parsePdf } from "@/lib/profile/pdf-parser";
 import { segmentResume } from "@/lib/profile/segmenter";
 import { extractMappedSkills } from "@/lib/profile/skill-mapper";
 import { extractSemanticSkillEvidence, mergeProfileExtractions } from "@/lib/profile/semantic-extractor";
+import { extractStructuredProfile } from "@/lib/profile/profile-structure-extractor";
+import { getSql } from "@/lib/db/postgres";
 
 export const PROFILE_ANALYZER_SCHEMA_VERSION = "profile-analyzer-b1";
 
@@ -136,6 +138,12 @@ export class ProfileAnalysisService {
         warnings
       );
 
+      const structuredProfile = await extractStructuredProfile({
+        blocks,
+        catalog,
+        sourceKind: document.documentType
+      });
+
       await this.repository.replaceBlocksAndClaims({
         userId: input.userId,
         runId,
@@ -143,6 +151,11 @@ export class ProfileAnalysisService {
         blocks,
         claims: extraction.claims
       });
+      await this.repository.saveStructuredProfile(
+        input.userId,
+        runId,
+        structuredProfile
+      );
 
       await this.repository.setStage(
         input.userId,
@@ -153,7 +166,10 @@ export class ProfileAnalysisService {
           pages: parsed.quality.pageCount,
           blocks: blocks.length,
           mappedClaims: extraction.claims.length,
-          evidenceCandidates: extraction.evidence.length
+          evidenceCandidates: extraction.evidence.length,
+          unresolvedTerms: structuredProfile.unresolvedTerms.length,
+          experienceItems: structuredProfile.experienceItems.length,
+          projectItems: structuredProfile.projectItems.length
         },
         warnings
       );
@@ -191,6 +207,7 @@ export class ProfileAnalysisService {
         quality: parsed.quality,
         blocks: blocks.length,
         claims: extraction.claims.length,
+        structuredProfile,
         evidence: evidenceResult,
         gapAnalysis: gapResult
           ? {
@@ -213,9 +230,31 @@ export class ProfileAnalysisService {
           blocks: blocks.length,
           mappedClaims: extraction.claims.length,
           evidenceAccepted: evidenceResult.acceptedEvidenceIds.length,
-          skillDeltas: evidenceResult.deltas.length
+          skillDeltas: evidenceResult.deltas.length,
+          unresolvedTerms: structuredProfile.unresolvedTerms.length
         },
-        warnings
+        [...warnings, ...structuredProfile.warnings]
+      );
+
+      const sql = getSql();
+      await sql.unsafe(
+        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,evidence_refs,metadata) values ($1::uuid,'profile.analysis.completed',$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb)",
+        [
+          input.userId,
+          document.documentType === "certificate" ? "CERTIFICATE_ANALYSIS" : "PROFILE_ANALYSIS",
+          runId,
+          "Profile analysis completed with " + extraction.claims.length + " mapped skill claim" + (extraction.claims.length === 1 ? "" : "s") + " and " + structuredProfile.unresolvedTerms.length + " unresolved term" + (structuredProfile.unresolvedTerms.length === 1 ? "" : "s") + ".",
+          JSON.stringify([{type:"profile_analysis_run",id:runId},{type:"profile_document",id:document.id}]),
+          JSON.stringify(evidenceResult.acceptedEvidenceIds),
+          JSON.stringify({
+            documentType:document.documentType,
+            skillsDetected:extraction.claims.length,
+            evidenceProposed:extraction.evidence.length,
+            evidenceAccepted:evidenceResult.acceptedEvidenceIds.length,
+            unresolvedTerms:structuredProfile.unresolvedTerms.length,
+            warnings:[...warnings,...structuredProfile.warnings]
+          })
+        ]
       );
 
       return { runId, reused: false, result };

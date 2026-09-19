@@ -7,6 +7,10 @@ function rows(value: unknown): Row[] {
   return value as Row[];
 }
 
+function arrayOfStrings(value: unknown): string[] {
+  return Array.isArray(value) ? value.map(String) : [];
+}
+
 function normalize(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9+#.]+/g, " ").replace(/\s+/g, " ").trim();
 }

@@ -18,7 +18,7 @@ export async function POST(request:Request) {
     const result=parsed.data.triggerType==="TASK_BEHAVIOR"
       ? await getAdaptiveTriggerService().considerTaskBehavior({userId:user.id,taskId:parsed.data.taskId})
       : await getAdaptiveTriggerService().considerSkillConflict({userId:user.id,skillId:parsed.data.skillId,triggerRef:parsed.data.triggerRef});
-    return ok(requestId,result,result.changed?{plan_diff:result.diff}:undefined);
+    return ok(requestId,result,result.changed && "diff" in result ? {plan_diff:result.diff}:undefined);
   } catch(error){
     if(error instanceof UnauthenticatedError) return fail(requestId,401,"UNAUTHENTICATED","Sign in to evaluate a replan trigger.");
     return fail(requestId,500,"REPLAN_CONSIDER_FAILED","Could not evaluate this replan trigger.");

@@ -49,7 +49,7 @@ export class PostgresGapRepository {
       select rv.id,rv.version,tr.id role_id,tr.name
       from public.role_versions rv
       join public.target_roles tr on tr.id=rv.role_id
-      where rv.id=${roleVersionId}::uuid and rv.status='ACTIVE'
+      where rv.id=${roleVersionId}::uuid
       limit 1
     `;
     if (!versions[0]) throw new Error("ACTIVE_ROLE_VERSION_NOT_FOUND");
@@ -140,7 +140,7 @@ export class PostgresGapRepository {
         insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,metadata)
         values (
           ${userId}::uuid,'gap.analysis.completed',${trigger.type},${trigger.ref},
-          ${`Career readiness recalculated to ${analysis.readiness}% for Backend Engineer.`},
+          ${`Career readiness recalculated to ${analysis.readiness}% for the active target role.`},
           ${JSON.stringify([{type:"gap_snapshot",id:snapshotId},{type:"career_goal",id:goal.id}])}::jsonb,
           ${JSON.stringify({readiness:analysis.readiness,evidenceCoverage:analysis.evidenceCoverage})}::jsonb
         )

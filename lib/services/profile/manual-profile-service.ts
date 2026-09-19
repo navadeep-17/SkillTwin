@@ -40,16 +40,16 @@ function conservativeManualEvidence(candidate:EvidenceCandidate,sourceId:string,
 export class ManualProfileService{
   constructor(private readonly repository=new PostgresProfileAnalysisRepository()){}
 
-  async createAndAnalyze(input:{userId:string;title:string;text:string}){
+  async createAndAnalyze(input:{userId:string;title:string;text:string;deferPlan?:boolean}){
     const sql=getSql();
     const source=rows(await sql.unsafe(
       "insert into public.profile_manual_sources(user_id,title,text_content,version,status) values ($1::uuid,$2,$3,1,'ACTIVE') returning *",
       [input.userId,input.title,input.text]
     ))[0];
-    return this.analyzeRecord(input.userId,source,[]);
+    return this.analyzeRecord(input.userId,source,[],Boolean(input.deferPlan));
   }
 
-  async updateAndAnalyze(input:{userId:string;sourceId:string;title?:string;text?:string}){
+  async updateAndAnalyze(input:{userId:string;sourceId:string;title?:string;text?:string;deferPlan?:boolean}){
     const sql=getSql();
     const current=rows(await sql.unsafe(
       "select * from public.profile_manual_sources where id=$1::uuid and user_id=$2::uuid and status='ACTIVE' limit 1",
@@ -73,7 +73,7 @@ export class ManualProfileService{
       "update public.profile_manual_sources set title=$1,text_content=$2,version=version+1,analysis_result=null where id=$3::uuid and user_id=$4::uuid returning *",
       [input.title ?? String(current.title),input.text ?? String(current.text_content),input.sourceId,input.userId]
     ))[0];
-    return this.analyzeRecord(input.userId,next,affected);
+    return this.analyzeRecord(input.userId,next,affected,Boolean(input.deferPlan));
   }
 
   async list(userId:string){
@@ -83,7 +83,7 @@ export class ManualProfileService{
     ));
   }
 
-  private async analyzeRecord(userId:string,source:Row,previouslyAffected:string[]){
+  private async analyzeRecord(userId:string,source:Row,previouslyAffected:string[],deferPlan:boolean){
     const sql=getSql();
     const sourceId=String(source.id),version=Number(source.version),text=String(source.text_content);
     const analysisKey="manual_profile:"+sourceId+":v"+version+":"+MANUAL_PROFILE_ANALYZER_VERSION;
@@ -136,7 +136,7 @@ export class ManualProfileService{
       const shouldGap=evidenceResult.downstream.runGapAnalysis || recomputed.downstream.runGapAnalysis;
       const gap=shouldGap?await getGapAnalysisService().recompute(userId,{type:"MANUAL_PROFILE_SKILL_DELTA",ref:runId}):null;
       let plan:unknown=null;
-      if(gap){
+      if(gap && !deferPlan){
         try{plan=await getInitialPlanService().generate(userId);}catch(error){
           warnings.push("INITIAL_PLAN_GENERATION_FAILED");
           console.error("manual_profile.plan.failed",{runId,error:error instanceof Error?error.message:String(error)});

@@ -8,6 +8,7 @@ import { PostgresProfileAnalysisRepository } from "@/lib/repositories/postgres/p
 import { segmentResume } from "@/lib/profile/segmenter";
 import { extractMappedSkills } from "@/lib/profile/skill-mapper";
 import { extractSemanticSkillEvidence, mergeProfileExtractions } from "@/lib/profile/semantic-extractor";
+import { extractStructuredProfile } from "@/lib/profile/profile-structure-extractor";
 import type { EvidenceCandidate } from "@/lib/domain/skills";
 
 export const MANUAL_PROFILE_ANALYZER_VERSION="manual-profile-b1";
@@ -117,11 +118,17 @@ export class ManualProfileService{
       }
       const merged=mergeProfileExtractions(deterministic,semantic);
       const evidence=merged.evidence.map(item=>conservativeManualEvidence(item,sourceId,version));
+      const structuredProfile=await extractStructuredProfile({
+        blocks,
+        catalog,
+        sourceKind:"manual_profile"
+      });
 
       await this.repository.replaceBlocksAndClaims({userId,runId,sourceId,blocks,claims:merged.claims});
+      await this.repository.saveStructuredProfile(userId,runId,structuredProfile);
       await sql.unsafe(
         "update public.profile_analysis_runs set stage='evidence',progress_percent=75,counts=$1::jsonb,warnings=$2::jsonb where id=$3::uuid and user_id=$4::uuid",
-        [JSON.stringify({blocks:blocks.length,mappedClaims:merged.claims.length,evidenceCandidates:evidence.length}),JSON.stringify(warnings),runId,userId]
+        [JSON.stringify({blocks:blocks.length,mappedClaims:merged.claims.length,evidenceCandidates:evidence.length,unresolvedTerms:structuredProfile.unresolvedTerms.length}),JSON.stringify([...warnings,...structuredProfile.warnings]),runId,userId]
       );
 
       const evidenceResult=await getEvidenceEngine().ingestBatch({
@@ -144,7 +151,7 @@ export class ManualProfileService{
       }
 
       const result={
-        sourceId,runId,version,claims:merged.claims.length,
+        sourceId,runId,version,claims:merged.claims.length,structuredProfile,
         evidence:{...evidenceResult,deltas:[...evidenceResult.deltas,...recomputed.deltas]},
         gapAnalysis:gap?{snapshotId:gap.snapshotId,readiness:gap.readiness,evidenceCoverage:gap.evidenceCoverage}:null,
         plan,warnings
@@ -152,7 +159,7 @@ export class ManualProfileService{
       await sql.begin(async tx=>{
         await tx.unsafe(
           "update public.profile_analysis_runs set status='complete',stage='complete',progress_percent=100,counts=$1::jsonb,warnings=$2::jsonb,evidence_batch_result=$3::jsonb,completed_at=now() where id=$4::uuid and user_id=$5::uuid",
-          [JSON.stringify({blocks:blocks.length,mappedClaims:merged.claims.length,evidenceAccepted:evidenceResult.acceptedEvidenceIds.length}),JSON.stringify(warnings),JSON.stringify(result),runId,userId]
+          [JSON.stringify({blocks:blocks.length,mappedClaims:merged.claims.length,evidenceAccepted:evidenceResult.acceptedEvidenceIds.length,unresolvedTerms:structuredProfile.unresolvedTerms.length}),JSON.stringify([...warnings,...structuredProfile.warnings]),JSON.stringify(result),runId,userId]
         );
         await tx.unsafe(
           "update public.profile_manual_sources set analysis_result=$1::jsonb where id=$2::uuid and user_id=$3::uuid",
@@ -165,7 +172,15 @@ export class ManualProfileService{
             "Processed manual profile context across "+merged.claims.length+" canonical skill claim"+(merged.claims.length===1?"":"s")+".",
             JSON.stringify([{type:"manual_profile",id:sourceId}]),
             JSON.stringify(evidenceResult.acceptedEvidenceIds),
-            JSON.stringify({version,analyzerVersion:MANUAL_PROFILE_ANALYZER_VERSION})
+            JSON.stringify({
+              version,
+              analyzerVersion:MANUAL_PROFILE_ANALYZER_VERSION,
+              skillsDetected:merged.claims.length,
+              evidenceProposed:evidence.length,
+              evidenceAccepted:evidenceResult.acceptedEvidenceIds.length,
+              unresolvedTerms:structuredProfile.unresolvedTerms.length,
+              warnings:[...warnings,...structuredProfile.warnings]
+            })
           ]
         );
         await tx.unsafe("update public.users set onboarding_step=greatest(onboarding_step,2) where id=$1::uuid",[userId]);

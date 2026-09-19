@@ -3,8 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 
 const links = [
   { href: "/overview", label: "Overview" },
+  { href: "/skills", label: "Skills" },
   { href: "/roadmap", label: "Roadmap" },
   { href: "/practice", label: "Practice" },
+  { href: "/projects", label: "Projects" },
+  { href: "/progress", label: "Progress" },
   { href: "/journey", label: "Journey Chat" },
   { href: "/activity", label: "Activity" }
 ];

@@ -67,6 +67,7 @@ export async function POST(request: Request) {
       await remove("skillGapResults", "delete from public.skill_gap_results where user_id=$1::uuid");
       await remove("gapSnapshots", "delete from public.gap_snapshots where user_id=$1::uuid");
       await remove("careerGoals", "delete from public.career_goals where user_id=$1::uuid");
+      await remove("profileProjects", "delete from public.profile_projects where user_id=$1::uuid");
       await remove("profileAnalysisRuns", "delete from public.profile_analysis_runs where user_id=$1::uuid");
       await remove("profileDocuments", "delete from public.profile_documents where user_id=$1::uuid");
       await remove("skillHistory", "delete from public.skill_history where user_id=$1::uuid");

@@ -9,7 +9,7 @@ import {
   type GeneratedTask
 } from "@/lib/domain/learning-planner";
 
-const RESOURCE_CATALOG_VERSION = "resource-catalog-d1";
+const RESOURCE_CATALOG_VERSION = "resource-catalog-d2";
 
 type Row = Record<string, unknown>;
 
@@ -49,13 +49,56 @@ function catalogTags(value: unknown) {
   return Array.isArray(value) ? value.map(String) : [];
 }
 
-function resourceScore(resource: Row, task: GeneratedTask, preferredSessionMinutes: number) {
+function resourceScore(
+  resource: Row,
+  task: GeneratedTask,
+  preferredSessionMinutes: number,
+  preferredFormats: string[]
+) {
   const tags = catalogTags(resource.tags);
   if (!task.resourceTag || !tags.includes(task.resourceTag)) return -1;
+
+  const titleTokens = task.title.toLowerCase().split(/[^a-z0-9+#.]+/).filter(token => token.length >= 3);
+  const topicTerms = new Set([task.resourceTag, ...titleTokens]);
+  const overlap = tags.filter(tag => topicTerms.has(tag)).length;
+  const topicFit = Math.min(1, overlap / Math.max(1, Math.min(3, topicTerms.size)));
+
+  const desiredLevel = task.difficulty === "BASIC" ? 1 : task.difficulty === "STANDARD" ? 2 : 3;
+  const levelMap: Record<string, number> = {
+    AWARENESS: 0.5,
+    BEGINNER: 1,
+    INTERMEDIATE: 2,
+    ADVANCED: 3
+  };
+  const levels = catalogTags(resource.levels).map(level => levelMap[level] ?? 2);
+  const levelDistance = levels.length ? Math.min(...levels.map(level => Math.abs(level - desiredLevel))) : 1;
+  const levelFit = Math.max(0, 1 - levelDistance / 2.5);
+
   const quality = Number(resource.quality ?? 0);
   const duration = Number(resource.duration_minutes ?? preferredSessionMinutes);
   const durationFit = Math.max(0, 1 - Math.abs(duration - preferredSessionMinutes) / Math.max(preferredSessionMinutes, 1));
-  return Number((0.8 * quality + 0.2 * durationFit).toFixed(4));
+
+  const format = String(resource.format ?? "").toLowerCase();
+  const formatFit = preferredFormats.some(pref => {
+    const normalized = pref === "documentation" ? "docs" : pref;
+    return format.includes(normalized);
+  }) ? 1 : 0.4;
+
+  const officialProviders = new Set([
+    "MDN Web Docs","Docker Docs","Python Docs","TypeScript Docs","React Docs",
+    "PostgreSQL Docs","Git","pandas Docs","NumPy Docs","scikit-learn Docs","Microsoft Learn","Ubuntu Documentation"
+  ]);
+  const sourceBonus = officialProviders.has(String(resource.provider)) ? 1 : 0.65;
+
+  const score =
+      0.35 * topicFit
+    + 0.20 * levelFit
+    + 0.15 * quality
+    + 0.10 * durationFit
+    + 0.10 * formatFit
+    + 0.10 * sourceBonus;
+
+  return Number(score.toFixed(4));
 }
 
 export class InitialPlanService {
@@ -115,6 +158,7 @@ export class InitialPlanService {
       preferredSessionMinutes: Number(goal.preferred_session_minutes),
       minSessionMinutes: Number(goal.min_session_minutes)
     };
+    const preferredFormats = jsonArray(goal.preferred_formats, ["projects","practice","documentation"]);
 
     const constraintFingerprint = createHash("sha256")
       .update(JSON.stringify(constraints))
@@ -260,7 +304,7 @@ export class InitialPlanService {
                 const ranked = resourceRows
                   .map(resource => ({
                     resource,
-                    score: resourceScore(resource, task, constraints.preferredSessionMinutes)
+                    score: resourceScore(resource, task, constraints.preferredSessionMinutes, preferredFormats)
                   }))
                   .filter(item => item.score >= 0)
                   .sort((a,b) => b.score - a.score || String(a.resource.title).localeCompare(String(b.resource.title)));
@@ -273,7 +317,7 @@ export class InitialPlanService {
                       taskId,
                       String(chosen.resource.id),
                       chosen.score,
-                      "Verified resource matched canonical skill tag, quality, and session-duration fit."
+                      "Verified resource matched the task topic, target difficulty, learner format preference, session length, quality, and source stability."
                     ]
                   );
                 }

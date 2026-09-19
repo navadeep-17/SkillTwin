@@ -9,6 +9,8 @@ type Settings = Record<string,unknown> | null;
 const DAYS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
 export function SettingsForm({goal,settings}:{goal:Goal;settings:Settings}) {
+  const [careerObjective,setCareerObjective]=useState(String(goal?.career_objective ?? ""));
+  const [targetDate,setTargetDate]=useState(String(goal?.target_date ?? ""));
   const [hours,setHours]=useState(Number(goal?.hours_per_week ?? 10));
   const [session,setSession]=useState(Number(goal?.preferred_session_minutes ?? 60));
   const [days,setDays]=useState<string[]>(Array.isArray(goal?.learning_days) ? goal!.learning_days as string[] : ["Mon","Tue","Wed","Thu","Fri","Sat"]);
@@ -27,7 +29,7 @@ export function SettingsForm({goal,settings}:{goal:Goal;settings:Settings}) {
       if (goal?.id) {
         const response=await fetch("/api/goals/"+String(goal.id),{
           method:"PATCH",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({hoursPerWeek:hours,preferredSessionMinutes:session,learningDays:days,preferredFormats:formats,adaptationMode:adaptation})
+          body:JSON.stringify({careerObjective:careerObjective||null,targetDate:targetDate||null,hoursPerWeek:hours,preferredSessionMinutes:session,learningDays:days,preferredFormats:formats,adaptationMode:adaptation})
         });
         const payload=await response.json();
         if (!response.ok || !payload.ok) throw new Error(payload.error?.message ?? "Goal settings failed.");
@@ -53,6 +55,17 @@ export function SettingsForm({goal,settings}:{goal:Goal;settings:Settings}) {
 
   return (
     <form onSubmit={submit} className="space-y-6">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div><h2 className="text-xl font-semibold">Goal and timeline</h2><p className="mt-1 text-sm text-slate-500">Timeline changes recompute role-gap urgency. Changing the target role uses the explicit onboarding workflow.</p></div>
+          <Link href="/onboarding" className="rounded-xl border px-4 py-2 text-sm font-medium">Change target role</Link>
+        </div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <label><span className="text-sm font-medium">Career objective</span><input value={careerObjective} onChange={e=>setCareerObjective(e.target.value)} className="mt-1 w-full rounded-xl border px-3 py-2" placeholder="Placement-ready for my target role" /></label>
+          <label><span className="text-sm font-medium">Target date</span><input type="date" value={targetDate} onChange={e=>setTargetDate(e.target.value)} className="mt-1 w-full rounded-xl border px-3 py-2" /></label>
+        </div>
+      </section>
+
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="text-xl font-semibold">Learning schedule</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -84,7 +97,7 @@ export function SettingsForm({goal,settings}:{goal:Goal;settings:Settings}) {
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="text-xl font-semibold">Profile data</h2>
         <div className="mt-3 flex flex-wrap gap-3">
-          <Link href="/onboarding" className="rounded-xl border px-4 py-2 text-sm font-medium">Re-analyze resume</Link>
+          <Link href="/onboarding" className="rounded-xl border px-4 py-2 text-sm font-medium">Resume / manual profile / certificates</Link>
           <Link href="/projects" className="rounded-xl border px-4 py-2 text-sm font-medium">Add/update project evidence</Link>
         </div>
       </section>

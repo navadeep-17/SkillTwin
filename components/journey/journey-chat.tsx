@@ -23,7 +23,7 @@ type Proposal = {
 const starters = [
   "Why did my roadmap change?",
   "What should I do next?",
-  "How ready am I for Backend Engineer?",
+  "How ready am I for my target role?",
   "Challenge me",
   "Undo that roadmap change"
 ];
@@ -91,6 +91,29 @@ export function JourneyChat() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     await sendText(input);
+  }
+
+  async function rejectAction() {
+    if (!proposal || confirming) return;
+    setConfirming(true);
+    setError("");
+    try {
+      const response = await fetch("/api/chat/actions/" + proposal.id + "/reject", { method: "POST" });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) {
+        setError(payload.error?.message ?? "The proposal could not be rejected.");
+        return;
+      }
+      setMessages(current => [
+        ...current,
+        { id: "reject-" + Date.now(), role: "ASSISTANT", content: "Current SkillTwin state kept. The proposed action was rejected." }
+      ]);
+      setProposal(null);
+    } catch {
+      setError("The proposal could not be rejected.");
+    } finally {
+      setConfirming(false);
+    }
   }
 
   async function confirmAction() {
@@ -204,8 +227,9 @@ export function JourneyChat() {
               </button>
               <button
                 type="button"
-                onClick={() => setProposal(null)}
-                className="rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900"
+                onClick={rejectAction}
+                disabled={confirming}
+                className="rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900 disabled:opacity-50"
               >
                 Keep current state
               </button>

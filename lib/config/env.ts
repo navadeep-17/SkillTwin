@@ -2,8 +2,8 @@ import { z } from "zod";
 
 const publicSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url().default("https://eozvilqmrhtujqtdmrri.supabase.co"),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).default("sb_publishable_vAoB9dpwSkPb-zTrhXNnAA_MalFJ8bK")
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url().default("http://127.0.0.1:54321"),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).default("local-anon-key-not-configured")
 });
 
 const serverSchema = publicSchema.extend({

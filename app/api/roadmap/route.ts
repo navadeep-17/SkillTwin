@@ -1,6 +1,7 @@
 import { getRequestId } from "@/lib/api/request-context";
 import { fail, ok } from "@/lib/api/responses";
 import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
+import { getInitialPlanService } from "@/lib/services/planner/initial-plan-service";
 
 export const dynamic = "force-dynamic";
 
@@ -96,5 +97,32 @@ export async function GET() {
       error: error instanceof Error ? error.message : String(error)
     });
     return fail(requestId, 500, "INTERNAL_ERROR", "Could not load the active roadmap.");
+  }
+}
+
+
+export async function POST() {
+  const requestId = await getRequestId();
+  try {
+    const { user } = await requireUser();
+    const result = await getInitialPlanService().generate(user.id);
+    return ok(requestId, result, {
+      notifications: [{
+        title: result.reused ? "Roadmap already current" : "Initial roadmap created",
+        message: result.reused ? "SkillTwin kept the existing active baseline." : "SkillTwin created Plan v1 from the final onboarding gap snapshot.",
+        tone: "success"
+      }],
+      next_action: { type: "OPEN_ROADMAP", label: "View roadmap", href: "/roadmap" }
+    }, result.reused ? 200 : 201);
+  } catch (error) {
+    if (error instanceof UnauthenticatedError) {
+      return fail(requestId, 401, "UNAUTHENTICATED", "Sign in to generate your roadmap.");
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    if (message === "ACTIVE_GOAL_NOT_FOUND" || message === "GAP_SNAPSHOT_NOT_FOUND") {
+      return fail(requestId, 409, message, "Complete target-role analysis before generating the roadmap.");
+    }
+    console.error("roadmap.generate.failed", { requestId, error: message });
+    return fail(requestId, 500, "ROADMAP_GENERATION_FAILED", "Could not generate the initial roadmap.");
   }
 }

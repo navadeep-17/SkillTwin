@@ -31,7 +31,7 @@ export async function GET(){
   if(env.SUPABASE_DB_URL){
     try{
       const sql=getSql();
-      const result=rows(await sql.unsafe(\`
+      const result=rows(await sql.unsafe(`
         select
           (select value from public.system_metadata where key='schema_contract_version') schema_contract,
           (select value from public.system_metadata where key='seed_version') seed_version,
@@ -42,7 +42,7 @@ export async function GET(){
           (select count(*)::int from public.learning_resources where status='ACTIVE' and (is_verified=false or url !~ '^https://')) invalid_active_resource_count,
           (select count(*)::int from public.assessment_question_bank where skill_id='10000000-0000-0000-0000-000000000007'::uuid and is_active=true) rest_question_count,
           (select count(*)::int from storage.buckets where id='profile-documents' and public=false) private_bucket_count
-      \`));
+      `));
       const row=result[0] ?? {};
       database="ready";
 

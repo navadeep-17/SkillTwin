@@ -124,10 +124,11 @@ export interface RoleValidationReport {
 }
 
 export class RoleService {
-  async list() {
+  async list(userId:string) {
     const sql = getSql();
     return rows(await sql.unsafe(
-      "select tr.id,tr.slug,tr.name,tr.family,rv.id role_version_id,rv.version,rv.source,rv.schema_version from public.target_roles tr join lateral (select * from public.role_versions x where x.role_id=tr.id and x.status='ACTIVE' order by x.version desc limit 1) rv on true order by tr.family nulls last,tr.name"
+      "select tr.id,tr.slug,tr.name,tr.family,rv.id role_version_id,rv.version,rv.source,rv.schema_version from public.target_roles tr join lateral (select * from public.role_versions x where x.role_id=tr.id and x.status='ACTIVE' order by x.version desc limit 1) rv on true where tr.owner_user_id is null or tr.owner_user_id=$1::uuid order by tr.family nulls last,tr.name",
+      [userId]
     )).map(row => ({
       id:String(row.id),
       slug:String(row.slug),
@@ -140,11 +141,11 @@ export class RoleService {
     }));
   }
 
-  async get(roleIdOrVersionId: string) {
+  async get(userId:string, roleIdOrVersionId: string) {
     const sql = getSql();
     const versionRows = rows(await sql.unsafe(
-      "select rv.id,rv.version,rv.source,rv.status,rv.schema_version,tr.id role_id,tr.slug,tr.name,tr.family from public.role_versions rv join public.target_roles tr on tr.id=rv.role_id where (rv.id=$1::uuid or tr.id=$1::uuid) order by rv.version desc limit 1",
-      [roleIdOrVersionId]
+      "select rv.id,rv.version,rv.source,rv.status,rv.schema_version,tr.id role_id,tr.slug,tr.name,tr.family from public.role_versions rv join public.target_roles tr on tr.id=rv.role_id where (rv.id=$1::uuid or tr.id=$1::uuid) and (tr.owner_user_id is null or tr.owner_user_id=$2::uuid) order by rv.version desc limit 1",
+      [roleIdOrVersionId,userId]
     ));
     if (!versionRows[0]) throw new Error("ROLE_NOT_FOUND");
     const version = versionRows[0];
@@ -372,8 +373,8 @@ export class RoleService {
       const roleId = randomUUID();
       const roleVersionId = randomUUID();
       await tx.unsafe(
-        "insert into public.target_roles(id,slug,name,family) values ($1::uuid,$2,$3,'Custom')",
-        [roleId,slug,candidate.roleName]
+        "insert into public.target_roles(id,slug,name,family,owner_user_id) values ($1::uuid,$2,$3,'Custom',$4::uuid)",
+        [roleId,slug,candidate.roleName,userId]
       );
       await tx.unsafe(
         "insert into public.role_versions(id,role_id,version,source,status,schema_version) values ($1::uuid,$2::uuid,1,'AI_GENERATED','ACTIVE','role-c1')",

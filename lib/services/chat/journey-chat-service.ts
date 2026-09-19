@@ -198,6 +198,7 @@ export class JourneyChatService {
 
     const [
       snapshotResult,
+      goalResult,
       gapResult,
       planResult,
       taskResult,
@@ -207,6 +208,10 @@ export class JourneyChatService {
     ] = await Promise.all([
       sql.unsafe(
         "select * from public.gap_snapshots where user_id=$1::uuid order by created_at desc limit 1",
+        [userId]
+      ),
+      sql.unsafe(
+        "select g.id,tr.name role_name from public.career_goals g join public.role_versions rv on rv.id=g.role_version_id join public.target_roles tr on tr.id=rv.role_id where g.user_id=$1::uuid and g.status='ACTIVE' limit 1",
         [userId]
       ),
       sql.unsafe(
@@ -245,6 +250,7 @@ export class JourneyChatService {
 
     return {
       snapshot: rows(snapshotResult)[0] ?? null,
+      roleName: rows(goalResult)[0]?.role_name == null ? null : String(rows(goalResult)[0].role_name),
       gaps: rows(gapResult),
       plan: rows(planResult)[0] ?? null,
       tasks: rows(taskResult),
@@ -260,6 +266,7 @@ export class JourneyChatService {
     message: string,
     context: {
       snapshot: Row | null;
+      roleName: string | null;
       gaps: Row[];
       plan: Row | null;
       tasks: Row[];
@@ -271,6 +278,7 @@ export class JourneyChatService {
   ) {
     const refs: JourneyReference[] = [];
     const evidenceRefs: string[] = [];
+    const roleLabel = context.roleName ?? "your target role";
 
     if (intent === "UNDO_ROADMAP_CHANGE") {
       const diff = context.latestDiff;
@@ -436,9 +444,9 @@ export class JourneyChatService {
         };
       }
 
-      refs.push(ref("gap_snapshot", context.snapshot, "Current Backend Engineer gap snapshot"));
+      refs.push(ref("gap_snapshot", context.snapshot, "Current " + roleLabel + " gap snapshot"));
       return {
-        content: "Your current Backend Engineer readiness guidance metric is " + String(context.snapshot.readiness)
+        content: "Your current " + roleLabel + " readiness guidance metric is " + String(context.snapshot.readiness)
           + "%, with " + String(context.snapshot.evidence_coverage)
           + "% evidence coverage. Readiness is a role-weighted learning guidance metric, not a hiring probability.",
         refs,
@@ -487,7 +495,7 @@ export class JourneyChatService {
       return {
         content: String(skill.canonical_name) + ": " + scoreText + " with " + confidence
           + "% confidence."
-          + (gap ? " Against Backend Engineer v1, the current gap severity is "
+          + (gap ? " Against " + roleLabel + ", the current gap severity is "
             + Math.round(Number(gap.gap_severity) * 100) + "% and the recommended action is "
             + String(gap.recommended_action) + "." : ""),
         refs,
@@ -499,7 +507,7 @@ export class JourneyChatService {
     const pieces: string[] = [];
     if (context.snapshot) {
       refs.push(ref("gap_snapshot", context.snapshot, "Current gap snapshot"));
-      pieces.push("Backend Engineer readiness is " + String(context.snapshot.readiness) + "%.");
+      pieces.push(roleLabel + " readiness is " + String(context.snapshot.readiness) + "%.");
     }
     if (context.gaps[0]) {
       const gap = context.gaps[0];

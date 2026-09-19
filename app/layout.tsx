@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppNav } from "@/components/shell/app-nav";
+import { GlobalAgentTools } from "@/components/shell/global-agent-tools";
 import { AppAgentTools } from "@/components/shell/app-agent-tools";
 
 export const metadata: Metadata = {

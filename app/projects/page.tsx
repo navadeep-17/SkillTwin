@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProjectEvidenceForm } from "@/components/projects/project-evidence-form";
+import { ProjectRecommendationPanel } from "@/components/projects/project-recommendation-panel";
 
 export default async function ProjectsPage() {
   const supabase = await createClient();
@@ -24,6 +25,8 @@ export default async function ProjectsPage() {
           Add what you built and how you used the technologies. SkillTwin maps the description to canonical skills, but only the Evidence Engine decides whether capability or confidence changes.
         </p>
       </header>
+
+      <div className="mt-8"><ProjectRecommendationPanel /></div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[.9fr_1.1fr]">
         <ProjectEvidenceForm />

@@ -33,8 +33,9 @@ export async function POST(request:Request){
     if(!parsed.success) return fail(requestId,400,"VALIDATION_ERROR","Invalid manual profile.",parsed.error.flatten().fieldErrors);
     const deferPlan=new URL(request.url).searchParams.get("deferPlan")==="1";
     const result=await getManualProfileService().createAndAnalyze({userId:user.id,title:parsed.data.title,text:parsed.data.text,deferPlan});
+    const analysis=result.result as {evidence?:{deltas?:unknown[]}};
     return ok(requestId,result,{
-      skill_delta:result.result.evidence?.deltas ?? [],
+      skill_delta:analysis.evidence?.deltas ?? [],
       notifications:[{title:"Manual profile analyzed",message:"SkillTwin added conservative source-backed profile evidence.",tone:"success"}]
     },201);
   }catch(error){
@@ -54,8 +55,9 @@ export async function PATCH(request:Request){
     const result=await getManualProfileService().updateAndAnalyze({
       userId:user.id,sourceId:parsed.data.id,title:parsed.data.title,text:parsed.data.text,deferPlan
     });
+    const analysis=result.result as {evidence?:{deltas?:unknown[]}};
     return ok(requestId,result,{
-      skill_delta:result.result.evidence?.deltas ?? [],
+      skill_delta:analysis.evidence?.deltas ?? [],
       notifications:[{title:"Manual profile re-analyzed",message:"Old evidence was superseded and the canonical SkillTwin was recomputed.",tone:"success"}]
     });
   }catch(error){

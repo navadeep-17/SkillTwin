@@ -67,7 +67,9 @@ export class ProjectEvidenceService {
         input.title ?? String(current.title),
         input.description ?? String(current.description),
         JSON.stringify(input.technologies ?? (Array.isArray(current.technologies)?current.technologies:[])),
-        Object.prototype.hasOwnProperty.call(input,"artifactUrl") ? input.artifactUrl ?? null : current.artifact_url ?? null,
+        Object.prototype.hasOwnProperty.call(input,"artifactUrl")
+          ? input.artifactUrl ?? null
+          : current.artifact_url == null ? null : String(current.artifact_url),
         input.projectId,input.userId
       ]
     ))[0];

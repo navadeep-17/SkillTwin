@@ -78,6 +78,11 @@ export async function GET(){
     notes.push("Server database configuration is missing.");
   }
 
+  const publicSupabaseConfigured=Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+
   const aiConfigured=env.AI_PROVIDER==="gemini"
     ? Boolean(env.GEMINI_API_KEY)
     : Boolean(env.OPENAI_API_KEY);
@@ -91,6 +96,7 @@ export async function GET(){
     resourceCatalog==="ready" &&
     assessmentBank==="ready" &&
     privateStorage==="ready" &&
+    publicSupabaseConfigured &&
     aiMode!=="unavailable";
 
   return ok(requestId,{
@@ -98,6 +104,7 @@ export async function GET(){
     service:"skilltwin-web",
     appVersion:process.env.VERCEL_GIT_COMMIT_SHA?.slice(0,12) ?? "local",
     checks:{
+      publicSupabase:publicSupabaseConfigured?"configured":"missing",
       database,
       schemaContract:metadata,
       seedVersion:metadata,

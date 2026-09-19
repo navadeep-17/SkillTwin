@@ -8,7 +8,7 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ documentId: string }> }
 ) {
   const requestId = await getRequestId();
@@ -16,10 +16,12 @@ export async function POST(
   try {
     const { documentId } = await context.params;
     const { user, supabase } = await requireUser();
+    const deferPlan = new URL(request.url).searchParams.get("deferPlan") === "1";
     const analysis = await getProfileAnalysisService().analyzeDocument({
       userId: user.id,
       documentId,
-      supabase
+      supabase,
+      deferPlan
     });
 
     const result = analysis.result as {

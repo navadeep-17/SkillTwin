@@ -174,7 +174,6 @@ export function RoadmapView() {
 
 function TaskCard({
   task,
-  onChanged,
   onOpen
 }: {
   task: Task;
@@ -182,40 +181,6 @@ function TaskCard({
   onOpen: (href: string) => void;
 }) {
   const resource = task.resource?.learning_resources;
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState("");
-
-  async function act() {
-    if (pending || task.status === "COMPLETED") return;
-    setPending(true);
-    setError("");
-
-    try {
-      const validation = task.type === "VALIDATE";
-      const response = await fetch(
-        "/api/tasks/" + task.id + (validation ? "/validate" : "/complete"),
-        { method: "POST" }
-      );
-      const payload = await response.json();
-
-      if (!response.ok || !payload.ok) {
-        setError(payload.error?.message ?? "Could not update this task.");
-        return;
-      }
-
-      if (validation) {
-        const href = payload.ui_effects?.next_action?.href;
-        if (href) onOpen(href);
-        return;
-      }
-
-      onChanged();
-    } catch {
-      setError("Could not update this task.");
-    } finally {
-      setPending(false);
-    }
-  }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -230,37 +195,33 @@ function TaskCard({
         <span>{task.difficulty}</span>
         {task.due_at ? <span>{new Date(task.due_at).toLocaleDateString()}</span> : null}
         {task.flexible ? <span>Flexible</span> : null}
+        <span>{task.status}</span>
       </div>
       {resource?.url ? (
-        <a
-          href={resource.url}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-3 block rounded-lg border border-slate-200 bg-white p-3 text-sm hover:border-brand-300"
-        >
+        <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-sm">
           <span className="font-medium">{resource.title}</span>
           <span className="ml-2 text-slate-500">· {resource.provider}</span>
-        </a>
+          <p className="mt-1 text-xs text-slate-400">Verified catalog resource</p>
+        </div>
       ) : null}
 
-      <div className="mt-4">
-        {task.status === "COMPLETED" ? (
-          <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
-            Completed
-          </span>
-        ) : (
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onOpen("/roadmap/task/" + task.id)}
+          className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white"
+        >
+          {task.status === "COMPLETED" ? "View task" : task.type === "VALIDATE" ? "Open validation task" : "Open task"}
+        </button>
+        {task.type === "VALIDATE" && task.status !== "COMPLETED" ? (
           <button
             type="button"
-            onClick={act}
-            disabled={pending}
-            className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
+            onClick={() => onOpen("/roadmap/task/" + task.id)}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium"
           >
-            {pending
-              ? task.type === "VALIDATE" ? "Preparing…" : "Saving…"
-              : task.type === "VALIDATE" ? "Start validation" : "Mark complete"}
+            Why validate?
           </button>
-        )}
-        {error ? <p className="mt-2 text-xs text-rose-700">{error}</p> : null}
+        ) : null}
       </div>
     </div>
   );

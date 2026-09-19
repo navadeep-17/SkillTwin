@@ -97,6 +97,66 @@ function normalize(candidate: EvidenceCandidate, producerVersion: string): Evide
 export class EvidenceEngine {
   constructor(private readonly repository: EvidenceRepository) {}
 
+  async recomputeSkills(input: {
+    userId: string;
+    skillIds: string[];
+    trigger: { type: string; ref: string };
+  }): Promise<{
+    deltas: SkillDelta[];
+    downstream: { runGapAnalysis: boolean; considerReplan: boolean };
+  }> {
+    const skillIds=[...new Set(input.skillIds.filter(Boolean))].sort();
+    if(!skillIds.length) return {deltas:[],downstream:{runGapAnalysis:false,considerReplan:false}};
+
+    return this.repository.transaction(async tx=>{
+      await tx.ensureSkillSnapshots(input.userId,skillIds);
+      const before=await tx.lockSkillSnapshots(input.userId,skillIds);
+      const evidence=await tx.listEvidence(input.userId,skillIds);
+      const deltas:SkillDelta[]=[];
+
+      for(const skillId of skillIds){
+        const previous=before.get(skillId) ?? null;
+        const forSkill=evidence.filter(item=>item.skillId===skillId);
+        const next=estimateSkill(skillId,forSkill,previous);
+        const newestEvidenceAt=forSkill.map(item=>item.createdAt).sort().at(-1) ?? null;
+        await tx.saveSkillSnapshot(input.userId,next,newestEvidenceAt);
+        const delta=buildSkillDelta(previous,next,[]);
+        if(!delta) continue;
+        deltas.push(delta);
+        await tx.appendSkillHistory(input.userId,{
+          skillId,
+          triggerType:input.trigger.type,
+          triggerRef:input.trigger.ref,
+          before:previous,
+          after:next,
+          evidenceIds:[],
+          explanation:delta.learnerExplanation
+        });
+        await tx.appendAgentEvent(input.userId,{
+          eventType:"skill.updated",
+          triggerType:input.trigger.type,
+          triggerRef:input.trigger.ref,
+          summary:delta.learnerExplanation,
+          entityRefs:[{type:"skill",id:skillId}],
+          evidenceRefs:[],
+          metadata:{changed:delta.changed,recomputedAfterSupersession:true}
+        });
+      }
+
+      return {
+        deltas,
+        downstream:{
+          runGapAnalysis:deltas.length>0,
+          considerReplan:deltas.some(delta=>
+            delta.changed.includes("LEVEL")
+            || delta.changed.includes("VALIDATION")
+            || delta.changed.includes("CONFLICT")
+          )
+        }
+      };
+    });
+  }
+
   async ingestBatch(input: {
     userId: string;
     trigger: { type: string; ref: string };

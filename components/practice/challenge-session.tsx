@@ -44,6 +44,21 @@ type CompletionResult = {
     readiness?: number;
     evidenceCoverage?: number;
   } | null;
+  replan?: {
+    changed?: boolean;
+    diff?: {
+      diffId?: string;
+      fromVersion?: number;
+      toVersion?: number | null;
+      headline?: string;
+      totalMinuteDelta?: number;
+      whatChanged?: Array<{
+        type?: string;
+        task?: { title?: string; durationMinutes?: number };
+      }>;
+    };
+  } | null;
+  warnings?: string[];
 };
 
 function asStrings(value: unknown): string[] {
@@ -200,6 +215,31 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
         {completion.gapAnalysis?.readiness != null ? (
           <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
             Backend Engineer readiness was recomputed to <strong>{completion.gapAnalysis.readiness}%</strong>.
+          </div>
+        ) : null}
+
+        {completion.replan?.changed && completion.replan.diff ? (
+          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-violet-700">Roadmap adapted</p>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold">{completion.replan.diff.headline ?? "Roadmap updated from assessment evidence"}</p>
+                <p className="mt-1 text-sm text-violet-900">
+                  Plan v{completion.replan.diff.fromVersion ?? "—"} → v{completion.replan.diff.toVersion ?? "—"}
+                  {completion.replan.diff.totalMinuteDelta != null
+                    ? " · +" + completion.replan.diff.totalMinuteDelta + " min targeted work"
+                    : ""}
+                </p>
+              </div>
+              {completion.replan.diff.diffId ? (
+                <Link
+                  href={"/roadmap/changes/" + completion.replan.diff.diffId}
+                  className="rounded-xl bg-violet-700 px-4 py-2 text-sm font-medium text-white"
+                >
+                  See What Changed
+                </Link>
+              ) : null}
+            </div>
           </div>
         ) : null}
 

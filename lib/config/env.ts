@@ -9,9 +9,10 @@ const publicSchema = z.object({
 const serverSchema = publicSchema.extend({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
   SUPABASE_DB_URL: z.string().min(1).optional(),
-  AI_PROVIDER: z.enum(["openai", "gemini"]).default("openai"),
+  AI_PROVIDER: z.enum(["openai", "gemini"]).default("gemini"),
   OPENAI_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().min(1).default("gemini-3.8-flash"),
   DEMO_FALLBACK_ENABLED: z.enum(["true", "false"]).default("true")
 });
 
@@ -33,6 +34,7 @@ export function getServerEnv() {
     AI_PROVIDER: process.env.AI_PROVIDER,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GEMINI_MODEL: process.env.GEMINI_MODEL,
     DEMO_FALLBACK_ENABLED: process.env.DEMO_FALLBACK_ENABLED
   });
 }

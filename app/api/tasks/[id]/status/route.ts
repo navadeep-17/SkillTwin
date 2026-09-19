@@ -4,6 +4,7 @@ import { fail, ok } from "@/lib/api/responses";
 import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
 import { getSql } from "@/lib/db/postgres";
 import { getEvidenceEngine } from "@/lib/services/skills/evidence-service";
+import { getAdaptiveTriggerService } from "@/lib/services/replanner/adaptive-trigger-service";
 
 const schema=z.object({
   status:z.enum(["PLANNED","IN_PROGRESS","COMPLETED","SKIPPED"]),
@@ -73,7 +74,14 @@ export async function PATCH(request:Request,context:{params:Promise<{id:string}>
       });
     }
 
-    return ok(requestId,{taskId:id,status:parsed.data.status,rescheduled,evidence},{
+    let replan:unknown=null;
+    try {
+      replan=await getAdaptiveTriggerService().considerTaskBehavior({userId:user.id,taskId:id});
+    } catch(replanError) {
+      console.error("task.behavior.replan.failed",{taskId:id,error:replanError instanceof Error?replanError.message:String(replanError)});
+    }
+
+    return ok(requestId,{taskId:id,status:parsed.data.status,rescheduled,evidence,replan},{
       skill_delta:evidence?.deltas ?? [],
       notifications:[{title:"Task updated",message:parsed.data.status==="COMPLETED"?"Completion evidence was recorded conservatively.":"Roadmap execution state updated.",tone:"success"}]
     });

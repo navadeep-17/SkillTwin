@@ -7,6 +7,7 @@ import { PostgresProfileAnalysisRepository } from "@/lib/repositories/postgres/p
 import { parsePdf } from "@/lib/profile/pdf-parser";
 import { segmentResume } from "@/lib/profile/segmenter";
 import { extractMappedSkills } from "@/lib/profile/skill-mapper";
+import { extractSemanticSkillEvidence, mergeProfileExtractions } from "@/lib/profile/semantic-extractor";
 
 export const PROFILE_ANALYZER_SCHEMA_VERSION = "profile-analyzer-b1";
 
@@ -65,12 +66,56 @@ export class ProfileAnalysisService {
       );
 
       const catalog = await this.repository.listCatalog();
-      const extraction = extractMappedSkills({
+      const deterministicExtraction = extractMappedSkills({
         blocks,
         catalog,
         documentId: document.id,
         documentVersion: document.version
       });
+
+      let semanticExtraction = null;
+      try {
+        await this.repository.setStage(
+          input.userId,
+          runId,
+          "extracting",
+          48,
+          { pages: parsed.quality.pageCount, blocks: blocks.length },
+          warnings
+        );
+        semanticExtraction = await extractSemanticSkillEvidence({
+          blocks,
+          catalog,
+          documentId: document.id,
+          documentVersion: document.version
+        });
+      } catch (semanticError) {
+        warnings.push("AI_SEMANTIC_EXTRACTION_FAILED");
+        console.error("profile.semantic_extraction.failed", {
+          runId,
+          error: semanticError instanceof Error ? semanticError.message : String(semanticError)
+        });
+      }
+
+      const extraction = mergeProfileExtractions(
+        deterministicExtraction,
+        semanticExtraction
+      );
+
+      await this.repository.setStage(
+        input.userId,
+        runId,
+        "mapping",
+        58,
+        {
+          pages: parsed.quality.pageCount,
+          blocks: blocks.length,
+          deterministicClaims: deterministicExtraction.claims.length,
+          semanticClaims: semanticExtraction?.claims.length ?? 0,
+          mergedClaims: extraction.claims.length
+        },
+        warnings
+      );
 
       await this.repository.replaceBlocksAndClaims({
         userId: input.userId,

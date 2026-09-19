@@ -60,7 +60,7 @@ export class PostgresEvidenceRepository implements EvidenceRepository {
   async transaction<T>(work: (tx: EvidenceTransaction) => Promise<T>): Promise<T> {
     const sql = getSql();
 
-    return sql.begin(async transaction => {
+    return (await sql.begin(async transaction => {
       const adapter: EvidenceTransaction = {
         ensureSkillSnapshots: async (userId, skillIds) => {
           for (const skillId of skillIds) {
@@ -170,6 +170,6 @@ export class PostgresEvidenceRepository implements EvidenceRepository {
       };
 
       return work(adapter);
-    });
+    })) as T;
   }
 }

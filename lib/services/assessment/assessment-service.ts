@@ -5,7 +5,7 @@ import { getSql } from "@/lib/db/postgres";
 import { getGeminiStructuredClient } from "@/lib/ai/gemini-interactions";
 import { getEvidenceEngine } from "@/lib/services/skills/evidence-service";
 import { getGapAnalysisService } from "@/lib/services/gaps/gap-analysis-service";
-import { getAdaptiveReplannerService } from "@/lib/services/replanner/adaptive-replanner-service";
+import { getAdaptiveTriggerService } from "@/lib/services/replanner/adaptive-trigger-service";
 
 export const ASSESSMENT_BLUEPRINT_VERSION = "assessment-blueprint-e2";
 export const ASSESSMENT_EVALUATION_VERSION = "adaptive-evaluator-e2";
@@ -663,8 +663,16 @@ export class AssessmentService {
 
     let replanResult:unknown=null,replanWarning:string|null=null;
     try {
-      replanResult=await getAdaptiveReplannerService().considerAssessment({
-        userId,assessmentId,skillId:String(assessment.skill_id),weaknesses,evidenceIds:evidenceResult.acceptedEvidenceIds,gapSnapshotId:gapResult?.snapshotId ?? null
+      replanResult=await getAdaptiveTriggerService().considerAssessment({
+        userId,
+        assessmentId,
+        skillId:String(assessment.skill_id),
+        weaknesses,
+        strengths,
+        normalizedScore:Number(normalizedScore.toFixed(4)),
+        assessmentConfidence:Number(belief.assessmentConfidence.toFixed(4)),
+        evidenceIds:evidenceResult.acceptedEvidenceIds,
+        gapSnapshotId:gapResult?.snapshotId ?? null
       });
     } catch(error){
       replanWarning="REPLAN_FAILED";

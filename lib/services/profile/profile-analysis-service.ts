@@ -14,7 +14,7 @@ export const PROFILE_ANALYZER_SCHEMA_VERSION = "profile-analyzer-b1";
 export class ProfileAnalysisService {
   constructor(private readonly repository = new PostgresProfileAnalysisRepository()) {}
 
-  async analyzeResume(input: { userId: string; documentId: string; supabase: SupabaseClient }) {
+  async analyzeDocument(input: { userId: string; documentId: string; supabase: SupabaseClient }) {
     const document = await this.repository.getDocument(input.userId, input.documentId);
     if (!document) throw new Error("PROFILE_DOCUMENT_NOT_FOUND");
 
@@ -52,6 +52,7 @@ export class ProfileAnalysisService {
       await this.repository.setStage(input.userId, runId, "segmenting", 35);
       const blocks = segmentResume({
         documentId: document.id,
+        documentType: document.documentType,
         documentVersion: document.version,
         pages: parsed.pages
       });
@@ -102,6 +103,25 @@ export class ProfileAnalysisService {
         semanticExtraction
       );
 
+      if (document.documentType === "certificate") {
+        extraction.evidence = extraction.evidence.map(candidate => ({
+          ...candidate,
+          sourceType: "MANUAL_SELF_REPORT",
+          sourceGroupId: "certificate:" + document.id + ":v" + document.version + ":" + candidate.sourceRef,
+          levelSignal: null,
+          directness: Math.min(candidate.directness, 0.65),
+          quality: Math.min(candidate.quality, 0.35),
+          coverage: Math.min(candidate.coverage, 0.25),
+          metadata: {
+            ...(candidate.metadata ?? {}),
+            sourceKind: "certificate",
+            certificateDocumentId: document.id,
+            originalProposedSourceType: candidate.sourceType
+          },
+          idempotencyKey: "certificate:" + document.id + ":v" + document.version + ":" + candidate.skillId + ":" + candidate.sourceRef
+        }));
+      }
+
       await this.repository.setStage(
         input.userId,
         runId,
@@ -141,7 +161,7 @@ export class ProfileAnalysisService {
 
       const evidenceResult = await getEvidenceEngine().ingestBatch({
         userId: input.userId,
-        trigger: { type: "PROFILE_ANALYSIS", ref: runId },
+        trigger: { type: document.documentType === "certificate" ? "CERTIFICATE_ANALYSIS" : "PROFILE_ANALYSIS", ref: runId },
         candidates: extraction.evidence,
         producerVersion: PROFILE_ANALYZER_SCHEMA_VERSION
       });
@@ -211,6 +231,10 @@ export class ProfileAnalysisService {
       );
       throw error;
     }
+  }
+
+  analyzeResume(input: { userId: string; documentId: string; supabase: SupabaseClient }) {
+    return this.analyzeDocument(input);
   }
 }
 

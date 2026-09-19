@@ -83,3 +83,57 @@ insert into public.role_dependency_edges(role_version_id,prerequisite_requiremen
 ('21000000-0000-0000-0000-000000000001','23000000-0000-0000-0000-000000000005','23000000-0000-0000-0000-000000000012','HARD'),
 ('21000000-0000-0000-0000-000000000001','23000000-0000-0000-0000-000000000011','23000000-0000-0000-0000-000000000013','SOFT')
 on conflict(role_version_id,prerequisite_requirement_id,dependent_requirement_id) do update set edge_type=excluded.edge_type;
+
+
+-- Verified learning-resource catalog for deterministic planner output.
+insert into public.learning_resources(
+  id,title,provider,url,tags,levels,format,duration_minutes,quality,is_verified,status,catalog_version,last_verified_at
+) values
+(
+  '30000000-0000-0000-0000-000000000001',
+  'HTTP request methods',
+  'MDN Web Docs',
+  'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods',
+  '["http","methods","idempotency","safe-methods"]'::jsonb,
+  '["BEGINNER","INTERMEDIATE"]'::jsonb,
+  'DOCS',35,0.98,true,'ACTIVE','resource-catalog-d1',now()
+),
+(
+  '30000000-0000-0000-0000-000000000002',
+  'HTTP response status codes',
+  'MDN Web Docs',
+  'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status',
+  '["http","status-codes","responses"]'::jsonb,
+  '["BEGINNER","INTERMEDIATE"]'::jsonb,
+  'DOCS',30,0.98,true,'ACTIVE','resource-catalog-d1',now()
+),
+(
+  '30000000-0000-0000-0000-000000000003',
+  'REST',
+  'MDN Web Docs',
+  'https://developer.mozilla.org/en-US/docs/Glossary/REST',
+  '["rest-api","resource-design","http"]'::jsonb,
+  '["BEGINNER","INTERMEDIATE"]'::jsonb,
+  'DOCS',25,0.95,true,'ACTIVE','resource-catalog-d1',now()
+),
+(
+  '30000000-0000-0000-0000-000000000004',
+  'Get started with Docker',
+  'Docker Docs',
+  'https://docs.docker.com/get-started/',
+  '["docker","containers","images"]'::jsonb,
+  '["BEGINNER","INTERMEDIATE"]'::jsonb,
+  'DOCS',45,0.98,true,'ACTIVE','resource-catalog-d1',now()
+)
+on conflict(url) do update set
+  title=excluded.title,
+  provider=excluded.provider,
+  tags=excluded.tags,
+  levels=excluded.levels,
+  format=excluded.format,
+  duration_minutes=excluded.duration_minutes,
+  quality=excluded.quality,
+  is_verified=true,
+  status='ACTIVE',
+  catalog_version=excluded.catalog_version,
+  last_verified_at=now();

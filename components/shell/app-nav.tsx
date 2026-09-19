@@ -9,7 +9,8 @@ const links = [
   { href: "/projects", label: "Projects" },
   { href: "/progress", label: "Progress" },
   { href: "/journey", label: "Journey Chat" },
-  { href: "/activity", label: "Activity" }
+  { href: "/activity", label: "Activity" },
+  { href: "/settings", label: "Settings" }
 ];
 
 export async function AppNav() {

@@ -8,13 +8,20 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: npm install
+      - run: npm run lint
+      - run: npm run qa:static
       - run: npm run typecheck:core
       - run: npm run test:core
       - run: npm run typecheck
       - run: npm run build
+      - name: Verify live database contract when CI secret is configured
+        if: ${{ env.SUPABASE_DB_URL != '' }}
+        run: npm run qa:db

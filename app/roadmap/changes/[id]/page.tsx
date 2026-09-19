@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { UndoPlanChangeButton } from "@/components/roadmap/undo-plan-change-button";
+import { PlanDiffDecisionButtons } from "@/components/roadmap/plan-diff-decision-buttons";
 
 type Operation = {
   type?: string;
@@ -46,7 +47,7 @@ export default async function RoadmapChangePage({
           <h1 className="text-3xl font-semibold">{diff.summary}</h1>
           <p className="mt-2 max-w-2xl text-slate-600">{diff.reason}</p>
         </div>
-        <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">{diff.status}</span>
+        <span className={diff.status==="PROPOSED"?"rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700":"rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700"}>{diff.status}</span>
       </div>
 
       <section className="mt-7 grid gap-4 sm:grid-cols-4">
@@ -64,7 +65,7 @@ export default async function RoadmapChangePage({
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{operation.type ?? "CHANGE"}</p>
-                  <p className="mt-1 font-semibold">{operation.task?.title ?? "Roadmap task changed"}</p>
+                  <p className="mt-1 font-semibold">{operation.task?.title ?? operationTitle(operation)}</p>
                 </div>
                 {operation.task?.durationMinutes ? (
                   <span className="rounded-full bg-white px-2.5 py-1 text-xs">{operation.task.durationMinutes} min</span>
@@ -97,7 +98,7 @@ export default async function RoadmapChangePage({
       ) : null}
 
       <div className="mt-7 flex flex-wrap gap-3">
-        <Link href="/roadmap" className="rounded-xl bg-brand-600 px-4 py-2 font-medium text-white">View updated roadmap</Link>
+        {diff.status === "PROPOSED" ? <PlanDiffDecisionButtons diffId={diff.id} /> : <Link href="/roadmap" className="rounded-xl bg-brand-600 px-4 py-2 font-medium text-white">View updated roadmap</Link>}
         {diff.status === "APPLIED" && diff.can_undo ? <UndoPlanChangeButton diffId={diff.id} /> : null}
         <Link href="/overview" className="rounded-xl border border-slate-300 bg-white px-4 py-2 font-medium">Back to overview</Link>
       </div>
@@ -112,6 +113,15 @@ function Metric({ label, value }: { label: string; value: string }) {
       <p className="mt-1 text-xl font-semibold">{value}</p>
     </div>
   );
+}
+
+function operationTitle(operation: Operation & Record<string, unknown>) {
+  if (operation.type === "MOVE_TASK") return "Move a future roadmap task";
+  if (operation.type === "REMOVE_TASK") return "Remove redundant future work";
+  if (operation.type === "CHANGE_DIFFICULTY") return "Change future task difficulty";
+  if (operation.type === "CHANGE_DURATION") return "Resize a future learning session";
+  if (operation.type === "CHANGE_RESOURCE") return "Switch to a verified learning resource";
+  return "Roadmap task changed";
 }
 
 function humanize(value: string) {

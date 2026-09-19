@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getServerEnv } from "@/lib/config/env";
@@ -68,7 +69,7 @@ export default async function DemoPage() {
   const latestAssessment = assessment.data;
   const latestDiff = diff.data;
 
-  const steps = [
+  const steps: Array<{ label: string; ready: boolean; detail: string; href: Route }> = [
     {
       label: "1. Resume analysis",
       ready: resume?.analysis_status === "complete",
@@ -105,7 +106,7 @@ export default async function DemoPage() {
       detail: latestDiff
         ? "v" + latestDiff.from_version + " → v" + (latestDiff.to_version ?? "—") + " · " + latestDiff.status
         : "No roadmap change yet",
-      href: latestDiff ? "/roadmap/changes/" + latestDiff.id : "/roadmap"
+      href: latestDiff ? (("/roadmap/changes/" + latestDiff.id) as Route) : "/roadmap"
     },
     {
       label: "6. Grounded explanation",

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { UndoPlanChangeButton } from "@/components/roadmap/undo-plan-change-button";
 
 type Operation = {
   type?: string;
@@ -97,6 +98,7 @@ export default async function RoadmapChangePage({
 
       <div className="mt-7 flex flex-wrap gap-3">
         <Link href="/roadmap" className="rounded-xl bg-brand-600 px-4 py-2 font-medium text-white">View updated roadmap</Link>
+        {diff.status === "APPLIED" && diff.can_undo ? <UndoPlanChangeButton diffId={diff.id} /> : null}
         <Link href="/overview" className="rounded-xl border border-slate-300 bg-white px-4 py-2 font-medium">Back to overview</Link>
       </div>
     </main>

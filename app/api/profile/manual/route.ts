@@ -31,7 +31,8 @@ export async function POST(request:Request){
     const {user}=await requireUser();
     const parsed=postSchema.safeParse(await request.json());
     if(!parsed.success) return fail(requestId,400,"VALIDATION_ERROR","Invalid manual profile.",parsed.error.flatten().fieldErrors);
-    const result=await getManualProfileService().createAndAnalyze({userId:user.id,title:parsed.data.title,text:parsed.data.text});
+    const deferPlan=new URL(request.url).searchParams.get("deferPlan")==="1";
+    const result=await getManualProfileService().createAndAnalyze({userId:user.id,title:parsed.data.title,text:parsed.data.text,deferPlan});
     return ok(requestId,result,{
       skill_delta:result.result.evidence?.deltas ?? [],
       notifications:[{title:"Manual profile analyzed",message:"SkillTwin added conservative source-backed profile evidence.",tone:"success"}]
@@ -49,8 +50,9 @@ export async function PATCH(request:Request){
     const {user}=await requireUser();
     const parsed=patchSchema.safeParse(await request.json());
     if(!parsed.success) return fail(requestId,400,"VALIDATION_ERROR","Invalid manual profile update.",parsed.error.flatten().fieldErrors);
+    const deferPlan=new URL(request.url).searchParams.get("deferPlan")==="1";
     const result=await getManualProfileService().updateAndAnalyze({
-      userId:user.id,sourceId:parsed.data.id,title:parsed.data.title,text:parsed.data.text
+      userId:user.id,sourceId:parsed.data.id,title:parsed.data.title,text:parsed.data.text,deferPlan
     });
     return ok(requestId,result,{
       skill_delta:result.result.evidence?.deltas ?? [],

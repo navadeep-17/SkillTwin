@@ -16,7 +16,7 @@ export interface CandidateSkillClaim {
   claimType: "explicit" | "usage" | "inferred_context";
   evidenceSnippet: string;
   extractionConfidence: number;
-  mappingMethod: "exact_alias";
+  mappingMethod: "exact_alias" | "ai_catalog_selection";
   mappingConfidence: number;
 }
 

@@ -52,7 +52,6 @@ export class ProfileAnalysisService {
       await this.repository.setStage(input.userId, runId, "segmenting", 35);
       const blocks = segmentResume({
         documentId: document.id,
-        documentType: document.documentType,
         documentVersion: document.version,
         pages: parsed.pages
       });

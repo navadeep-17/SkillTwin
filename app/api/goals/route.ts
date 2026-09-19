@@ -33,8 +33,8 @@ export async function POST(request:Request) {
     const sql=getSql();
     const result=await sql.begin(async tx=>{
       const role=await tx.unsafe(
-        "select rv.id,tr.name from public.role_versions rv join public.target_roles tr on tr.id=rv.role_id where rv.id=$1::uuid and rv.status='ACTIVE' limit 1",
-        [parsed.data.roleVersionId]
+        "select rv.id,tr.name from public.role_versions rv join public.target_roles tr on tr.id=rv.role_id where rv.id=$1::uuid and rv.status='ACTIVE' and (tr.owner_user_id is null or tr.owner_user_id=$2::uuid) limit 1",
+        [parsed.data.roleVersionId,user.id]
       ) as Array<Record<string,unknown>>;
       if (!role[0]) throw new Error("ROLE_VERSION_NOT_FOUND");
 

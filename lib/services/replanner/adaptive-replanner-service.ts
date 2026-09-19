@@ -519,6 +519,183 @@ export class AdaptiveReplannerService {
     return this.diffDto(appliedDiff!, false);
   }
 
+  async undo(userId: string, diffId: string) {
+    const sql = getSql();
+
+    const originalRows = rows(await sql.unsafe(
+      "select * from public.plan_diffs where id=$1::uuid and user_id=$2::uuid limit 1",
+      [diffId, userId]
+    ));
+    const original = originalRows[0];
+    if (!original) throw new Error("PLAN_DIFF_NOT_FOUND");
+    if (String(original.status) !== "APPLIED" || !original.to_plan_id) {
+      throw new Error("PLAN_DIFF_NOT_UNDOABLE");
+    }
+
+    const activeRows = rows(await sql.unsafe(
+      "select * from public.learning_plans where id=$1::uuid and user_id=$2::uuid and status='ACTIVE' limit 1",
+      [String(original.to_plan_id), userId]
+    ));
+    const active = activeRows[0];
+    if (!active || Number(active.version) !== Number(original.to_version)) {
+      throw new Error("UNDO_STALE_BASELINE");
+    }
+
+    const insertedTasks = rows(await sql.unsafe(
+      "select t.*,w.week_index,w.planned_minutes week_planned_minutes from public.learning_tasks t join public.plan_weeks w on w.id=t.week_id where t.plan_id=$1::uuid and t.inserted_by_plan_diff_id=$2::uuid order by t.created_at",
+      [String(active.id), diffId]
+    ));
+    if (insertedTasks.length !== 1) throw new Error("UNDO_UNSUPPORTED_PATCH_SHAPE");
+
+    const task = insertedTasks[0];
+    if (String(task.status) !== "PLANNED") throw new Error("UNDO_UNSAFE_TASK_PROGRESS");
+
+    const duration = Number(task.duration_minutes);
+    const fingerprint = createHash("sha256")
+      .update(JSON.stringify({
+        originalDiffId: diffId,
+        fromPlanId: String(active.id),
+        fromVersion: Number(active.version),
+        logicalTaskId: String(task.logical_task_id),
+        operation: "UNDO_ADD_TASK",
+        replannerVersion: REPLANNER_VERSION
+      }))
+      .digest("hex");
+
+    const existingRows = rows(await sql.unsafe(
+      "select * from public.plan_diffs where user_id=$1::uuid and input_fingerprint=$2 limit 1",
+      [userId, fingerprint]
+    ));
+    if (existingRows[0]) return this.diffDto(existingRows[0], true);
+
+    let undoDiff: Row | null = null;
+
+    await sql.begin(async tx => {
+      const lockedRows = rows(await tx.unsafe(
+        "select * from public.learning_plans where id=$1::uuid and user_id=$2::uuid for update",
+        [String(active.id), userId]
+      ));
+      const locked = lockedRows[0];
+      if (!locked || String(locked.status) !== "ACTIVE") throw new Error("UNDO_STALE_BASELINE");
+
+      const nextVersion = Number(active.version) + 1;
+      const diffRows = rows(await tx.unsafe(
+        "insert into public.plan_diffs(user_id,goal_id,from_plan_id,from_version,status,trigger_type,trigger_refs,evidence_refs,summary,reason,operations,weekly_impact,timeline_impact,total_minute_delta,touch_count,complexity,can_undo,generator_version,validator_version,input_fingerprint) values ($1::uuid,$2::uuid,$3::uuid,$4,'PROPOSED','UNDO',$5::jsonb,$6::jsonb,$7,$8,$9::jsonb,$10::jsonb,'NONE',$11,1,'MINOR',false,$12,$13,$14) returning *",
+        [
+          userId,
+          String(active.goal_id),
+          String(active.id),
+          Number(active.version),
+          JSON.stringify([diffId]),
+          JSON.stringify(jsonValue(original.evidence_refs, [])),
+          "Undo previous roadmap reinforcement",
+          "The inserted reinforcement has not started, so SkillTwin can safely restore the prior remaining workload without deleting history.",
+          JSON.stringify([{
+            type: "REMOVE_TASK",
+            taskId: String(task.id),
+            logicalTaskId: String(task.logical_task_id),
+            title: String(task.title),
+            before: {
+              durationMinutes: duration,
+              dueAt: task.due_at == null ? null : String(task.due_at),
+              status: String(task.status)
+            },
+            after: null,
+            reasonRefs: [diffId]
+          }]),
+          JSON.stringify([{
+            weekIndex: Number(task.week_index),
+            beforeMinutes: Number(task.week_planned_minutes),
+            afterMinutes: Number(task.week_planned_minutes) - duration
+          }]),
+          -duration,
+          REPLANNER_VERSION,
+          REPLAN_VALIDATOR_VERSION,
+          fingerprint
+        ]
+      ));
+      const newDiffId = String(diffRows[0].id);
+
+      await tx.unsafe(
+        "update public.learning_plans set status='SUPERSEDED' where id=$1::uuid and status='ACTIVE'",
+        [String(active.id)]
+      );
+
+      const planRows = rows(await tx.unsafe(
+        "insert into public.learning_plans(user_id,goal_id,version,status,start_date,end_date,gap_snapshot_id,constraint_fingerprint,planner_version,generation_key,planned_minutes,adaptation_buffer_minutes,rationale,warnings,parent_plan_id) values ($1::uuid,$2::uuid,$3,'ACTIVE',$4::date,$5::date,$6::uuid,$7,$8,$9,$10,$11,$12::jsonb,$13::jsonb,$14::uuid) returning id",
+        [
+          userId,
+          String(active.goal_id),
+          nextVersion,
+          String(active.start_date),
+          String(active.end_date),
+          String(active.gap_snapshot_id),
+          String(active.constraint_fingerprint),
+          String(active.planner_version),
+          "undo:" + diffId + ":v" + nextVersion,
+          Math.max(0, Number(active.planned_minutes) - duration),
+          Number(active.adaptation_buffer_minutes),
+          JSON.stringify(jsonValue(active.rationale, {})),
+          JSON.stringify(jsonValue(active.warnings, [])),
+          String(active.id)
+        ]
+      ));
+      const nextPlanId = String(planRows[0].id);
+
+      await tx.unsafe(
+        "insert into public.plan_weeks(plan_id,week_index,start_date,end_date,capacity_minutes,planned_minutes,focus_skill_ids,rationale) select $1::uuid,w.week_index,w.start_date,w.end_date,w.capacity_minutes,case when w.id=$2::uuid then greatest(0,w.planned_minutes-$3) else w.planned_minutes end,w.focus_skill_ids,w.rationale from public.plan_weeks w where w.plan_id=$4::uuid order by w.week_index",
+        [nextPlanId, String(task.week_id), duration, String(active.id)]
+      );
+
+      await tx.unsafe(
+        "insert into public.learning_objectives(plan_id,week_id,skill_id,requirement_id,type,start_score,target_score,success_criteria,priority_at_creation,status,logical_objective_id) select $1::uuid,nw.id,o.skill_id,o.requirement_id,o.type,o.start_score,o.target_score,o.success_criteria,o.priority_at_creation,o.status,o.logical_objective_id from public.learning_objectives o join public.plan_weeks ow on ow.id=o.week_id join public.plan_weeks nw on nw.plan_id=$1::uuid and nw.week_index=ow.week_index where o.plan_id=$2::uuid order by o.created_at,o.id",
+        [nextPlanId, String(active.id)]
+      );
+
+      await tx.unsafe(
+        "insert into public.learning_tasks(plan_id,week_id,objective_id,skill_id,type,title,duration_minutes,due_at,status,difficulty,flexible,rationale_code,inserted_by_plan_diff_id,completed_at,logical_task_id) select $1::uuid,no.week_id,no.id,t.skill_id,t.type,t.title,t.duration_minutes,t.due_at,t.status,t.difficulty,t.flexible,t.rationale_code,t.inserted_by_plan_diff_id,t.completed_at,t.logical_task_id from public.learning_tasks t join public.learning_objectives oo on oo.id=t.objective_id join public.learning_objectives no on no.plan_id=$1::uuid and no.logical_objective_id=oo.logical_objective_id where t.plan_id=$2::uuid and t.logical_task_id<>$3::uuid order by t.created_at,t.id",
+        [nextPlanId, String(active.id), String(task.logical_task_id)]
+      );
+
+      await tx.unsafe(
+        "insert into public.task_resource_assignments(task_id,resource_id,rank_score,ranker_version,explanation) select nt.id,a.resource_id,a.rank_score,a.ranker_version,a.explanation from public.task_resource_assignments a join public.learning_tasks ot on ot.id=a.task_id join public.learning_tasks nt on nt.plan_id=$1::uuid and nt.logical_task_id=ot.logical_task_id where ot.plan_id=$2::uuid",
+        [nextPlanId, String(active.id)]
+      );
+
+      const appliedRows = rows(await tx.unsafe(
+        "update public.plan_diffs set to_plan_id=$1::uuid,to_version=$2,status='APPLIED',applied_at=now() where id=$3::uuid returning *",
+        [nextPlanId, nextVersion, newDiffId]
+      ));
+      undoDiff = appliedRows[0];
+
+      await tx.unsafe(
+        "update public.plan_diffs set status='UNDONE',can_undo=false where id=$1::uuid and user_id=$2::uuid",
+        [diffId, userId]
+      );
+
+      await tx.unsafe(
+        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,evidence_refs,metadata) values ($1::uuid,'plan.undo.applied','UNDO',$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)",
+        [
+          userId,
+          diffId,
+          "Created Plan v" + nextVersion + " by safely undoing the unstarted reinforcement task.",
+          JSON.stringify([
+            { type: "plan_diff", id: newDiffId },
+            { type: "plan_diff", id: diffId },
+            { type: "learning_plan", id: nextPlanId }
+          ]),
+          JSON.stringify(jsonValue(original.evidence_refs, [])),
+          JSON.stringify({
+            removedLogicalTaskId: String(task.logical_task_id),
+            minuteDelta: -duration
+          })
+        ]
+      );
+    });
+
+    return this.diffDto(undoDiff!, false);
+  }
+
   private diffDto(diff: Row, reused: boolean) {
     return {
       changed: true,

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getWeeklyReportService } from "@/lib/services/progress/weekly-report-service";
 
 export default async function ProgressPage() {
   const supabase = await createClient();
@@ -50,12 +51,21 @@ export default async function ProgressPage() {
 
   const { data: tasks, error: tasksError } = await supabase
     .from("learning_tasks")
-    .select("id,status,duration_minutes,type,learning_plans!inner(user_id)")
+    .select("id,status,duration_minutes,actual_minutes,type,learning_plans!inner(user_id)")
     .eq("learning_plans.user_id", auth.user.id);
   if (tasksError) throw tasksError;
 
   const completed = (tasks ?? []).filter(task => task.status === "COMPLETED");
-  const totalMinutes = completed.reduce((sum, task) => sum + Number(task.duration_minutes), 0);
+  const totalMinutes = completed.reduce((sum, task) => sum + Number(task.actual_minutes ?? task.duration_minutes), 0);
+  const weeklyReport = await getWeeklyReportService().getOrGenerate(auth.user.id);
+  const improvingIds = Array.isArray(weeklyReport.improving_skill_ids) ? weeklyReport.improving_skill_ids.map(String) : [];
+  const attentionIds = Array.isArray(weeklyReport.attention_skill_ids) ? weeklyReport.attention_skill_ids.map(String) : [];
+  const reportSkillIds = [...new Set([...improvingIds, ...attentionIds])];
+  const { data: reportSkills, error: reportSkillsError } = reportSkillIds.length
+    ? await supabase.from("skills").select("id,canonical_name").in("id", reportSkillIds)
+    : { data: [], error: null };
+  if (reportSkillsError) throw reportSkillsError;
+  const reportSkillMap = new Map((reportSkills ?? []).map(skill => [skill.id, skill.canonical_name]));
   const latestSnapshot = snapshots?.at(-1) ?? null;
   const firstSnapshot = snapshots?.[0] ?? null;
   const readinessDelta = latestSnapshot && firstSnapshot
@@ -77,6 +87,47 @@ export default async function ProgressPage() {
         <Metric label="Readiness change" value={(readinessDelta >= 0 ? "+" : "") + readinessDelta + " pts"} />
         <Metric label="Completed tasks" value={String(completed.length)} />
         <Metric label="Learning time logged" value={formatMinutes(totalMinutes)} />
+      </section>
+
+      <section className="mt-8 rounded-2xl border border-indigo-200 bg-indigo-50 p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Weekly report</p>
+            <h2 className="mt-1 text-xl font-semibold">What changed this week</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-indigo-950">{String(weeklyReport.summary)}</p>
+          </div>
+          <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-medium">
+            {String(weeklyReport.week_start)} → {String(weeklyReport.week_end)}
+          </span>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <ReportMetric label="Tasks completed" value={String(weeklyReport.tasks_completed)} />
+          <ReportMetric label="Learning time" value={formatMinutes(Number(weeklyReport.learning_minutes))} />
+          <ReportMetric label="Validations" value={String(weeklyReport.assessments_completed)} />
+          <ReportMetric label="Skills changed" value={String(weeklyReport.skills_changed)} />
+          <ReportMetric label="Roadmap changes" value={String(weeklyReport.roadmap_changes)} />
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="rounded-xl bg-white/70 p-4">
+            <p className="text-sm font-semibold">Improving</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {improvingIds.length ? improvingIds.map(id => <span key={id} className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs text-emerald-700">{reportSkillMap.get(id) ?? "Skill"}</span>) : <span className="text-sm text-slate-500">No material positive SkillDelta this week.</span>}
+            </div>
+          </div>
+          <div className="rounded-xl bg-white/70 p-4">
+            <p className="text-sm font-semibold">Needs attention</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {attentionIds.length ? attentionIds.map(id => <span key={id} className="rounded-full bg-amber-50 px-2.5 py-1 text-xs text-amber-700">{reportSkillMap.get(id) ?? "Skill"}</span>) : <span className="text-sm text-slate-500">No low assessment outcome flagged this week.</span>}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-xl border border-indigo-200 bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Recommended next step</p>
+          <p className="mt-1 text-sm font-medium text-slate-800">{String(weeklyReport.recommended_next_step ?? "Continue the active roadmap.")}</p>
+        </div>
       </section>
 
       <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -161,6 +212,10 @@ export default async function ProgressPage() {
       </section>
     </main>
   );
+}
+
+function ReportMetric({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-xl bg-white/70 p-4"><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-xl font-semibold">{value}</p></div>;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

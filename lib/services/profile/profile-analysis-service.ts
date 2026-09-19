@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getEvidenceEngine } from "@/lib/services/skills/evidence-service";
 import { getGapAnalysisService } from "@/lib/services/gaps/gap-analysis-service";
+import { getInitialPlanService } from "@/lib/services/planner/initial-plan-service";
 import { PostgresProfileAnalysisRepository } from "@/lib/repositories/postgres/profile-analysis-repository";
 import { parsePdf } from "@/lib/profile/pdf-parser";
 import { segmentResume } from "@/lib/profile/segmenter";
@@ -107,6 +108,19 @@ export class ProfileAnalysisService {
           )
         : null;
 
+      let planResult: unknown = null;
+      if (gapResult) {
+        try {
+          planResult = await getInitialPlanService().generate(input.userId);
+        } catch (planError) {
+          warnings.push("INITIAL_PLAN_GENERATION_FAILED");
+          console.error("profile.analysis.plan.failed", {
+            runId,
+            error: planError instanceof Error ? planError.message : String(planError)
+          });
+        }
+      }
+
       const result = {
         runId,
         documentId: document.id,
@@ -121,6 +135,7 @@ export class ProfileAnalysisService {
               evidenceCoverage: gapResult.evidenceCoverage
             }
           : null,
+        plan: planResult,
         warnings
       };
 

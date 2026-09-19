@@ -137,3 +137,77 @@ on conflict(url) do update set
   status='ACTIVE',
   catalog_version=excluded.catalog_version,
   last_verified_at=now();
+
+
+insert into public.assessment_question_bank(
+  id,skill_id,concept_id,type,difficulty,prompt,options,answer_key,rubric,tags,source,version,is_active
+) values
+(
+  '40000000-0000-0000-0000-000000000001',
+  '10000000-0000-0000-0000-000000000007',
+  'http-method-semantics','MCQ',1,
+  'Which HTTP method is conventionally used to retrieve a resource without changing server state?',
+  '[{"id":"a","text":"POST"},{"id":"b","text":"GET"},{"id":"c","text":"PATCH"},{"id":"d","text":"DELETE"}]'::jsonb,
+  '{"correctOptionId":"b"}'::jsonb,
+  '{"correctFeedback":"GET is the conventional safe retrieval method.","incorrectFeedback":"Review HTTP method semantics: retrieval should use a safe read method."}'::jsonb,
+  '["rest-api","http","methods"]'::jsonb,'SEEDED','rest-bank-e1',true
+),
+(
+  '40000000-0000-0000-0000-000000000002',
+  '10000000-0000-0000-0000-000000000007',
+  'status-codes','MCQ',2,
+  'A REST API successfully creates a new resource. Which response status is the most specific conventional choice?',
+  '[{"id":"a","text":"200 OK"},{"id":"b","text":"201 Created"},{"id":"c","text":"204 No Content"},{"id":"d","text":"304 Not Modified"}]'::jsonb,
+  '{"correctOptionId":"b"}'::jsonb,
+  '{"correctFeedback":"201 Created explicitly represents successful resource creation.","incorrectFeedback":"For a successful create operation, prefer the status that explicitly communicates creation."}'::jsonb,
+  '["rest-api","http","status-codes"]'::jsonb,'SEEDED','rest-bank-e1',true
+),
+(
+  '40000000-0000-0000-0000-000000000003',
+  '10000000-0000-0000-0000-000000000007',
+  'resource-design','MCQ',2,
+  'Which endpoint shape best follows resource-oriented REST conventions for retrieving order 42?',
+  '[{"id":"a","text":"/getOrder?id=42"},{"id":"b","text":"/orders/42"},{"id":"c","text":"/orders/get/42"},{"id":"d","text":"/fetch-order/42"}]'::jsonb,
+  '{"correctOptionId":"b"}'::jsonb,
+  '{"correctFeedback":"Resource-oriented URLs usually identify the noun and resource identifier directly.","incorrectFeedback":"Prefer noun-based resource paths rather than action verbs in the URL."}'::jsonb,
+  '["rest-api","resource-design"]'::jsonb,'SEEDED','rest-bank-e1',true
+),
+(
+  '40000000-0000-0000-0000-000000000004',
+  '10000000-0000-0000-0000-000000000007',
+  'put-vs-patch','MCQ',3,
+  'A client wants to change only a user''s displayName while leaving unspecified fields untouched. Which method best communicates that intent?',
+  '[{"id":"a","text":"PUT"},{"id":"b","text":"PATCH"},{"id":"c","text":"GET"},{"id":"d","text":"HEAD"}]'::jsonb,
+  '{"correctOptionId":"b"}'::jsonb,
+  '{"correctFeedback":"PATCH is conventionally used for partial modification.","incorrectFeedback":"Distinguish complete replacement semantics from a partial update."}'::jsonb,
+  '["rest-api","http","put-patch"]'::jsonb,'SEEDED','rest-bank-e1',true
+),
+(
+  '40000000-0000-0000-0000-000000000005',
+  '10000000-0000-0000-0000-000000000007',
+  'idempotency','MCQ',3,
+  'Which statement best describes an idempotent HTTP operation?',
+  '[{"id":"a","text":"It must always return the same response body."},{"id":"b","text":"Repeating the same request has the same intended server-side effect as making it once."},{"id":"c","text":"It never changes server state."},{"id":"d","text":"It can only be called once per client."}]'::jsonb,
+  '{"correctOptionId":"b"}'::jsonb,
+  '{"correctFeedback":"Idempotency concerns the intended server-side effect of repeated identical requests.","incorrectFeedback":"Idempotency does not mean read-only and does not require an identical response body."}'::jsonb,
+  '["rest-api","http","idempotency"]'::jsonb,'SEEDED','rest-bank-e1',true
+),
+(
+  '40000000-0000-0000-0000-000000000006',
+  '10000000-0000-0000-0000-000000000007',
+  'error-semantics','MCQ',2,
+  'An authenticated user requests a resource that exists but they are not allowed to access. Which status usually communicates this most directly?',
+  '[{"id":"a","text":"400 Bad Request"},{"id":"b","text":"401 Unauthorized"},{"id":"c","text":"403 Forbidden"},{"id":"d","text":"404 Not Found"}]'::jsonb,
+  '{"correctOptionId":"c"}'::jsonb,
+  '{"correctFeedback":"403 Forbidden means the server understood the request but refuses authorization.","incorrectFeedback":"Differentiate authentication failure from an authenticated caller lacking permission."}'::jsonb,
+  '["rest-api","http","authorization","status-codes"]'::jsonb,'SEEDED','rest-bank-e1',true
+)
+on conflict(id) do update set
+  prompt=excluded.prompt,
+  options=excluded.options,
+  answer_key=excluded.answer_key,
+  rubric=excluded.rubric,
+  tags=excluded.tags,
+  difficulty=excluded.difficulty,
+  version=excluded.version,
+  is_active=true;

@@ -8,6 +8,7 @@ export interface ProfileDocumentRecord {
   id: string;
   userId: string;
   version: number;
+  documentType: "resume" | "certificate";
   fileName: string;
   storagePath: string;
   sha256: string;
@@ -21,7 +22,7 @@ export class PostgresProfileAnalysisRepository {
   async getDocument(userId: string, documentId: string): Promise<ProfileDocumentRecord | null> {
     const sql = getSql();
     const rows = rowsOf(await sql.unsafe(
-      "select id,user_id,version,file_name,storage_path,sha256 from public.profile_documents where id=$1::uuid and user_id=$2::uuid and document_type='resume' limit 1",
+      "select id,user_id,version,document_type,file_name,storage_path,sha256 from public.profile_documents where id=$1::uuid and user_id=$2::uuid and document_type in ('resume','certificate') limit 1",
       [documentId, userId]
     ));
     const row = rows[0];
@@ -29,6 +30,7 @@ export class PostgresProfileAnalysisRepository {
       id: String(row.id),
       userId: String(row.user_id),
       version: Number(row.version),
+      documentType: String(row.document_type) as "resume" | "certificate",
       fileName: String(row.file_name),
       storagePath: String(row.storage_path),
       sha256: String(row.sha256)
@@ -37,10 +39,11 @@ export class PostgresProfileAnalysisRepository {
 
   async getOrCreateRun(userId: string, document: ProfileDocumentRecord, schemaVersion: string) {
     const sql = getSql();
-    const analysisKey = "resume:" + document.id + ":v" + document.version + ":" + schemaVersion;
+    const sourceType = document.documentType;
+    const analysisKey = sourceType + ":" + document.id + ":v" + document.version + ":" + schemaVersion;
     const rows = rowsOf(await sql.unsafe(
-      "insert into public.profile_analysis_runs(user_id,source_type,source_id,source_version,analyzer_schema_version,analysis_key,status,stage,progress_percent) values ($1::uuid,'resume',$2::uuid,$3,$4,$5,'pending','queued',0) on conflict(user_id,analysis_key) do update set analysis_key=excluded.analysis_key returning *",
-      [userId, document.id, document.version, schemaVersion, analysisKey]
+      "insert into public.profile_analysis_runs(user_id,source_type,source_id,source_version,analyzer_schema_version,analysis_key,status,stage,progress_percent) values ($1::uuid,$2,$3::uuid,$4,$5,$6,'pending','queued',0) on conflict(user_id,analysis_key) do update set analysis_key=excluded.analysis_key returning *",
+      [userId, sourceType, document.id, document.version, schemaVersion, analysisKey]
     ));
     return rows[0];
   }

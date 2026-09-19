@@ -15,7 +15,14 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
-    "db:push": "supabase db push"
+    "db:push": "supabase db push",
+    "lint": "eslint .",
+    "qa:migrations": "node scripts/verify-migrations.mjs",
+    "qa:client-boundary": "node scripts/check-client-boundaries.mjs",
+    "qa:static": "npm run qa:migrations && npm run qa:client-boundary",
+    "qa:db": "node scripts/verify-release-db.mjs",
+    "smoke:production": "node scripts/smoke-production.mjs",
+    "release:verify": "npm run lint && npm run qa:static && npm run typecheck:core && npm run test:core && npm run typecheck && npm run build"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

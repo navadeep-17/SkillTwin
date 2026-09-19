@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const MAX_BYTES = 10 * 1024 * 1024;
 
 function safeFileName(name: string) {
-  return name.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(-120) || "resume.pdf";
+  return name.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(-120) || "profile.pdf";
 }
 
 export async function POST(request: Request) {
@@ -19,15 +19,20 @@ export async function POST(request: Request) {
     const { user, supabase } = await requireUser();
     const form = await request.formData();
     const file = form.get("file");
+    const documentTypeRaw = String(form.get("documentType") ?? "resume");
+    const documentType = documentTypeRaw === "certificate" ? "certificate" : documentTypeRaw === "resume" ? "resume" : null;
 
+    if (!documentType) {
+      return fail(requestId, 400, "DOCUMENT_TYPE", "documentType must be resume or certificate.");
+    }
     if (!(file instanceof File)) {
-      return fail(requestId, 400, "FILE_REQUIRED", "Attach a PDF resume in the file field.");
+      return fail(requestId, 400, "FILE_REQUIRED", "Attach a PDF in the file field.");
     }
     if (file.type !== "application/pdf") {
-      return fail(requestId, 415, "UNSUPPORTED_FILE", "SkillTwin currently accepts PDF resumes only.");
+      return fail(requestId, 415, "UNSUPPORTED_FILE", "SkillTwin currently accepts PDF profile documents only.");
     }
     if (file.size <= 0 || file.size > MAX_BYTES) {
-      return fail(requestId, 413, "FILE_SIZE", "Resume PDF must be between 1 byte and 10 MB.");
+      return fail(requestId, 413, "FILE_SIZE", "PDF must be between 1 byte and 10 MB.");
     }
 
     const bytes = new Uint8Array(await file.arrayBuffer());
@@ -39,7 +44,7 @@ export async function POST(request: Request) {
     const sha256 = createHash("sha256").update(bytes).digest("hex");
     const { data: duplicate, error: duplicateError } = await supabase
       .from("profile_documents")
-      .select("id,file_name,version,parse_status,analysis_status,created_at")
+      .select("id,document_type,file_name,version,parse_status,analysis_status,created_at")
       .eq("user_id", user.id)
       .eq("sha256", sha256)
       .order("version", { ascending: false })
@@ -62,7 +67,7 @@ export async function POST(request: Request) {
       .insert({
         id: documentId,
         user_id: user.id,
-        document_type: "resume",
+        document_type: documentType,
         file_name: file.name,
         mime_type: file.type,
         byte_size: file.size,
@@ -70,7 +75,7 @@ export async function POST(request: Request) {
         sha256,
         version: 1
       })
-      .select("id,file_name,version,parse_status,analysis_status,created_at")
+      .select("id,document_type,file_name,version,parse_status,analysis_status,created_at")
       .single();
 
     if (insertError) {
@@ -81,12 +86,12 @@ export async function POST(request: Request) {
     return ok(requestId, { document, duplicate: false }, undefined, 201);
   } catch (error) {
     if (error instanceof UnauthenticatedError) {
-      return fail(requestId, 401, "UNAUTHENTICATED", "Sign in before uploading a resume.");
+      return fail(requestId, 401, "UNAUTHENTICATED", "Sign in before uploading profile documents.");
     }
     console.error("profile.document.upload.failed", {
       requestId,
       error: error instanceof Error ? error.message : String(error)
     });
-    return fail(requestId, 500, "UPLOAD_FAILED", "Could not securely store this resume.");
+    return fail(requestId, 500, "UPLOAD_FAILED", "Could not securely store this profile document.");
   }
 }

@@ -1,9 +1,9 @@
-import type { SkillEvidence, UserSkillState } from "./skills";
-import { estimateSkill } from "./skills";
-import { BACKEND_ENGINEER_V1, analyzeGaps, readiness } from "./role-gap";
-import { createWeekOnePlan } from "./planner";
-import { outcomeToEvidence, REST_DEMO_OUTCOME } from "./assessment";
-import { replanForRestWeakness } from "./replanner";
+import type { SkillEvidence, UserSkillState } from "./skills.js";
+import { estimateSkill } from "./skills.js";
+import { BACKEND_ENGINEER_V1, analyzeGaps, readiness } from "./role-gap.js";
+import { createWeekOnePlan } from "./planner.js";
+import { outcomeToEvidence, REST_DEMO_OUTCOME } from "./assessment.js";
+import { replanForRestWeakness } from "./replanner.js";
 
 const initialEvidence: SkillEvidence[] = [
   { id: "ev-http-1", skillId: "http", sourceType: "RESUME_PROJECT_DETAIL", sourceGroupId: "resume-http", levelSignal: 1.7, directness: 1, quality: 0.82, coverage: 0.72, claim: "Built API endpoints and handled HTTP methods/status codes" },

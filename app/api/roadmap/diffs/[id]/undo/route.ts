@@ -1,7 +1,7 @@
 import { getRequestId } from "@/lib/api/request-context";
 import { fail, ok } from "@/lib/api/responses";
 import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
-import { getAdaptiveReplannerService } from "@/lib/services/replanner/adaptive-replanner-service";
+import { getPlanUndoService } from "@/lib/services/replanner/plan-undo-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +15,7 @@ export async function POST(
   try {
     const { id } = await context.params;
     const { user } = await requireUser();
-    const result = await getAdaptiveReplannerService().undo(user.id, id);
+    const result = await getPlanUndoService().undo(user.id, id);
 
     return ok(requestId, result, {
       plan_diff: result.diff,
@@ -42,16 +42,16 @@ export async function POST(
     if (
       message === "PLAN_DIFF_NOT_UNDOABLE"
       || message === "UNDO_STALE_BASELINE"
-      || message === "UNDO_UNSAFE_TASK_PROGRESS"
-      || message === "UNDO_UNSUPPORTED_PATCH_SHAPE"
+      || message === "UNDO_UNSUPPORTED_RESOURCE_REMOVAL"
+      || message === "UNDO_UNSUPPORTED_NULL_DUE_DATE"
+      || message === "UNDO_TOO_COMPLEX"
+      || message.startsWith("PLAN_DIFF_VALIDATION_FAILED")
     ) {
       return fail(
         requestId,
         409,
         message,
-        message === "UNDO_UNSAFE_TASK_PROGRESS"
-          ? "This change can no longer be exactly undone because the inserted task has already progressed."
-          : "This roadmap change cannot be safely undone from the current plan state."
+        "This roadmap change cannot be safely compensated from the current task/progress state."
       );
     }
 

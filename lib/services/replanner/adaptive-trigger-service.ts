@@ -307,7 +307,7 @@ export class AdaptiveTriggerService {
     const sql=getSql();
     const fingerprint=createHash("sha256").update(JSON.stringify({
       planId:String(input.active.id),version:Number(input.active.version),triggerType:input.triggerType,triggerRef:input.triggerRef,
-      operations:input.operations,evidenceRefs:[...input.evidenceRefs].sort(),version:REPLAN_TRIGGER_VERSION
+      operations:input.operations,evidenceRefs:[...input.evidenceRefs].sort(),triggerVersion:REPLAN_TRIGGER_VERSION
     })).digest("hex");
     const existing=rows(await sql.unsafe("select * from public.plan_diffs where user_id=$1::uuid and input_fingerprint=$2 limit 1",[input.userId,fingerprint]))[0];
     if(existing) return getPlanPatchEngine().dto(existing,true);

@@ -5,6 +5,27 @@ export const WEEKLY_REPORT_VERSION="weekly-report-g1";
 type Row=Record<string,unknown>;
 const rows=(value:unknown)=>value as Row[];
 
+export interface WeeklyReportDto extends Record<string,unknown> {
+  id:string;
+  user_id:string;
+  goal_id:string|null;
+  week_start:string;
+  week_end:string;
+  readiness_start:number|null;
+  readiness_end:number|null;
+  tasks_completed:number;
+  learning_minutes:number;
+  assessments_completed:number;
+  skills_changed:number;
+  roadmap_changes:number;
+  improving_skill_ids:unknown;
+  attention_skill_ids:unknown;
+  summary:string;
+  recommended_next_step:string|null;
+  report_version:string;
+  roadmapOperationCounts:{moved:number;added:number;removed:number};
+}
+
 function weekBounds() {
   const now=new Date();
   const day=now.getUTCDay() || 7;
@@ -16,7 +37,7 @@ function weekBounds() {
 function strings(value:unknown){return Array.isArray(value)?value.map(String):[];}
 
 export class WeeklyReportService {
-  async getOrGenerate(userId:string) {
+  async getOrGenerate(userId:string):Promise<WeeklyReportDto> {
     const sql=getSql();
     const {start,end}=weekBounds();
     const existing=rows(await sql.unsafe(
@@ -97,14 +118,14 @@ export class WeeklyReportService {
         "update public.weekly_reports set goal_id=$1::uuid,week_end=$2::date,readiness_start=$3,readiness_end=$4,tasks_completed=$5,learning_minutes=$6,assessments_completed=$7,skills_changed=$8,roadmap_changes=$9,improving_skill_ids=$10::jsonb,attention_skill_ids=$11::jsonb,summary=$12,recommended_next_step=$13 where id=$14::uuid returning *",
         [goal?.id?String(goal.id):null,end,readinessStart,readinessEnd,completed.length,learningMinutes,assessments.length,changedSkillIds.length,diffs.length,JSON.stringify([...new Set(improving)]),JSON.stringify([...new Set(attention)]),summary,recommendation,String(existing.id)]
       ))[0];
-      return {...refreshed,roadmapOperationCounts:{moved,added,removed}};
+      return {...refreshed,roadmapOperationCounts:{moved,added,removed}} as WeeklyReportDto;
     }
 
     const inserted=rows(await sql.unsafe(
       "insert into public.weekly_reports(user_id,goal_id,week_start,week_end,readiness_start,readiness_end,tasks_completed,learning_minutes,assessments_completed,skills_changed,roadmap_changes,improving_skill_ids,attention_skill_ids,summary,recommended_next_step,report_version) values ($1::uuid,$2::uuid,$3::date,$4::date,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13::jsonb,$14,$15,$16) returning *",
       [userId,goal?.id?String(goal.id):null,start,end,readinessStart,readinessEnd,completed.length,learningMinutes,assessments.length,changedSkillIds.length,diffs.length,JSON.stringify([...new Set(improving)]),JSON.stringify([...new Set(attention)]),summary,recommendation,WEEKLY_REPORT_VERSION]
     ))[0];
-    return {...inserted,roadmapOperationCounts:{moved,added,removed}};
+    return {...inserted,roadmapOperationCounts:{moved,added,removed}} as WeeklyReportDto;
   }
 }
 

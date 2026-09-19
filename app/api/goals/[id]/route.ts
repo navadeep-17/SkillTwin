@@ -36,20 +36,28 @@ export async function PATCH(request:Request,context:{params:Promise<{id:string}>
     const current=existing[0];
     const value=(key:string,dbKey:string)=>Object.prototype.hasOwnProperty.call(parsed.data,key) ? (parsed.data as Record<string,unknown>)[key] : current[dbKey];
 
+    const targetDateValue=value("targetDate","target_date");
+    const learningDaysValue=value("learningDays","learning_days");
+    const preferredFormatsValue=value("preferredFormats","preferred_formats");
+    const preferredAlternativesValue=value("preferredAlternatives","preferred_alternatives");
+    const careerObjectiveValue=value("careerObjective","career_objective");
+    const goalDescriptionValue=value("goalDescription","goal_description");
+    const experienceLevelValue=value("experienceLevel","experience_level");
+
     const updated=await sql.unsafe(
       "update public.career_goals set target_date=$1::date,hours_per_week=$2,preferred_session_minutes=$3,min_session_minutes=$4,learning_days=$5::jsonb,preferred_formats=$6::jsonb,adaptation_mode=$7,preferred_alternatives=$8::jsonb,career_objective=$9,goal_description=$10,experience_level=$11 where id=$12::uuid and user_id=$13::uuid returning *",
       [
-        value("targetDate","target_date") ?? null,
+        targetDateValue==null?null:String(targetDateValue),
         Number(value("hoursPerWeek","hours_per_week")),
         Number(value("preferredSessionMinutes","preferred_session_minutes")),
         Number(value("minSessionMinutes","min_session_minutes")),
-        JSON.stringify(value("learningDays","learning_days")),
-        JSON.stringify(value("preferredFormats","preferred_formats")),
+        JSON.stringify(Array.isArray(learningDaysValue)?learningDaysValue:[]),
+        JSON.stringify(Array.isArray(preferredFormatsValue)?preferredFormatsValue:[]),
         String(value("adaptationMode","adaptation_mode")),
-        JSON.stringify(value("preferredAlternatives","preferred_alternatives")),
-        value("careerObjective","career_objective") ?? null,
-        value("goalDescription","goal_description") ?? null,
-        value("experienceLevel","experience_level") ?? null,
+        JSON.stringify(preferredAlternativesValue && typeof preferredAlternativesValue==="object" && !Array.isArray(preferredAlternativesValue)?preferredAlternativesValue:{}),
+        careerObjectiveValue==null?null:String(careerObjectiveValue),
+        goalDescriptionValue==null?null:String(goalDescriptionValue),
+        experienceLevelValue==null?null:String(experienceLevelValue),
         id,user.id
       ]
     ) as Array<Record<string,unknown>>;

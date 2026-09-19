@@ -8,8 +8,8 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const requestId = await getRequestId();
   try {
-    await requireUser();
-    return ok(requestId,{roles:await getRoleService().list()});
+    const {user}=await requireUser();
+    return ok(requestId,{roles:await getRoleService().list(user.id)});
   } catch (error) {
     if (error instanceof UnauthenticatedError) return fail(requestId,401,"UNAUTHENTICATED","Sign in to view target roles.");
     return fail(requestId,500,"ROLE_LIST_FAILED","Could not load target roles.");

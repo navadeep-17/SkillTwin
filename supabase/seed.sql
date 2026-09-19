@@ -96,7 +96,7 @@ insert into public.learning_resources(
   'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods',
   '["http","methods","idempotency","safe-methods"]'::jsonb,
   '["BEGINNER","INTERMEDIATE"]'::jsonb,
-  'DOCS',35,0.98,true,'ACTIVE','resource-catalog-d1',now()
+  'DOCS',35,0.98,true,'ACTIVE','resource-catalog-d2',now()
 ),
 (
   '30000000-0000-0000-0000-000000000002',
@@ -105,7 +105,7 @@ insert into public.learning_resources(
   'https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status',
   '["http","status-codes","responses"]'::jsonb,
   '["BEGINNER","INTERMEDIATE"]'::jsonb,
-  'DOCS',30,0.98,true,'ACTIVE','resource-catalog-d1',now()
+  'DOCS',30,0.98,true,'ACTIVE','resource-catalog-d2',now()
 ),
 (
   '30000000-0000-0000-0000-000000000003',
@@ -114,7 +114,7 @@ insert into public.learning_resources(
   'https://developer.mozilla.org/en-US/docs/Glossary/REST',
   '["rest-api","resource-design","http"]'::jsonb,
   '["BEGINNER","INTERMEDIATE"]'::jsonb,
-  'DOCS',25,0.95,true,'ACTIVE','resource-catalog-d1',now()
+  'DOCS',25,0.95,true,'ACTIVE','resource-catalog-d2',now()
 ),
 (
   '30000000-0000-0000-0000-000000000004',
@@ -123,7 +123,7 @@ insert into public.learning_resources(
   'https://docs.docker.com/get-started/',
   '["docker","containers","images"]'::jsonb,
   '["BEGINNER","INTERMEDIATE"]'::jsonb,
-  'DOCS',45,0.98,true,'ACTIVE','resource-catalog-d1',now()
+  'DOCS',45,0.98,true,'ACTIVE','resource-catalog-d2',now()
 )
 on conflict(url) do update set
   title=excluded.title,
@@ -150,7 +150,7 @@ insert into public.assessment_question_bank(
   '[{"id":"a","text":"POST"},{"id":"b","text":"GET"},{"id":"c","text":"PATCH"},{"id":"d","text":"DELETE"}]'::jsonb,
   '{"correctOptionId":"b"}'::jsonb,
   '{"correctFeedback":"GET is the conventional safe retrieval method.","incorrectFeedback":"Review HTTP method semantics: retrieval should use a safe read method."}'::jsonb,
-  '["rest-api","http","methods"]'::jsonb,'SEEDED','rest-bank-e1',true
+  '["rest-api","http","methods"]'::jsonb,'SEEDED','adaptive-bank-e2',true
 ),
 (
   '40000000-0000-0000-0000-000000000002',
@@ -160,7 +160,7 @@ insert into public.assessment_question_bank(
   '[{"id":"a","text":"200 OK"},{"id":"b","text":"201 Created"},{"id":"c","text":"204 No Content"},{"id":"d","text":"304 Not Modified"}]'::jsonb,
   '{"correctOptionId":"b"}'::jsonb,
   '{"correctFeedback":"201 Created explicitly represents successful resource creation.","incorrectFeedback":"For a successful create operation, prefer the status that explicitly communicates creation."}'::jsonb,
-  '["rest-api","http","status-codes"]'::jsonb,'SEEDED','rest-bank-e1',true
+  '["rest-api","http","status-codes"]'::jsonb,'SEEDED','adaptive-bank-e2',true
 ),
 (
   '40000000-0000-0000-0000-000000000003',
@@ -170,7 +170,7 @@ insert into public.assessment_question_bank(
   '[{"id":"a","text":"/getOrder?id=42"},{"id":"b","text":"/orders/42"},{"id":"c","text":"/orders/get/42"},{"id":"d","text":"/fetch-order/42"}]'::jsonb,
   '{"correctOptionId":"b"}'::jsonb,
   '{"correctFeedback":"Resource-oriented URLs usually identify the noun and resource identifier directly.","incorrectFeedback":"Prefer noun-based resource paths rather than action verbs in the URL."}'::jsonb,
-  '["rest-api","resource-design"]'::jsonb,'SEEDED','rest-bank-e1',true
+  '["rest-api","resource-design"]'::jsonb,'SEEDED','adaptive-bank-e2',true
 ),
 (
   '40000000-0000-0000-0000-000000000004',
@@ -180,7 +180,7 @@ insert into public.assessment_question_bank(
   '[{"id":"a","text":"PUT"},{"id":"b","text":"PATCH"},{"id":"c","text":"GET"},{"id":"d","text":"HEAD"}]'::jsonb,
   '{"correctOptionId":"b"}'::jsonb,
   '{"correctFeedback":"PATCH is conventionally used for partial modification.","incorrectFeedback":"Distinguish complete replacement semantics from a partial update."}'::jsonb,
-  '["rest-api","http","put-patch"]'::jsonb,'SEEDED','rest-bank-e1',true
+  '["rest-api","http","put-patch"]'::jsonb,'SEEDED','adaptive-bank-e2',true
 ),
 (
   '40000000-0000-0000-0000-000000000005',
@@ -190,7 +190,7 @@ insert into public.assessment_question_bank(
   '[{"id":"a","text":"It must always return the same response body."},{"id":"b","text":"Repeating the same request has the same intended server-side effect as making it once."},{"id":"c","text":"It never changes server state."},{"id":"d","text":"It can only be called once per client."}]'::jsonb,
   '{"correctOptionId":"b"}'::jsonb,
   '{"correctFeedback":"Idempotency concerns the intended server-side effect of repeated identical requests.","incorrectFeedback":"Idempotency does not mean read-only and does not require an identical response body."}'::jsonb,
-  '["rest-api","http","idempotency"]'::jsonb,'SEEDED','rest-bank-e1',true
+  '["rest-api","http","idempotency"]'::jsonb,'SEEDED','adaptive-bank-e2',true
 ),
 (
   '40000000-0000-0000-0000-000000000006',
@@ -200,7 +200,7 @@ insert into public.assessment_question_bank(
   '[{"id":"a","text":"400 Bad Request"},{"id":"b","text":"401 Unauthorized"},{"id":"c","text":"403 Forbidden"},{"id":"d","text":"404 Not Found"}]'::jsonb,
   '{"correctOptionId":"c"}'::jsonb,
   '{"correctFeedback":"403 Forbidden means the server understood the request but refuses authorization.","incorrectFeedback":"Differentiate authentication failure from an authenticated caller lacking permission."}'::jsonb,
-  '["rest-api","http","authorization","status-codes"]'::jsonb,'SEEDED','rest-bank-e1',true
+  '["rest-api","http","authorization","status-codes"]'::jsonb,'SEEDED','adaptive-bank-e2',true
 )
 on conflict(id) do update set
   prompt=excluded.prompt,
@@ -211,3 +211,11 @@ on conflict(id) do update set
   difficulty=excluded.difficulty,
   version=excluded.version,
   is_active=true;
+
+
+-- Release metadata is idempotently refreshed when seed.sql is replayed.
+insert into public.system_metadata(key,value) values
+('seed_version','seed-2026-09-19-v2'),
+('resource_catalog_version','resource-catalog-d2'),
+('demo_fixture_version','demo-backend-v1')
+on conflict(key) do update set value=excluded.value,updated_at=now();

@@ -57,8 +57,8 @@ Set at minimum:
 
 \`\`\`bash
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_SUPABASE_URL=https://eozvilqmrhtujqtdmrri.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_vAoB9dpwSkPb-zTrhXNnAA_MalFJ8bK
+NEXT_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-publishable-key>
 SUPABASE_DB_URL=postgresql://...
 AI_PROVIDER=gemini
 GEMINI_MODEL=gemini-3.8-flash
@@ -111,8 +111,8 @@ Create/import the GitHub repository in Vercel, then configure these Production +
 
 \`\`\`
 NEXT_PUBLIC_APP_URL=https://<your-domain>
-NEXT_PUBLIC_SUPABASE_URL=https://eozvilqmrhtujqtdmrri.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_vAoB9dpwSkPb-zTrhXNnAA_MalFJ8bK
+NEXT_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-publishable-key>
 SUPABASE_DB_URL=<server-only Supabase Postgres URL>
 AI_PROVIDER=gemini
 GEMINI_MODEL=gemini-3.8-flash

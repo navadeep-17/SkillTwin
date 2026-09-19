@@ -43,6 +43,26 @@ export async function POST(
     const payload = proposal.payload && typeof proposal.payload === "object" && !Array.isArray(proposal.payload)
       ? proposal.payload as Record<string, unknown>
       : {};
+    const baseline = proposal.baseline_ref && typeof proposal.baseline_ref === "object" && !Array.isArray(proposal.baseline_ref)
+      ? proposal.baseline_ref as Record<string, unknown>
+      : {};
+
+    if (String(proposal.action_type) === "START_ASSESSMENT" || String(proposal.action_type) === "GENERATE_PLAN") {
+      const expectedGap = baseline.gapSnapshotId ? String(baseline.gapSnapshotId) : null;
+      if (expectedGap) {
+        const currentGap = rows(await sql.unsafe(
+          "select id from public.gap_snapshots where user_id=$1::uuid order by created_at desc limit 1",
+          [user.id]
+        ))[0];
+        if (!currentGap || String(currentGap.id) !== expectedGap) {
+          await sql.unsafe(
+            "update public.chat_action_proposals set status='EXPIRED' where id=$1::uuid and user_id=$2::uuid",
+            [id, user.id]
+          );
+          return fail(requestId, 409, "ACTION_STALE_BASELINE", "Learner state changed after this proposal. Ask Journey Chat again so it can ground a fresh action.");
+        }
+      }
+    }
 
     await sql.unsafe(
       "update public.chat_action_proposals set status='CONFIRMED' where id=$1::uuid and user_id=$2::uuid and status='PROPOSED'",

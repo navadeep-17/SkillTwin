@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { NotificationBell } from "@/components/shell/notification-bell";
 
 const links = [
   { href: "/overview", label: "Overview" },
@@ -36,6 +37,7 @@ export async function AppNav() {
             </Link>
           ))}
         </nav>
+        <NotificationBell />
         <Link
           href="/onboarding"
           className="hidden shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 sm:block"

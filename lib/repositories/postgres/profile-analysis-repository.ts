@@ -3,6 +3,7 @@ import { getSql } from "@/lib/db/postgres";
 import type { CanonicalSkillEntry, CandidateSkillClaim } from "@/lib/profile/skill-mapper";
 import type { ProfileSourceBlock } from "@/lib/profile/segmenter";
 import type { ParsedPdf } from "@/lib/profile/pdf-parser";
+import type { StructuredProfileOutput } from "@/lib/profile/profile-structure-extractor";
 
 export interface ProfileDocumentRecord {
   id: string;
@@ -132,6 +133,30 @@ export class PostgresProfileAnalysisRepository {
             claim.mappingMethod,
             claim.mappingConfidence
           ]
+        );
+      }
+    });
+  }
+
+  async saveStructuredProfile(
+    userId: string,
+    runId: string,
+    structured: StructuredProfileOutput
+  ) {
+    const sql = getSql();
+    await sql.begin(async tx => {
+      await tx.unsafe(
+        "update public.profile_analysis_runs set structured_profile=$1::jsonb where id=$2::uuid and user_id=$3::uuid",
+        [JSON.stringify(structured), runId, userId]
+      );
+      await tx.unsafe(
+        "delete from public.unresolved_skill_terms where analysis_run_id=$1::uuid and user_id=$2::uuid",
+        [runId, userId]
+      );
+      for (const item of structured.unresolvedTerms) {
+        await tx.unsafe(
+          "insert into public.unresolved_skill_terms(user_id,analysis_run_id,source_block_id,raw_term,context,status) values ($1::uuid,$2::uuid,$3,$4,$5,'UNRESOLVED')",
+          [userId, runId, item.sourceBlockId, item.rawTerm, item.context]
         );
       }
     });

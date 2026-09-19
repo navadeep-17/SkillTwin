@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { getSql } from "@/lib/db/postgres";
 import { getEvidenceEngine } from "@/lib/services/skills/evidence-service";
 import { getGapAnalysisService } from "@/lib/services/gaps/gap-analysis-service";
+import { getAdaptiveReplannerService } from "@/lib/services/replanner/adaptive-replanner-service";
 
 export const ASSESSMENT_BLUEPRINT_VERSION = "assessment-blueprint-e1";
 export const ASSESSMENT_EVALUATION_VERSION = "deterministic-evaluator-e1";
@@ -511,6 +512,25 @@ export class AssessmentService {
       ? await getGapAnalysisService().recompute(userId, { type: "ASSESSMENT_SKILL_DELTA", ref: assessmentId })
       : null;
 
+    let replanResult: unknown = null;
+    let replanWarning: string | null = null;
+    try {
+      replanResult = await getAdaptiveReplannerService().considerAssessment({
+        userId,
+        assessmentId,
+        skillId: String(assessment.skill_id),
+        weaknesses,
+        evidenceIds: evidenceResult.acceptedEvidenceIds,
+        gapSnapshotId: gapResult?.snapshotId ?? null
+      });
+    } catch (replanError) {
+      replanWarning = "REPLAN_FAILED";
+      console.error("assessment.replan.failed", {
+        assessmentId,
+        error: replanError instanceof Error ? replanError.message : String(replanError)
+      });
+    }
+
     await sql.begin(async tx => {
       await tx.unsafe(
         "update public.skill_assessment_outcomes set evidence_batch_result=$1::jsonb,gap_snapshot_id=$2::uuid where assessment_id=$3::uuid and user_id=$4::uuid",
@@ -553,7 +573,9 @@ export class AssessmentService {
             readiness: gapResult.readiness,
             evidenceCoverage: gapResult.evidenceCoverage
           }
-        : null
+        : null,
+      replan: replanResult,
+      warnings: replanWarning ? [replanWarning] : []
     };
   }
 

@@ -226,10 +226,10 @@ export class AssessmentService {
       return {assessment:this.assessmentDto(assessment,attempts.length),question:null,outcome};
     }
     const nextOrdinal=attempts.length+1;
-    let question=rows(await sql.unsafe(
+    let question:Row|null=rows(await sql.unsafe(
       "select id,ordinal,type,concept_ids,difficulty,prompt,options from public.skill_assessment_questions where assessment_id=$1::uuid and ordinal=$2 limit 1",
       [assessmentId,nextOrdinal]
-    ))[0];
+    ))[0] ?? null;
     if(!question && String(assessment.status)==="ACTIVE"){
       question=await this.ensureNextQuestion(userId,assessmentId,assessment,attempts.length);
     }

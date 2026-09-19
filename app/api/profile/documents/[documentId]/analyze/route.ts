@@ -16,7 +16,7 @@ export async function POST(
   try {
     const { documentId } = await context.params;
     const { user, supabase } = await requireUser();
-    const analysis = await getProfileAnalysisService().analyzeResume({
+    const analysis = await getProfileAnalysisService().analyzeDocument({
       userId: user.id,
       documentId,
       supabase
@@ -35,7 +35,7 @@ export async function POST(
         notifications: [{
           title: analysis.reused ? "Profile analysis already complete" : "Profile analysis complete",
           message: result.gapAnalysis?.readiness != null
-            ? "SkillTwin updated. Backend Engineer readiness is now " + result.gapAnalysis.readiness + "%."
+            ? "SkillTwin updated. Target-role readiness is now " + result.gapAnalysis.readiness + "%."
             : "Profile evidence processed.",
           tone: "success"
         }],
@@ -48,23 +48,23 @@ export async function POST(
     );
   } catch (error) {
     if (error instanceof UnauthenticatedError) {
-      return fail(requestId, 401, "UNAUTHENTICATED", "Sign in to analyze your resume.");
+      return fail(requestId, 401, "UNAUTHENTICATED", "Sign in to analyze this profile document.");
     }
 
     const message = error instanceof Error ? error.message : String(error);
     if (message === "PROFILE_DOCUMENT_NOT_FOUND") {
-      return fail(requestId, 404, "NOT_FOUND", "Resume document not found.");
+      return fail(requestId, 404, "NOT_FOUND", "Profile document not found.");
     }
     if (message === "TEXT_EXTRACTION_TOO_LOW") {
       return fail(
         requestId,
         422,
         "PDF_TEXT_TOO_LOW",
-        "This PDF appears image-based or has too little extractable text. Upload a text-based PDF for now."
+        "This PDF appears image-based or has too little extractable text. Upload a text-based PDF or enter the information manually; OCR is intentionally outside the frozen MVP."
       );
     }
 
     console.error("profile.analysis.failed", { requestId, error: message });
-    return fail(requestId, 500, "PROFILE_ANALYSIS_FAILED", "Could not analyze this resume.");
+    return fail(requestId, 500, "PROFILE_ANALYSIS_FAILED", "Could not analyze this profile document.");
   }
 }

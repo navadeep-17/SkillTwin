@@ -1,0 +1,32 @@
+{
+  "name": "skilltwin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck:core": "tsc -p tsconfig.json --noEmit",
+    "build:core": "tsc -p tsconfig.json",
+    "test:core": "npm run build:core && node --test tests/core.test.mjs",
+    "demo": "npm run build:core && node dist/scripts/demo.js"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.56.0",
+    "@tanstack/react-query": "^5.85.0",
+    "lucide-react": "^0.468.0",
+    "next": "^15.5.0",
+    "pdfjs-dist": "^4.10.38",
+    "postgres": "^3.4.7",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "reactflow": "^11.11.4",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.8.3"
+  },
+  "engines": { "node": ">=20" }
+}

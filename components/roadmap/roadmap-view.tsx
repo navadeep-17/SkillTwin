@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type ResourceAssignment = {
   learning_resources?: {
@@ -68,7 +69,9 @@ type RoadmapPayload = {
 };
 
 export function RoadmapView() {
+  const router = useRouter();
   const [payload, setPayload] = useState<RoadmapPayload | null>(null);
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -83,7 +86,7 @@ export function RoadmapView() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [revision]);
 
   if (!payload) {
     return <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">Loading roadmap…</div>;
@@ -150,7 +153,12 @@ export function RoadmapView() {
                     <p className="mb-3 text-sm text-slate-500">{objective.success_criteria}</p>
                     <div className="grid gap-3 md:grid-cols-2">
                       {objective.tasks.map(task => (
-                        <TaskCard key={task.id} task={task} />
+                        <TaskCard
+                          key={task.id}
+                          task={task}
+                          onChanged={() => setRevision(value => value + 1)}
+                          onOpen={(href) => router.push(href)}
+                        />
                       ))}
                     </div>
                   </div>
@@ -164,8 +172,51 @@ export function RoadmapView() {
   );
 }
 
-function TaskCard({ task }: { task: Task }) {
+function TaskCard({
+  task,
+  onChanged,
+  onOpen
+}: {
+  task: Task;
+  onChanged: () => void;
+  onOpen: (href: string) => void;
+}) {
   const resource = task.resource?.learning_resources;
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+
+  async function act() {
+    if (pending || task.status === "COMPLETED") return;
+    setPending(true);
+    setError("");
+
+    try {
+      const validation = task.type === "VALIDATE";
+      const response = await fetch(
+        "/api/tasks/" + task.id + (validation ? "/validate" : "/complete"),
+        { method: "POST" }
+      );
+      const payload = await response.json();
+
+      if (!response.ok || !payload.ok) {
+        setError(payload.error?.message ?? "Could not update this task.");
+        return;
+      }
+
+      if (validation) {
+        const href = payload.ui_effects?.next_action?.href;
+        if (href) onOpen(href);
+        return;
+      }
+
+      onChanged();
+    } catch {
+      setError("Could not update this task.");
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex items-start justify-between gap-3">
@@ -191,6 +242,26 @@ function TaskCard({ task }: { task: Task }) {
           <span className="ml-2 text-slate-500">· {resource.provider}</span>
         </a>
       ) : null}
+
+      <div className="mt-4">
+        {task.status === "COMPLETED" ? (
+          <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+            Completed
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={act}
+            disabled={pending}
+            className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
+          >
+            {pending
+              ? task.type === "VALIDATE" ? "Preparing…" : "Saving…"
+              : task.type === "VALIDATE" ? "Start validation" : "Mark complete"}
+          </button>
+        )}
+        {error ? <p className="mt-2 text-xs text-rose-700">{error}</p> : null}
+      </div>
     </div>
   );
 }

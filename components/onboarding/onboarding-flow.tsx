@@ -27,6 +27,9 @@ export function OnboardingFlow({
   const [adaptation,setAdaptation]=useState(String(initialGoal?.adaptation_mode ?? "AUTOMATIC"));
   const [resume,setResume]=useState<File|null>(null);
   const [documentId,setDocumentId]=useState("");
+  const [manualProfile,setManualProfile]=useState("");
+  const [certificate,setCertificate]=useState<File|null>(null);
+  const [certificateDocumentId,setCertificateDocumentId]=useState("");
   const [projectTitle,setProjectTitle]=useState("");
   const [projectDescription,setProjectDescription]=useState("");
   const [projectTechnologies,setProjectTechnologies]=useState("");
@@ -72,12 +75,22 @@ export function OnboardingFlow({
   async function uploadProfile() {
     setPending(true); setMessage("");
     try {
+      if (!resume && manualProfile.trim().length < 20) {
+        throw new Error("Add a text-based resume PDF or at least 20 characters of manual profile context.");
+      }
       if (resume) {
-        const form=new FormData(); form.set("file",resume);
+        const form=new FormData(); form.set("file",resume); form.set("documentType","resume");
         const response=await fetch("/api/profile/documents",{method:"POST",body:form});
         const result=await response.json();
         if (!response.ok || !result.ok) throw new Error(result.error?.message ?? "Resume upload failed.");
         setDocumentId(String(result.data.document.id));
+      }
+      if (certificate) {
+        const form=new FormData(); form.set("file",certificate); form.set("documentType","certificate");
+        const response=await fetch("/api/profile/documents",{method:"POST",body:form});
+        const result=await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.error?.message ?? "Certificate upload failed.");
+        setCertificateDocumentId(String(result.data.document.id));
       }
       setStep(3);
     } catch (error) { setMessage(error instanceof Error?error.message:"Profile upload failed."); }
@@ -99,6 +112,13 @@ export function OnboardingFlow({
   async function runAnalysis() {
     setPending(true); setMessage(""); setAnalysisStage(["Goal and learning constraints saved"]);
     try {
+      if (manualProfile.trim().length>=20) {
+        setAnalysisStage(current=>[...current,"Analyzing manual profile context"]);
+        const response=await fetch("/api/profile/manual?deferPlan=1",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:"Onboarding profile context",text:manualProfile.trim()})});
+        const result=await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.error?.message ?? "Manual profile analysis failed.");
+        setAnalysisStage(current=>[...current,"Manual profile evidence committed conservatively"]);
+      }
       if (projectTitle.trim() && projectDescription.trim().length>=20) {
         setAnalysisStage(current=>[...current,"Analyzing project evidence"]);
         const response=await fetch("/api/profile/projects",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:projectTitle,description:projectDescription,technologies:projectTechnologies.split(",").map(x=>x.trim()).filter(Boolean),artifactUrl:null})});
@@ -108,14 +128,30 @@ export function OnboardingFlow({
       }
       if (documentId) {
         setAnalysisStage(current=>[...current,"Parsing and segmenting resume","Mapping source-backed skill evidence"]);
-        const response=await fetch("/api/profile/documents/"+documentId+"/analyze",{method:"POST"});
+        const response=await fetch("/api/profile/documents/"+documentId+"/analyze?deferPlan=1",{method:"POST"});
         const result=await response.json();
         if (!response.ok || !result.ok) throw new Error(result.error?.message ?? "Resume analysis failed.");
-        setAnalysisStage(current=>[...current,"SkillTwin capability/confidence updated","Role gaps and readiness recomputed","Learning roadmap generated"]);
+        setAnalysisStage(current=>[...current,"Resume evidence committed to SkillTwin"]);
       } else {
-        setAnalysisStage(current=>[...current,"No resume supplied; using available project/manual evidence","Role gaps and readiness recomputed"]);
+        setAnalysisStage(current=>[...current,"No resume supplied; using manual/project evidence"]);
       }
-      await fetch("/api/onboarding/complete",{method:"POST"});
+      if (certificateDocumentId) {
+        setAnalysisStage(current=>[...current,"Parsing optional certificate context"]);
+        const response=await fetch("/api/profile/documents/"+certificateDocumentId+"/analyze?deferPlan=1",{method:"POST"});
+        const result=await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.error?.message ?? "Certificate analysis failed.");
+        setAnalysisStage(current=>[...current,"Certificate context recorded as low-weight evidence"]);
+      }
+
+      setAnalysisStage(current=>[...current,"Final role gaps and readiness available","Generating roadmap from final onboarding state"]);
+      const planResponse=await fetch("/api/roadmap",{method:"POST"});
+      const planResult=await planResponse.json();
+      if (!planResponse.ok || !planResult.ok) throw new Error(planResult.error?.message ?? "Roadmap generation failed.");
+      setAnalysisStage(current=>[...current,"Learning roadmap generated"]);
+
+      const completeResponse=await fetch("/api/onboarding/complete",{method:"POST"});
+      const complete=await completeResponse.json();
+      if (!completeResponse.ok || !complete.ok) throw new Error(complete.error?.message ?? "Could not complete onboarding.");
       setAnalysisStage(current=>[...current,"Onboarding complete"]);
     } catch (error) {
       setMessage(error instanceof Error?error.message:"Analysis failed.");
@@ -159,8 +195,12 @@ export function OnboardingFlow({
 
       {step===2?(
         <div className="mt-8 space-y-6">
-          <div><h2 className="text-xl font-semibold">Add profile evidence</h2><p className="mt-1 text-sm text-slate-600">Resume and project text are untrusted evidence sources. They never write capability directly.</p></div>
-          <label className="block rounded-2xl border border-dashed bg-white p-5"><span className="text-sm font-medium">Resume PDF</span><input type="file" accept="application/pdf,.pdf" onChange={e=>setResume(e.target.files?.[0] ?? null)} className="mt-3 block w-full" /></label>
+          <div><h2 className="text-xl font-semibold">Add profile evidence</h2><p className="mt-1 text-sm text-slate-600">Resume, manual profile, project, and certificate content are untrusted evidence sources. They never write capability directly.</p></div>
+          <label className="block rounded-2xl border border-dashed bg-white p-5"><span className="text-sm font-medium">Resume PDF</span><p className="mt-1 text-xs text-slate-500">Text-based PDF preferred. If extraction is poor, use the manual profile field below; SkillTwin does not silently OCR scans.</p><input type="file" accept="application/pdf,.pdf" onChange={e=>setResume(e.target.files?.[0] ?? null)} className="mt-3 block w-full" /></label>
+          <div className="rounded-2xl border bg-white p-5">
+            <label className="block"><span className="font-medium">Manual profile context</span><p className="mt-1 text-xs text-slate-500">Describe skills, coursework, experience, or anything missing from your resume. Self-report remains low-weight until validated.</p><textarea value={manualProfile} onChange={e=>setManualProfile(e.target.value)} rows={5} placeholder="Example: I built a Node/Express API for a college project and used SQL joins in coursework..." className="mt-3 w-full rounded-xl border px-3 py-2" /></label>
+          </div>
+          <label className="block rounded-2xl border border-dashed bg-white p-5"><span className="text-sm font-medium">Optional certificate PDF</span><p className="mt-1 text-xs text-slate-500">Used as contextual/presence evidence only; a certificate never proves proficiency by itself.</p><input type="file" accept="application/pdf,.pdf" onChange={e=>setCertificate(e.target.files?.[0] ?? null)} className="mt-3 block w-full" /></label>
           <div className="rounded-2xl border bg-white p-5">
             <p className="font-medium">Optional project evidence</p>
             <input value={projectTitle} onChange={e=>setProjectTitle(e.target.value)} placeholder="Project title" className="mt-3 w-full rounded-xl border px-3 py-2" />

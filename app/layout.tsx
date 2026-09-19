@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AppNav } from "@/components/shell/app-nav";
 
 export const metadata: Metadata = {
   title: "SkillTwin",
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-slate-50 text-slate-950 antialiased">{children}</body>
+      <body className="min-h-screen bg-slate-50 text-slate-950 antialiased"><AppNav />{children}</body>
     </html>
   );
 }

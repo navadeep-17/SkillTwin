@@ -14,7 +14,7 @@ export const PROFILE_ANALYZER_SCHEMA_VERSION = "profile-analyzer-b1";
 export class ProfileAnalysisService {
   constructor(private readonly repository = new PostgresProfileAnalysisRepository()) {}
 
-  async analyzeDocument(input: { userId: string; documentId: string; supabase: SupabaseClient }) {
+  async analyzeDocument(input: { userId: string; documentId: string; supabase: SupabaseClient; deferPlan?: boolean }) {
     const document = await this.repository.getDocument(input.userId, input.documentId);
     if (!document) throw new Error("PROFILE_DOCUMENT_NOT_FOUND");
 
@@ -174,7 +174,7 @@ export class ProfileAnalysisService {
         : null;
 
       let planResult: unknown = null;
-      if (gapResult) {
+      if (gapResult && !input.deferPlan) {
         try {
           planResult = await getInitialPlanService().generate(input.userId);
         } catch (planError) {
@@ -233,7 +233,7 @@ export class ProfileAnalysisService {
     }
   }
 
-  analyzeResume(input: { userId: string; documentId: string; supabase: SupabaseClient }) {
+  analyzeResume(input: { userId: string; documentId: string; supabase: SupabaseClient; deferPlan?: boolean }) {
     return this.analyzeDocument(input);
   }
 }

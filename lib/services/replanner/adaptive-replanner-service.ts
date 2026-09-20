@@ -11,27 +11,55 @@ function rows(value: unknown): Row[] {
   return value as Row[];
 }
 
+function parseJsonValue(value: unknown): unknown {
+  let current = value;
+  for (let depth = 0; depth < 2 && typeof current === "string"; depth += 1) {
+    try {
+      current = JSON.parse(current);
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
 function arrayOfStrings(value: unknown): string[] {
-  return Array.isArray(value) ? value.map(String) : [];
+  const parsed = parseJsonValue(value);
+  return Array.isArray(parsed) ? parsed.map(String) : [];
 }
 
 function jsonValue(value: unknown, fallback: unknown) {
-  return value == null ? fallback : value;
+  const parsed = parseJsonValue(value);
+  return parsed == null ? fallback : parsed;
 }
 
-function reinforcementTitle(weaknesses: string[]) {
+function dateOnly(value: unknown) {
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const text = String(value ?? "").trim();
+  const match = text.match(/^\d{4}-\d{2}-\d{2}/);
+  if (match) return match[0];
+  const parsed = new Date(text);
+  if (!Number.isFinite(parsed.getTime())) throw new Error("INVALID_PLAN_DATE");
+  return parsed.toISOString().slice(0, 10);
+}
+
+function reinforcementTitle(weaknesses: string[], skillName?: string) {
   const updateSemantics = weaknesses.includes("put-vs-patch");
   const idempotency = weaknesses.includes("idempotency");
-  if (updateSemantics && idempotency) return "HTTP update semantics + idempotency reinforcement";
-  if (updateSemantics) return "PUT vs PATCH semantics reinforcement";
-  if (idempotency) return "HTTP idempotency reinforcement";
-  return "Targeted REST API reinforcement";
+  if ((skillName ?? "").toLowerCase().includes("rest")) {
+    if (updateSemantics && idempotency) return "HTTP update semantics + idempotency reinforcement";
+    if (updateSemantics) return "PUT vs PATCH semantics reinforcement";
+    if (idempotency) return "HTTP idempotency reinforcement";
+  }
+  return "Targeted " + (skillName || "skill") + " concept reinforcement";
 }
 
-function dueInsideWeek(endDate: string) {
+function dueInsideWeek(endDate: unknown) {
   const now = new Date();
   const proposed = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
-  const end = new Date(endDate + "T12:00:00.000Z");
+  const normalizedEnd = dateOnly(endDate);
+  const end = new Date(normalizedEnd + "T12:00:00.000Z");
+  if (!Number.isFinite(end.getTime())) throw new Error("INVALID_PLAN_DATE");
   return (proposed < end ? proposed : end).toISOString();
 }
 
@@ -90,7 +118,7 @@ export class AdaptiveReplannerService {
     }
 
     const objectiveRows = rows(await sql.unsafe(
-      "select o.id objective_id,o.logical_objective_id,o.week_id,w.week_index,w.start_date,w.end_date,w.capacity_minutes,w.planned_minutes from public.learning_objectives o join public.plan_weeks w on w.id=o.week_id where o.plan_id=$1::uuid and o.skill_id=$2::uuid and o.status in ('PLANNED','IN_PROGRESS') and w.end_date>=current_date order by w.week_index limit 1",
+      "select o.id objective_id,o.logical_objective_id,o.week_id,w.week_index,w.start_date,w.end_date,w.capacity_minutes,w.planned_minutes,s.canonical_name skill_name from public.learning_objectives o join public.plan_weeks w on w.id=o.week_id join public.skills s on s.id=o.skill_id where o.plan_id=$1::uuid and o.skill_id=$2::uuid and o.status in ('PLANNED','IN_PROGRESS') and w.end_date>=current_date order by w.week_index limit 1",
       [String(active.id), input.skillId]
     ));
     const affected = objectiveRows[0];
@@ -258,7 +286,7 @@ export class AdaptiveReplannerService {
         objectiveLogicalId: String(affected.logical_objective_id),
         skillId: input.skillId,
         taskType: "PRACTICE",
-        title: reinforcementTitle(input.weaknesses),
+        title: reinforcementTitle(input.weaknesses, String(affected.skill_name ?? "skill")),
         durationMinutes: minutes,
         dueAt: dueInsideWeek(String(affected.end_date)),
         difficulty: "BASIC",
@@ -348,8 +376,8 @@ export class AdaptiveReplannerService {
           input.userId,
           String(active.goal_id),
           nextVersion,
-          String(active.start_date),
-          String(active.end_date),
+          dateOnly(active.start_date),
+          dateOnly(active.end_date),
           input.gapSnapshotId ?? String(active.gap_snapshot_id),
           String(active.constraint_fingerprint),
           String(active.planner_version),
@@ -376,8 +404,8 @@ export class AdaptiveReplannerService {
           [
             nextPlanId,
             Number(week.week_index),
-            String(week.start_date),
-            String(week.end_date),
+            dateOnly(week.start_date),
+            dateOnly(week.end_date),
             Number(week.capacity_minutes),
             Number(week.planned_minutes) + (isAffected ? reinforcementMinutes : 0),
             JSON.stringify(jsonValue(week.focus_skill_ids, [])),
@@ -473,7 +501,7 @@ export class AdaptiveReplannerService {
           newWeekId,
           newObjectiveId,
           input.skillId,
-          reinforcementTitle(input.weaknesses),
+          reinforcementTitle(input.weaknesses, String(affected.skill_name ?? "skill")),
           reinforcementMinutes,
           dueInsideWeek(String(affected.end_date)),
           diffId
@@ -627,8 +655,8 @@ export class AdaptiveReplannerService {
           userId,
           String(active.goal_id),
           nextVersion,
-          String(active.start_date),
-          String(active.end_date),
+          dateOnly(active.start_date),
+          dateOnly(active.end_date),
           String(active.gap_snapshot_id),
           String(active.constraint_fingerprint),
           String(active.planner_version),
@@ -709,8 +737,8 @@ export class AdaptiveReplannerService {
         toVersion: diff.to_version == null ? null : Number(diff.to_version),
         headline: String(diff.summary),
         triggerLabel: "Completed assessment",
-        whatChanged: Array.isArray(diff.operations) ? diff.operations : [],
-        weeklyImpact: Array.isArray(diff.weekly_impact) ? diff.weekly_impact : [],
+        whatChanged: Array.isArray(parseJsonValue(diff.operations)) ? parseJsonValue(diff.operations) as unknown[] : [],
+        weeklyImpact: Array.isArray(parseJsonValue(diff.weekly_impact)) ? parseJsonValue(diff.weekly_impact) as unknown[] : [],
         timelineImpact: String(diff.timeline_impact),
         totalMinuteDelta: Number(diff.total_minute_delta),
         touchCount: Number(diff.touch_count),

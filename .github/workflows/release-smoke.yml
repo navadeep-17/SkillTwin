@@ -1,22 +1,38 @@
-name: Release Smoke
+name: Railway Release Smoke
 
 on:
   workflow_dispatch:
+    inputs:
+      expected_commit_sha:
+        description: "Railway commit SHA to verify. Leave empty to use the selected branch/ref SHA."
+        required: false
+        type: string
+
+concurrency:
+  group: railway-production-smoke
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   production-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
-      - name: Run production smoke checks
+          cache: npm
+      - run: npm ci
+      - name: Wait for Railway and run production smoke checks
         run: npm run smoke:release
         env:
           BASE_URL: https://skilltwin-production.up.railway.app
+          EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha || github.sha }}
+          DEPLOY_WAIT_MS: 480000
+          DEPLOY_POLL_MS: 5000
           SUPABASE_URL: ${{ secrets.SMOKE_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SMOKE_SUPABASE_ANON_KEY }}
           SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}

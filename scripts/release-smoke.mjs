@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 
 const baseUrl = process.env.BASE_URL ?? "https://skilltwin-production.up.railway.app";
+const expectedCommitSha = process.env.EXPECTED_COMMIT_SHA?.trim().toLowerCase() || "";
+const deployWaitMs = Number(process.env.DEPLOY_WAIT_MS ?? 8 * 60 * 1000);
+const deployPollMs = Number(process.env.DEPLOY_POLL_MS ?? 5000);
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const smokeEmail = process.env.SMOKE_EMAIL;
@@ -12,6 +15,10 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function request(path, init = {}) {
   const response = await fetch(baseUrl + path, {
     redirect: "manual",
@@ -21,12 +28,91 @@ async function request(path, init = {}) {
   return { response, body };
 }
 
+function jsonBody(result, label) {
+  try {
+    return JSON.parse(result.body);
+  } catch {
+    throw new Error(label + " did not return valid JSON");
+  }
+}
+
+function commitMatches(actual, expected) {
+  const normalizedActual = String(actual ?? "").trim().toLowerCase();
+  if (!normalizedActual || !expected) return false;
+  return normalizedActual === expected
+    || normalizedActual.startsWith(expected)
+    || expected.startsWith(normalizedActual);
+}
+
+async function waitForExpectedDeployment() {
+  if (!expectedCommitSha) {
+    console.log("DEPLOYMENT_WAIT=SKIPPED (EXPECTED_COMMIT_SHA not set)");
+    return;
+  }
+
+  const deadline = Date.now() + deployWaitMs;
+  let lastSeen = "unavailable";
+
+  while (Date.now() < deadline) {
+    try {
+      const health = await request("/api/health");
+      if (health.response.status === 200) {
+        const payload = jsonBody(health, "health endpoint");
+        const data = payload?.data ?? {};
+        lastSeen = String(data.commitSha ?? data.version ?? "unknown");
+
+        if (data.platform === "railway" && commitMatches(data.commitSha ?? data.version, expectedCommitSha)) {
+          console.log("DEPLOYMENT_COMMIT=PASS " + lastSeen);
+          return;
+        }
+      }
+    } catch (error) {
+      lastSeen = error instanceof Error ? error.message : String(error);
+    }
+
+    console.log("Waiting for Railway deployment. expected=" + expectedCommitSha.slice(0, 8) + " seen=" + lastSeen);
+    await sleep(deployPollMs);
+  }
+
+  throw new Error(
+    "Railway did not serve expected commit "
+      + expectedCommitSha
+      + " within "
+      + deployWaitMs
+      + "ms. Last seen: "
+      + lastSeen
+  );
+}
+
 async function publicChecks() {
+  const root = await request("/");
+  assert(root.response.status === 200, "root page is not 200");
+  assert(root.body.includes("SkillTwin"), "root page does not contain SkillTwin branding");
+
+  const login = await request("/login");
+  assert(login.response.status === 200, "login page is not 200");
+  assert(login.body.includes("SkillTwin"), "login page does not contain SkillTwin branding");
+
   const health = await request("/api/health");
   assert(health.response.status === 200, "health endpoint is not 200");
+  const healthPayload = jsonBody(health, "health endpoint");
+  assert(healthPayload?.ok === true, "health endpoint did not return an ok API envelope");
+  assert(healthPayload?.data?.status === "ok", "health endpoint did not report ok");
+  assert(healthPayload?.data?.platform === "railway", "health endpoint is not reporting Railway runtime");
+
+  if (expectedCommitSha) {
+    assert(
+      commitMatches(healthPayload?.data?.commitSha ?? healthPayload?.data?.version, expectedCommitSha),
+      "health endpoint is not serving the expected Railway commit"
+    );
+  }
 
   const readiness = await request("/api/readiness");
   assert(readiness.response.status === 200, "readiness endpoint is not 200");
+  const readinessPayload = jsonBody(readiness, "readiness endpoint");
+  assert(readinessPayload?.ok === true, "readiness endpoint did not return an ok API envelope");
+  assert(readinessPayload?.data?.status === "ready", "production readiness did not report ready");
+  assert(readinessPayload?.data?.checks?.database === "ready", "production database readiness is not ready");
 
   const protectedPage = await request("/overview");
   assert(
@@ -202,6 +288,7 @@ async function authenticatedChecks() {
   console.log("CAUSAL_E2E=PASS");
 }
 
+await waitForExpectedDeployment();
 await publicChecks();
 await authenticatedChecks();
 console.log("RELEASE_SMOKE=PASS");

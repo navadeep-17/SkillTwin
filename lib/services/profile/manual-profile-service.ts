@@ -60,8 +60,14 @@ export class ManualProfileService {
       const extraction = mergeProfileExtractions(deterministic, semantic);
       const candidates = extraction.evidence.map(candidate => ({
         ...candidate,
+        sourceType: "MANUAL_SELF_REPORT" as const,
         sourceGroupId: candidate.sourceGroupId.replace(/^resume:/, "manual:"),
-        idempotencyKey: candidate.idempotencyKey.replace(/^resume(-ai)?:/, "manual:")
+        idempotencyKey: candidate.idempotencyKey.replace(/^resume(-ai)?:/, "manual:"),
+        metadata: {
+          ...(candidate.metadata ?? {}),
+          sourceKind: "manual_self_report",
+          analyzerVersion: MANUAL_PROFILE_ANALYZER_VERSION
+        }
       }));
 
       const evidence = await getEvidenceEngine().ingestBatch({

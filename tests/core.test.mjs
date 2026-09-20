@@ -94,7 +94,7 @@ import { evaluateConstructedWithFallback } from "../dist/lib/domain/constructed-
 test("constructed assessment falls back safely when AI fails", async () => {
   const result = await evaluateConstructedWithFallback(
     { expectedKeywords:["idempotency","retry"], conceptId:"http-idempotency" },
-    "I would use idempotency to make retries safe.",
+    "I would use idempotency so a retry is safe.",
     async () => { throw new Error("provider down"); }
   );
   assert.equal(result.score, 1);

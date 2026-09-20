@@ -4,7 +4,15 @@ import { PostgresGapRepository } from "@/lib/repositories/postgres/gap-repositor
 
 function remainingWeeks(targetDate: string | null) {
   if (!targetDate) return undefined;
-  const ms = new Date(`${targetDate}T23:59:59Z`).getTime() - Date.now();
+
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(targetDate)
+    ? targetDate + "T23:59:59Z"
+    : targetDate;
+
+  const targetTime = new Date(normalized).getTime();
+  if (!Number.isFinite(targetTime)) return undefined;
+
+  const ms = targetTime - Date.now();
   return Math.max(1, Math.ceil(ms / (7 * 24 * 60 * 60 * 1000)));
 }
 

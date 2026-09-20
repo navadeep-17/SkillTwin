@@ -9,7 +9,7 @@ export function ChallengeLauncher() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
-  async function startChallenge() {
+  async function startChallenge(mode: "CHALLENGE_ME" | "CALIBRATION") {
     setPending(true);
     setError("");
 
@@ -17,18 +17,18 @@ export function ChallengeLauncher() {
       const response = await fetch("/api/assessments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "CHALLENGE_ME" })
+        body: JSON.stringify({ mode })
       });
       const payload = await response.json();
 
       if (!response.ok || !payload.ok) {
-        setError(payload.error?.message ?? "Could not start Challenge Me.");
+        setError(payload.error?.message ?? "Could not start this validation.");
         return;
       }
 
       router.push("/practice/" + payload.data.assessment.id);
     } catch {
-      setError("Could not start Challenge Me.");
+      setError("Could not start this validation.");
     } finally {
       setPending(false);
     }
@@ -56,7 +56,7 @@ export function ChallengeLauncher() {
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={startChallenge}
+              onClick={() => void startChallenge("CHALLENGE_ME")}
               disabled={pending}
               className="btn-primary !px-5 !py-3"
             >
@@ -64,9 +64,18 @@ export function ChallengeLauncher() {
               {pending ? "Preparing challenge" : "Start Challenge Me"}
               {!pending ? <ArrowRight className="size-4" /> : null}
             </button>
+            <button
+              type="button"
+              onClick={() => void startChallenge("CALIBRATION")}
+              disabled={pending}
+              className="btn-secondary !px-4 !py-3"
+            >
+              <ShieldCheck className="size-4" />
+              Calibrate SkillTwin
+            </button>
             <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
               <ShieldCheck className="size-3.5 text-emerald-600" />
-              One committed summary evidence item per completed challenge
+              One committed summary evidence item per completed validation
             </span>
           </div>
         </div>

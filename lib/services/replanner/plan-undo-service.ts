@@ -22,22 +22,20 @@ export class PlanUndoService {
     ))[0];
     if(!active || Number(active.version)!==Number(original.to_version)) throw new Error("UNDO_STALE_BASELINE");
 
-    const [fromTasksRaw,toTasksRaw,fromObjectivesRaw,toObjectivesRaw,fromAssignmentsRaw,toAssignmentsRaw] = await Promise.all([
+    const [fromTasksRaw,toTasksRaw,fromObjectivesRaw,fromAssignmentsRaw,toAssignmentsRaw] = await Promise.all([
       sql.unsafe("select t.*,o.logical_objective_id from public.learning_tasks t join public.learning_objectives o on o.id=t.objective_id where t.plan_id=$1::uuid",[String(original.from_plan_id)]),
       sql.unsafe("select t.*,o.logical_objective_id from public.learning_tasks t join public.learning_objectives o on o.id=t.objective_id where t.plan_id=$1::uuid",[String(original.to_plan_id)]),
       sql.unsafe("select * from public.learning_objectives where plan_id=$1::uuid",[String(original.from_plan_id)]),
-      sql.unsafe("select * from public.learning_objectives where plan_id=$1::uuid",[String(original.to_plan_id)]),
       sql.unsafe("select a.* from public.task_resource_assignments a join public.learning_tasks t on t.id=a.task_id where t.plan_id=$1::uuid",[String(original.from_plan_id)]),
       sql.unsafe("select a.* from public.task_resource_assignments a join public.learning_tasks t on t.id=a.task_id where t.plan_id=$1::uuid",[String(original.to_plan_id)])
     ]);
     const fromTasks=rows(fromTasksRaw),toTasks=rows(toTasksRaw);
-    const fromObjectives=rows(fromObjectivesRaw),toObjectives=rows(toObjectivesRaw);
+    const fromObjectives=rows(fromObjectivesRaw);
     const fromAssignments=rows(fromAssignmentsRaw),toAssignments=rows(toAssignmentsRaw);
 
     const fromByLogical=new Map(fromTasks.map(task=>[String(task.logical_task_id),task]));
     const toByLogical=new Map(toTasks.map(task=>[String(task.logical_task_id),task]));
     const fromObjById=new Map(fromObjectives.map(obj=>[String(obj.id),obj]));
-    const toObjById=new Map(toObjectives.map(obj=>[String(obj.id),obj]));
     const fromAssignByTask=new Map(fromAssignments.map(item=>[String(item.task_id),item]));
     const toAssignByTask=new Map(toAssignments.map(item=>[String(item.task_id),item]));
 

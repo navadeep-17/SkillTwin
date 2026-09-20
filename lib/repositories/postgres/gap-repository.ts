@@ -26,7 +26,11 @@ export class PostgresGapRepository {
     return {
       id: String(row.id),
       roleVersionId: String(row.role_version_id),
-      targetDate: row.target_date ? String(row.target_date) : null,
+      targetDate: row.target_date
+        ? (row.target_date instanceof Date
+            ? row.target_date.toISOString().slice(0, 10)
+            : String(row.target_date).slice(0, 10))
+        : null,
       hoursPerWeek: Number(row.hours_per_week),
       adaptationMode: String(row.adaptation_mode) as CareerGoal["adaptationMode"],
       preferredAlternatives: row.preferred_alternatives && typeof row.preferred_alternatives === "object"

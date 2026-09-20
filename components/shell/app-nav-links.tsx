@@ -9,6 +9,7 @@ import {
   Map,
   MessageSquareText,
   Network,
+  Settings,
   Sparkles,
   TrendingUp
 } from "lucide-react";
@@ -31,7 +32,8 @@ const primaryLinks: NavLink[] = [
 const secondaryLinks: NavLink[] = [
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/journey", label: "Ask SkillTwin", icon: MessageSquareText },
-  { href: "/activity", label: "Activity", icon: Activity }
+  { href: "/activity", label: "Activity", icon: Activity },
+  { href: "/settings", label: "Settings", icon: Settings }
 ];
 
 function active(pathname: string, href: string) {

@@ -11,10 +11,6 @@ function rows(value: unknown): Row[] {
   return value as Row[];
 }
 
-function arrayOfStrings(value: unknown): string[] {
-  return Array.isArray(value) ? value.map(String) : [];
-}
-
 function jsonValue(value: unknown, fallback: unknown) {
   return value == null ? fallback : value;
 }

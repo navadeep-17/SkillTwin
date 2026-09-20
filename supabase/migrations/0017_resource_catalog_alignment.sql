@@ -54,4 +54,4 @@ where lt.type='LEARN'
   and not exists (
     select 1 from public.task_resource_assignments tra where tra.task_id=lt.id
   )
-on conflict(task_id) do nothing;
+on conflict(task_id,resource_id) do nothing;

@@ -823,9 +823,11 @@ export class AdaptiveReplannerService {
           const toWeekId = weekByIndex.get(toWeekIndex);
           if (!toWeekId || toWeekIndex <= 0) throw new Error("PLAN_DIFF_REFERENCE_ERROR");
           if (!Boolean(targetTask.flexible)) throw new Error("PLAN_DIFF_UNSAFE_TASK_PROGRESS");
+          const movedDueAtRaw = operation.dueAt ?? after.dueAt ?? null;
+          const movedDueAt = movedDueAtRaw == null ? null : String(movedDueAtRaw);
           await tx.unsafe(
             "update public.learning_tasks set week_id=$1::uuid,due_at=coalesce($2::timestamptz,due_at),reschedule_count=reschedule_count+1 where id=$3::uuid and plan_id=$4::uuid",
-            [toWeekId,operation.dueAt ?? after.dueAt ?? null,String(targetTask.id),nextPlanId]
+            [toWeekId,movedDueAt,String(targetTask.id),nextPlanId]
           );
         } else if (type === "CHANGE_DURATION") {
           const duration = Number(operation.durationMinutes ?? after.durationMinutes ?? 0);

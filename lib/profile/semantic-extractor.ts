@@ -214,7 +214,7 @@ export async function extractSemanticSkillEvidence(input: {
     });
   }
 
-  for (const unresolved of result.unresolvedTerms) {
+  for (const unresolved of result.unresolvedTerms ?? []) {
     const block = blockMap.get(unresolved.sourceBlockId);
     if (!block) continue;
     if (!snippetExists(block.text, unresolved.context)) continue;

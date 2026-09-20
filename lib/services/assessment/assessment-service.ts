@@ -451,9 +451,11 @@ export class AssessmentService {
     const conceptId = jsonArray(question.concept_ids)[0] ?? "unknown";
 
     let attempt: Row | null = null;
+    let insertedNewAttempt = false;
+
     await sql.begin(async tx => {
       const inserted = rows(await tx.unsafe(
-        "insert into public.skill_assessment_attempts(assessment_id,question_id,user_id,answer_payload,status,score,evaluator_confidence,feedback,error_tag,evaluation_version,idempotency_key) values ($1::uuid,$2::uuid,$3::uuid,$4::jsonb,'EVALUATED',$5,$6,$7,$8,$9,$10) returning *",
+        "insert into public.skill_assessment_attempts(assessment_id,question_id,user_id,answer_payload,status,score,evaluator_confidence,feedback,error_tag,evaluation_version,idempotency_key) values ($1::uuid,$2::uuid,$3::uuid,$4::jsonb,'EVALUATED',$5,$6,$7,$8,$9,$10) on conflict do nothing returning *",
         [
           input.assessmentId,
           input.questionId,
@@ -467,7 +469,18 @@ export class AssessmentService {
           idempotencyKey
         ]
       ));
+
+      if (!inserted[0]) {
+        attempt = rows(await tx.unsafe(
+          "select * from public.skill_assessment_attempts where assessment_id=$1::uuid and question_id=$2::uuid and user_id=$3::uuid limit 1",
+          [input.assessmentId,input.questionId,input.userId]
+        ))[0] ?? null;
+        if (!attempt) throw new Error("ASSESSMENT_ATTEMPT_CONFLICT");
+        return;
+      }
+
       attempt = inserted[0];
+      insertedNewAttempt = true;
 
       await tx.unsafe(
         "insert into public.skill_assessment_concept_signals(attempt_id,assessment_id,user_id,skill_id,concept_id,polarity,strength,difficulty,error_tag,evaluator_confidence) values ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,$8,$9,$10)",
@@ -486,12 +499,16 @@ export class AssessmentService {
       );
 
       await tx.unsafe(
-        "update public.skill_assessments set current_question_index=$1 where id=$2::uuid and user_id=$3::uuid",
+        "update public.skill_assessments set current_question_index=greatest(current_question_index,$1) where id=$2::uuid and user_id=$3::uuid",
         [expectedOrdinal, input.assessmentId, input.userId]
       );
     });
 
-    return this.afterAttempt(input.userId, input.assessmentId, attempt!);
+    if (!attempt) throw new Error("ASSESSMENT_ATTEMPT_CONFLICT");
+    if (!insertedNewAttempt) {
+      return this.afterAttempt(input.userId, input.assessmentId, attempt);
+    }
+    return this.afterAttempt(input.userId, input.assessmentId, attempt);
   }
 
   private async afterAttempt(userId: string, assessmentId: string, attempt: Row) {
@@ -593,8 +610,8 @@ export class AssessmentService {
     const nextBank = available.find(row => String(row.id) === nextCandidate.id);
     if (!nextBank) throw new Error("QUESTION_BANK_SELECTION_FAILED");
 
-    const nextRows = rows(await sql.unsafe(
-      "insert into public.skill_assessment_questions(assessment_id,bank_question_id,ordinal,type,concept_ids,difficulty,prompt,options,answer_key,rubric,source,generator_version) values ($1::uuid,$2::uuid,$3,$4,$5::jsonb,$6,$7,$8::jsonb,$9::jsonb,$10::jsonb,$11,$12) returning id,ordinal,type,concept_ids,difficulty,prompt,options",
+    let nextRows = rows(await sql.unsafe(
+      "insert into public.skill_assessment_questions(assessment_id,bank_question_id,ordinal,type,concept_ids,difficulty,prompt,options,answer_key,rubric,source,generator_version) values ($1::uuid,$2::uuid,$3,$4,$5::jsonb,$6,$7,$8::jsonb,$9::jsonb,$10::jsonb,$11,$12) on conflict(assessment_id,ordinal) do nothing returning id,ordinal,type,concept_ids,difficulty,prompt,options",
       [
         assessmentId,
         String(nextBank.id),
@@ -610,6 +627,14 @@ export class AssessmentService {
         ASSESSMENT_QUESTION_VERSION
       ]
     ));
+
+    if (!nextRows[0]) {
+      nextRows = rows(await sql.unsafe(
+        "select id,ordinal,type,concept_ids,difficulty,prompt,options from public.skill_assessment_questions where assessment_id=$1::uuid and ordinal=$2 limit 1",
+        [assessmentId,answered + 1]
+      ));
+    }
+    if (!nextRows[0]) throw new Error("QUESTION_BANK_SELECTION_FAILED");
 
     return {
       completed: false,

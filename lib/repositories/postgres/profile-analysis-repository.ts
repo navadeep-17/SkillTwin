@@ -61,7 +61,7 @@ export class PostgresProfileAnalysisRepository {
     const sql = getSql();
     await sql.begin(async tx => {
       await tx.unsafe(
-        "insert into public.document_parse_runs(user_id,document_id,document_version,parser_version,status,full_text,page_map,quality,completed_at) values ($1::uuid,$2::uuid,$3,$4,'complete',$5,$6::jsonb,$7::jsonb,now()) on conflict(document_id,document_version,parser_version) do update set status='complete',full_text=excluded.full_text,page_map=excluded.page_map,quality=excluded.quality,error_code=null,error_message=null,completed_at=now()",
+        "insert into public.document_parse_runs(user_id,document_id,document_version,parser_version,status,full_text,page_map,quality,completed_at) values ($1::uuid,$2::uuid,$3,$4,'complete',$5,$1::text::jsonb,$1::text::jsonb,now()) on conflict(document_id,document_version,parser_version) do update set status='complete',full_text=excluded.full_text,page_map=excluded.page_map,quality=excluded.quality,error_code=null,error_message=null,completed_at=now()",
         [
           userId,
           document.id,
@@ -158,7 +158,7 @@ export class PostgresProfileAnalysisRepository {
   ) {
     const sql = getSql();
     await sql.unsafe(
-      "update public.profile_analysis_runs set stage=$1,progress_percent=$2,counts=coalesce($3::jsonb,counts),warnings=coalesce($4::jsonb,warnings) where id=$5::uuid and user_id=$6::uuid",
+      "update public.profile_analysis_runs set stage=$1,progress_percent=$2,counts=coalesce($1::text::jsonb,counts),warnings=coalesce($1::text::jsonb,warnings) where id=$5::uuid and user_id=$6::uuid",
       [
         stage,
         progress,
@@ -181,7 +181,7 @@ export class PostgresProfileAnalysisRepository {
     const sql = getSql();
     await sql.begin(async tx => {
       await tx.unsafe(
-        "update public.profile_analysis_runs set status='complete',stage='complete',progress_percent=100,counts=$1::jsonb,warnings=$2::jsonb,evidence_batch_result=$3::jsonb,completed_at=now() where id=$4::uuid and user_id=$5::uuid",
+        "update public.profile_analysis_runs set status='complete',stage='complete',progress_percent=100,counts=$1::text::jsonb,warnings=$1::text::jsonb,evidence_batch_result=$1::text::jsonb,completed_at=now() where id=$4::uuid and user_id=$5::uuid",
         [JSON.stringify(counts), JSON.stringify(warnings), JSON.stringify(result), runId, userId]
       );
       await tx.unsafe(

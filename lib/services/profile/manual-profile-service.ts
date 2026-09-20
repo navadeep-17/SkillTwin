@@ -1,5 +1,4 @@
 import "server-only";
-import { createHash, randomUUID } from "node:crypto";
 import { getSql } from "@/lib/db/postgres";
 import { getEvidenceEngine } from "@/lib/services/skills/evidence-service";
 import { getGapAnalysisService } from "@/lib/services/gaps/gap-analysis-service";

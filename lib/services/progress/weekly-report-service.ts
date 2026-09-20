@@ -34,7 +34,6 @@ function weekBounds() {
   const end=new Date(start); end.setUTCDate(end.getUTCDate()+6);
   return {start:start.toISOString().slice(0,10),end:end.toISOString().slice(0,10)};
 }
-function strings(value:unknown){return Array.isArray(value)?value.map(String):[];}
 
 export class WeeklyReportService {
   async getOrGenerate(userId:string):Promise<WeeklyReportDto> {

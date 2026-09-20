@@ -4,6 +4,7 @@ import { fail, ok } from "@/lib/api/responses";
 import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
 import { getSql } from "@/lib/db/postgres";
 import { getGapAnalysisService } from "@/lib/services/gaps/gap-analysis-service";
+import { getInitialPlanService } from "@/lib/services/planner/initial-plan-service";
 
 type Row = Record<string, unknown>;
 const rows = (value: unknown) => value as Row[];
@@ -149,17 +150,20 @@ export async function POST(request: Request) {
     ));
 
     let gapAnalysis: unknown = null;
+    let plan: unknown = null;
     if (Number(skillCount[0]?.count ?? 0) > 0) {
       gapAnalysis = await getGapAnalysisService().recompute(user.id, {
         type: "GOAL_CHANGE",
         ref: String(saved.id)
       });
+      plan = await getInitialPlanService().generate(user.id);
     }
 
     return ok(requestId, {
       goal: saved,
       role: roleMeta,
-      gapAnalysis
+      gapAnalysis,
+      plan
     }, {
       notifications: [{
         title: "Target role saved",

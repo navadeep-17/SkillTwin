@@ -146,12 +146,13 @@ export class ProfileAnalysisService {
         producerVersion: PROFILE_ANALYZER_SCHEMA_VERSION
       });
 
-      const gapResult = evidenceResult.downstream.runGapAnalysis
-        ? await getGapAnalysisService().recompute(
-            input.userId,
-            { type: "SKILL_DELTA", ref: runId }
-          )
-        : null;
+      const gapResult = await getGapAnalysisService().recompute(
+        input.userId,
+        {
+          type: evidenceResult.downstream.runGapAnalysis ? "SKILL_DELTA" : "PROFILE_ANALYSIS",
+          ref: runId
+        }
+      );
 
       let planResult: unknown = null;
       if (gapResult) {

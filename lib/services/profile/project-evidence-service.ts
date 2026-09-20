@@ -147,7 +147,7 @@ export class ProjectEvidenceService {
         try {
           replan = await getAdaptiveReplannerService().considerEvidenceSignal({
             userId: input.userId,
-            triggerType: "PROJECT_EVIDENCE",
+            triggerType: "PROJECT_EVIDENCE_COMMITTED",
             triggerRef: projectId,
             skillIds: evidenceResult.deltas.map(delta => delta.skillId),
             evidenceIds: evidenceResult.acceptedEvidenceIds,

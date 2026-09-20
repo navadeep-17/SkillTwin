@@ -102,7 +102,7 @@ export async function POST(
       try {
         replan = await getAdaptiveReplannerService().considerEvidenceSignal({
           userId: user.id,
-          triggerType: "TASK_BEHAVIOR",
+          triggerType: "TASK_BEHAVIOR_SIGNAL",
           triggerRef: id,
           skillIds: [String(task.skill_id)],
           evidenceIds: evidence.acceptedEvidenceIds,

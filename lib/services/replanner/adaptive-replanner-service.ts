@@ -56,8 +56,8 @@ function reinforcementTitle(weaknesses: string[], skillName?: string) {
 }
 
 function triggerLabel(triggerType: string) {
-  if (triggerType === "PROJECT_EVIDENCE") return "Project evidence";
-  if (triggerType === "TASK_BEHAVIOR") return "Learning behavior";
+  if (triggerType === "PROJECT_EVIDENCE_COMMITTED") return "Project evidence";
+  if (triggerType === "TASK_BEHAVIOR_SIGNAL") return "Learning behavior";
   if (triggerType === "CONSTRAINT_CHANGED") return "Learning constraints";
   if (triggerType === "UNDO") return "Undo";
   return "Completed assessment";

@@ -71,8 +71,9 @@ for (const operation of [
 const replannerService = read("lib/services/replanner/adaptive-replanner-service.ts");
 for (const trigger of [
   "ASSESSMENT_COMPLETED",
-  "PROJECT_EVIDENCE",
-  "TASK_BEHAVIOR"
+  "PROJECT_EVIDENCE_COMMITTED",
+  "TASK_BEHAVIOR_SIGNAL",
+  "CONSTRAINT_CHANGED"
 ]) {
   assert(replannerService.includes(trigger), "adaptive replanner missing live trigger " + trigger);
 }

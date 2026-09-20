@@ -5,6 +5,7 @@ import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
 import { getSql } from "@/lib/db/postgres";
 import { getGapAnalysisService } from "@/lib/services/gaps/gap-analysis-service";
 import { getInitialPlanService } from "@/lib/services/planner/initial-plan-service";
+import { getAdaptiveReplannerService } from "@/lib/services/replanner/adaptive-replanner-service";
 
 type Row = Record<string, unknown>;
 const rows = (value: unknown) => value as Row[];
@@ -151,19 +152,63 @@ export async function POST(request: Request) {
 
     let gapAnalysis: unknown = null;
     let plan: unknown = null;
+    let replan: unknown = null;
+    let replanWarning: string | null = null;
+
     if (Number(skillCount[0]?.count ?? 0) > 0) {
       gapAnalysis = await getGapAnalysisService().recompute(user.id, {
         type: "GOAL_CHANGE",
         ref: String(saved.id)
       });
-      plan = await getInitialPlanService().generate(user.id);
+
+      const existingPlan = rows(await sql.unsafe(
+        "select id,version from public.learning_plans where user_id=$1::uuid and goal_id=$2::uuid and status='ACTIVE' order by version desc limit 1",
+        [user.id, String(saved.id)]
+      ))[0];
+
+      if (existingPlan) {
+        try {
+          replan = await getAdaptiveReplannerService().considerConstraintChange({
+            userId: user.id,
+            goalId: String(saved.id),
+            triggerRef: String(saved.id) + ":constraints",
+            hoursPerWeek: input.hoursPerWeek,
+            preferredSessionMinutes: input.preferredSessionMinutes,
+            minSessionMinutes: input.minSessionMinutes,
+            learningDays: input.learningDays
+          });
+        } catch (error) {
+          replanWarning = "CONSTRAINT_REPLAN_FAILED";
+          console.error("goal.constraint_replan.failed", {
+            goalId: String(saved.id),
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+
+        const refreshedPlan = rows(await sql.unsafe(
+          "select id,version from public.learning_plans where user_id=$1::uuid and goal_id=$2::uuid and status='ACTIVE' order by version desc limit 1",
+          [user.id, String(saved.id)]
+        ))[0];
+        plan = refreshedPlan
+          ? {
+              planId: String(refreshedPlan.id),
+              version: Number(refreshedPlan.version),
+              reused: true,
+              reason: "ACTIVE_PLAN_REEVALUATED_FOR_CONSTRAINTS"
+            }
+          : null;
+      } else {
+        plan = await getInitialPlanService().generate(user.id);
+      }
     }
 
     return ok(requestId, {
       goal: saved,
       role: roleMeta,
       gapAnalysis,
-      plan
+      plan,
+      replan,
+      warnings: replanWarning ? [replanWarning] : []
     }, {
       notifications: [{
         title: "Target role saved",

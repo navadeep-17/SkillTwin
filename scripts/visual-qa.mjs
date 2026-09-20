@@ -7,6 +7,8 @@ const email = process.env.SMOKE_EMAIL?.trim() ?? "";
 const password = process.env.SMOKE_PASSWORD ?? "";
 const requireAuth = process.env.REQUIRE_AUTH_VISUAL === "true";
 const outputRoot = path.resolve("artifacts/visual-qa");
+const expectedCommitSha = process.env.EXPECTED_COMMIT_SHA?.trim().toLowerCase() ?? "";
+const deployWaitMs = Number(process.env.DEPLOY_WAIT_MS ?? 8 * 60 * 1000);
 
 const viewports = [
   { name: "desktop", width: 1440, height: 1000 },
@@ -34,6 +36,48 @@ const authenticatedPages = [
 
 await fs.rm(outputRoot, { recursive: true, force: true });
 await fs.mkdir(outputRoot, { recursive: true });
+
+function commitMatches(actual, expected) {
+  const normalizedActual = String(actual ?? "").trim().toLowerCase();
+  if (!normalizedActual || !expected) return false;
+  return normalizedActual === expected
+    || normalizedActual.startsWith(expected)
+    || expected.startsWith(normalizedActual);
+}
+
+async function waitForProductionCommit() {
+  if (!expectedCommitSha) return;
+
+  const deadline = Date.now() + deployWaitMs;
+  let lastSeen = "unavailable";
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(baseUrl + "/api/health", { cache: "no-store" });
+      if (response.ok) {
+        const payload = await response.json();
+        const health = payload?.data ?? {};
+        lastSeen = String(health.commitSha ?? health.version ?? "unknown");
+        if (health.platform === "railway" && commitMatches(health.commitSha ?? health.version, expectedCommitSha)) {
+          console.log("VISUAL_QA_DEPLOYMENT_COMMIT=PASS " + lastSeen);
+          return;
+        }
+      }
+    } catch (error) {
+      lastSeen = error instanceof Error ? error.message : String(error);
+    }
+
+    console.log("VISUAL_QA_WAITING_FOR_DEPLOYMENT expected=" + expectedCommitSha.slice(0, 8) + " seen=" + lastSeen);
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+
+  throw new Error(
+    "Production did not serve expected commit " + expectedCommitSha
+      + " within " + deployWaitMs + "ms. Last seen: " + lastSeen
+  );
+}
+
+await waitForProductionCommit();
 
 const browser = await chromium.launch({ headless: true });
 const report = {

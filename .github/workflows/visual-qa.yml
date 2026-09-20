@@ -40,6 +40,8 @@ jobs:
         run: node scripts/visual-qa.mjs
         env:
           BASE_URL: https://skilltwin-production.up.railway.app
+          EXPECTED_COMMIT_SHA: ${{ github.sha }}
+          DEPLOY_WAIT_MS: 480000
           SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
           SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
           REQUIRE_AUTH_VISUAL: ${{ inputs.require_authenticated }}

@@ -379,9 +379,35 @@ export class AssessmentService {
       [assessmentId, nextOrdinal]
     ));
 
+    if (!questionRows[0] && attemptRows.length) {
+      const latestAttempt = rows(await sql.unsafe(
+        "select * from public.skill_assessment_attempts where assessment_id=$1::uuid and user_id=$2::uuid order by created_at desc,id desc limit 1",
+        [assessmentId,userId]
+      ))[0];
+
+      if (latestAttempt) {
+        const recovered = await this.afterAttempt(userId, assessmentId, latestAttempt);
+        if (recovered.completed) {
+          return {
+            assessment: this.assessmentDto({ ...assessment, status: "COMPLETED" }, attemptRows.length),
+            question: null,
+            outcome: recovered.outcome ?? null
+          };
+        }
+
+        return {
+          assessment: this.assessmentDto(assessment, attemptRows.length),
+          question: recovered.question ?? null,
+          outcome: null
+        };
+      }
+    }
+
+    if (!questionRows[0]) throw new Error("QUESTION_BANK_SELECTION_FAILED");
+
     return {
       assessment: this.assessmentDto(assessment, attemptRows.length),
-      question: questionRows[0] ? publicQuestion(questionRows[0]) : null,
+      question: publicQuestion(questionRows[0]),
       outcome: null
     };
   }
@@ -452,7 +478,6 @@ export class AssessmentService {
     const conceptId = jsonArray(question.concept_ids)[0] ?? "unknown";
 
     let attempt: Row | null = null;
-    let insertedNewAttempt = false;
 
     await sql.begin(async tx => {
       const inserted = rows(await tx.unsafe(
@@ -481,7 +506,6 @@ export class AssessmentService {
       }
 
       attempt = inserted[0];
-      insertedNewAttempt = true;
 
       await tx.unsafe(
         "insert into public.skill_assessment_concept_signals(attempt_id,assessment_id,user_id,skill_id,concept_id,polarity,strength,difficulty,error_tag,evaluator_confidence) values ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,$8,$9,$10)",
@@ -506,9 +530,6 @@ export class AssessmentService {
     });
 
     if (!attempt) throw new Error("ASSESSMENT_ATTEMPT_CONFLICT");
-    if (!insertedNewAttempt) {
-      return this.afterAttempt(input.userId, input.assessmentId, attempt);
-    }
     return this.afterAttempt(input.userId, input.assessmentId, attempt);
   }
 

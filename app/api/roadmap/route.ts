@@ -69,7 +69,7 @@ export async function GET() {
         .select("id,skill_id")
         .in("skill_id", skillIds)
         .eq("is_active", true)
-        .eq("type", "MCQ");
+        .in("type", ["MCQ","SHORT_TEXT","SCENARIO"]);
       if (bankError) throw bankError;
       for (const row of bankRows ?? []) {
         const key = String(row.skill_id);

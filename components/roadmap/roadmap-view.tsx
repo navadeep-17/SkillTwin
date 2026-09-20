@@ -75,14 +75,19 @@ export function RoadmapView() {
 
   useEffect(() => {
     let active = true;
-    fetch("/api/roadmap", { cache: "no-store" })
-      .then(response => response.json())
-      .then(data => {
+
+    async function loadRoadmap() {
+      try {
+        await fetch("/api/roadmap/sync", { method: "POST" }).catch(() => null);
+        const response = await fetch("/api/roadmap", { cache: "no-store" });
+        const data = await response.json();
         if (active) setPayload(data);
-      })
-      .catch(() => {
+      } catch {
         if (active) setPayload({ ok: false, error: { message: "Could not load roadmap." } });
-      });
+      }
+    }
+
+    void loadRoadmap();
     return () => {
       active = false;
     };

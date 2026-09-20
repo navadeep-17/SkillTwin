@@ -1,73 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { resetOwnDemoState } from "@/app/actions/demo-reset";
 
-export function DemoResetControl() {
-  const router = useRouter();
-  const [secret, setSecret] = useState("");
-  const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState("");
+export function DemoResetControl(){
+  const router=useRouter();
+  const [pending,startTransition]=useTransition();
+  const [message,setMessage]=useState("");
 
-  async function reset() {
-    if (!secret.trim() || pending) return;
-
-    const confirmed = window.confirm(
-      "Reset all learner-specific SkillTwin state for this signed-in account?"
-    );
-    if (!confirmed) return;
-
-    setPending(true);
+  function reset(){
+    if(pending) return;
+    if(!window.confirm("Reset this signed-in learner to the verified SkillTwin demo baseline?")) return;
     setMessage("");
 
-    try {
-      const response = await fetch("/api/demo/reset", {
-        method: "POST",
-        headers: {
-          "x-skilltwin-demo-secret": secret
-        }
-      });
-      const payload = await response.json();
-
-      if (!response.ok || !payload.ok) {
-        setMessage(payload.error?.message ?? "Demo reset failed.");
+    startTransition(async()=>{
+      const result=await resetOwnDemoState();
+      if(!result.ok){
+        setMessage(result.error);
         return;
       }
-
-      setSecret("");
-      router.push("/onboarding");
+      setMessage("DEMO READY. The deterministic baseline passed invariant verification.");
+      router.push("/overview");
       router.refresh();
-    } catch {
-      setMessage("Demo reset failed.");
-    } finally {
-      setPending(false);
-    }
+    });
   }
 
   return (
     <div className="max-w-xl">
-      <label className="block">
-        <span className="text-sm font-medium text-amber-950">Demo reset secret</span>
-        <input
-          type="password"
-          autoComplete="off"
-          value={secret}
-          onChange={event => setSecret(event.target.value)}
-          placeholder="Enter DEMO_RESET_SECRET"
-          className="mt-2 w-full rounded-xl border border-amber-300 bg-white px-3 py-2 outline-none ring-amber-500 focus:ring-2"
-        />
-      </label>
-
+      <p className="text-sm text-amber-950">
+        This clears only the currently signed-in learner state, rebuilds the deterministic demo baseline through canonical services, and verifies invariants before reporting success.
+      </p>
       <button
         type="button"
         onClick={reset}
-        disabled={!secret.trim() || pending}
+        disabled={pending}
         className="mt-3 rounded-xl bg-amber-800 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
-        {pending ? "Resetting…" : "Reset learner demo state"}
+        {pending?"Resetting and verifying…":"Reset learner to demo baseline"}
       </button>
-
-      {message ? <p className="mt-3 text-sm text-rose-700">{message}</p> : null}
+      {message?<p className={"mt-3 text-sm "+(message.startsWith("DEMO READY")?"text-emerald-700":"text-rose-700")}>{message}</p>:null}
     </div>
   );
 }

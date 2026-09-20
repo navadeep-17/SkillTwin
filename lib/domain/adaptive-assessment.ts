@@ -141,9 +141,11 @@ export function selectAdaptiveCandidate(
   const available = candidates.filter(candidate => !usedIds.has(candidate.id));
   if (!available.length) return null;
 
+  const targetConceptId = attempts.length ? state.targetConceptId : null;
+
   return [...available].sort((a, b) => {
-    const aConcept = a.conceptId === state.targetConceptId ? 0 : 1;
-    const bConcept = b.conceptId === state.targetConceptId ? 0 : 1;
+    const aConcept = targetConceptId && a.conceptId === targetConceptId ? 0 : 1;
+    const bConcept = targetConceptId && b.conceptId === targetConceptId ? 0 : 1;
     if (aConcept !== bConcept) return aConcept - bConcept;
 
     const aDifficulty = Math.abs(a.difficulty - state.nextDifficulty);

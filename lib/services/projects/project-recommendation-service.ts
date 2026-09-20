@@ -187,7 +187,7 @@ export class ProjectRecommendationService {
       recommendedAction: String(gap.recommended_action)
     }));
 
-    let recommendations = fallbackRecommendations(String(context.role_name), gaps);
+    let recommendations: Array<z.infer<typeof recommendationSchema>> = fallbackRecommendations(String(context.role_name), gaps);
 
     try {
       const ai = await getGeminiStructuredClient().generateJson({

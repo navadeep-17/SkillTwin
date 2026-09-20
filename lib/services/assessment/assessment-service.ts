@@ -8,7 +8,7 @@ import { getAdaptiveReplannerService } from "@/lib/services/replanner/adaptive-r
 export const ASSESSMENT_BLUEPRINT_VERSION = "assessment-blueprint-e1";
 export const ASSESSMENT_EVALUATION_VERSION = "deterministic-evaluator-e1";
 export const ASSESSMENT_AGGREGATOR_VERSION = "assessment-aggregator-e1";
-export const ASSESSMENT_QUESTION_VERSION = "rest-bank-e1";
+export const ASSESSMENT_QUESTION_VERSION = "mcq-bank-f1";
 
 type Row = Record<string, unknown>;
 
@@ -49,7 +49,7 @@ function blueprint(skillId: string, concepts: string[], startDifficulty: number)
     difficultyMin: 1,
     difficultyMax: 4,
     startDifficulty,
-    allowedTypes: ["MCQ", "SHORT_TEXT", "SCENARIO"],
+    allowedTypes: ["MCQ"],
     minItems: 4,
     maxItems: Math.min(6, Math.max(4, concepts.length)),
     targetCoverage: 0.80,
@@ -108,7 +108,7 @@ export class AssessmentService {
 
     if (!targetSkillId) {
       const candidateRows = rows(await sql.unsafe(
-        "select sgr.skill_id,sgr.priority_score,sgr.current_confidence from public.skill_gap_results sgr join public.gap_snapshots gs on gs.id=sgr.snapshot_id where gs.user_id=$1::uuid and gs.id=(select id from public.gap_snapshots where user_id=$1::uuid order by created_at desc limit 1) and exists(select 1 from public.assessment_question_bank qb where qb.skill_id=sgr.skill_id and qb.is_active=true) order by (sgr.priority_score * (1.25 - sgr.current_confidence)) desc limit 1",
+        "select sgr.skill_id,sgr.priority_score,sgr.current_confidence from public.skill_gap_results sgr join public.gap_snapshots gs on gs.id=sgr.snapshot_id where gs.user_id=$1::uuid and gs.id=(select id from public.gap_snapshots where user_id=$1::uuid order by created_at desc limit 1) and (select count(*) from public.assessment_question_bank qb where qb.skill_id=sgr.skill_id and qb.is_active=true and qb.type='MCQ') >= 4 order by (sgr.priority_score * (1.25 - sgr.current_confidence)) desc limit 1",
         [input.userId]
       ));
       if (!candidateRows[0]) throw new Error("NO_ASSESSABLE_SKILL");
@@ -118,7 +118,7 @@ export class AssessmentService {
     const [skillRows, stateRows, bankRows] = await Promise.all([
       sql.unsafe("select id,slug,canonical_name from public.skills where id=$1::uuid and is_active=true limit 1", [targetSkillId]),
       sql.unsafe("select capability_score,confidence,last_validated_at from public.user_skills where user_id=$1::uuid and skill_id=$2::uuid limit 1", [input.userId, targetSkillId]),
-      sql.unsafe("select * from public.assessment_question_bank where skill_id=$1::uuid and is_active=true order by difficulty,id", [targetSkillId])
+      sql.unsafe("select * from public.assessment_question_bank where skill_id=$1::uuid and is_active=true and type='MCQ' order by difficulty,id", [targetSkillId])
     ]);
 
     const skill = rows(skillRows)[0];

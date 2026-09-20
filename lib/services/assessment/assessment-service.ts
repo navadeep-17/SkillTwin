@@ -4,11 +4,17 @@ import { z } from "zod";
 import { getSql } from "@/lib/db/postgres";
 import { getGeminiStructuredClient } from "@/lib/ai/gemini-interactions";
 import { evaluateConstructedWithFallback } from "@/lib/domain/constructed-assessment";
+import {
+  adaptiveAssessmentState,
+  selectAdaptiveCandidate,
+  type AdaptiveAttempt,
+  type AdaptiveBlueprint
+} from "@/lib/domain/adaptive-assessment";
 import { getEvidenceEngine } from "@/lib/services/skills/evidence-service";
 import { getGapAnalysisService } from "@/lib/services/gaps/gap-analysis-service";
 import { getAdaptiveReplannerService } from "@/lib/services/replanner/adaptive-replanner-service";
 
-export const ASSESSMENT_BLUEPRINT_VERSION = "assessment-blueprint-e2";
+export const ASSESSMENT_BLUEPRINT_VERSION = "adaptive-blueprint-e3";
 export const ASSESSMENT_EVALUATION_VERSION = "hybrid-rubric-evaluator-e2";
 export const ASSESSMENT_AGGREGATOR_VERSION = "assessment-aggregator-e1";
 export const ASSESSMENT_QUESTION_VERSION = "mixed-bank-g1";
@@ -211,16 +217,20 @@ export class AssessmentService {
     const concepts = [...new Set(bank.map(row => String(row.concept_id)))];
     const frozenBlueprint = blueprint(targetSkillId, concepts, startDifficulty);
     const maxItems = Number(frozenBlueprint.maxItems);
-    const ranked = [...bank].sort((a, b) => {
-      const da = Math.abs(Number(a.difficulty) - startDifficulty);
-      const db = Math.abs(Number(b.difficulty) - startDifficulty);
-      if (da !== db) return da - db;
-      const typeRank = (value: unknown) => String(value) === "MCQ" ? 0 : String(value) === "SHORT_TEXT" ? 1 : 2;
-      const typeDelta = typeRank(a.type) - typeRank(b.type);
-      if (typeDelta !== 0) return typeDelta;
-      return String(a.id).localeCompare(String(b.id));
-    });
-    const selected = ranked.slice(0, maxItems);
+    const firstCandidate = selectAdaptiveCandidate(
+      frozenBlueprint,
+      [],
+      bank.map(row => ({
+        id: String(row.id),
+        conceptId: String(row.concept_id),
+        difficulty: Number(row.difficulty),
+        type: String(row.type)
+      }))
+    );
+    if (!firstCandidate) throw new Error("QUESTION_BANK_TOO_SMALL");
+    const firstQuestion = bank.find(row => String(row.id) === firstCandidate.id);
+    if (!firstQuestion) throw new Error("QUESTION_BANK_TOO_SMALL");
+    const selected = [firstQuestion];
 
     const requestHash = createHash("sha256")
       .update(JSON.stringify({
@@ -279,9 +289,9 @@ export class AssessmentService {
         [
           input.userId,
           assessmentId,
-          "Started a " + selected.length + "-item validation challenge for " + String(skill.canonical_name) + ".",
+          "Started adaptive validation for " + String(skill.canonical_name) + " with up to " + maxItems + " items.",
           JSON.stringify([{ type: "assessment", id: assessmentId }, { type: "skill", id: targetSkillId }]),
-          JSON.stringify({ blueprintVersion: ASSESSMENT_BLUEPRINT_VERSION, itemCount: selected.length })
+          JSON.stringify({ blueprintVersion: ASSESSMENT_BLUEPRINT_VERSION, maxItems, adaptive: true })
         ]
       );
     });
@@ -302,7 +312,7 @@ export class AssessmentService {
         mode: input.mode ?? "CHALLENGE_ME",
         status: "ACTIVE",
         blueprint: frozenBlueprint,
-        progress: { answered: 0, total: selected.length }
+        progress: { answered: 0, total: maxItems }
       },
       question: publicQuestion(firstRows[0])
     };

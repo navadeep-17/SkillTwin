@@ -2,7 +2,7 @@ import "server-only";
 import { getSql } from "@/lib/db/postgres";
 import type { CanonicalSkillEntry, CandidateSkillClaim } from "@/lib/profile/skill-mapper";
 import type { ProfileSourceBlock } from "@/lib/profile/segmenter";
-import type { ParsedPdf } from "@/lib/profile/pdf-parser";
+import { PDF_PARSER_VERSION, type ParsedPdf } from "@/lib/profile/pdf-parser";
 
 export interface ProfileDocumentRecord {
   id: string;
@@ -61,11 +61,12 @@ export class PostgresProfileAnalysisRepository {
     const sql = getSql();
     await sql.begin(async tx => {
       await tx.unsafe(
-        "insert into public.document_parse_runs(user_id,document_id,document_version,parser_version,status,full_text,page_map,quality,completed_at) values ($1::uuid,$2::uuid,$3,'pdfjs-b1','complete',$4,$5::jsonb,$6::jsonb,now()) on conflict(document_id,document_version,parser_version) do update set status='complete',full_text=excluded.full_text,page_map=excluded.page_map,quality=excluded.quality,error_code=null,error_message=null,completed_at=now()",
+        "insert into public.document_parse_runs(user_id,document_id,document_version,parser_version,status,full_text,page_map,quality,completed_at) values ($1::uuid,$2::uuid,$3,$4,'complete',$5,$6::jsonb,$7::jsonb,now()) on conflict(document_id,document_version,parser_version) do update set status='complete',full_text=excluded.full_text,page_map=excluded.page_map,quality=excluded.quality,error_code=null,error_message=null,completed_at=now()",
         [
           userId,
           document.id,
           document.version,
+          PDF_PARSER_VERSION,
           parsed.fullText,
           JSON.stringify(parsed.pages.map(page => ({ page: page.page, charCount: page.charCount }))),
           JSON.stringify(parsed.quality)

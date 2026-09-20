@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -11,6 +11,7 @@ import {
   LoaderCircle,
   Sparkles
 } from "lucide-react";
+import { ToastNotice, type ToastMessage } from "@/components/ui/toast-notice";
 
 type ResourceAssignment = {
   learning_resources?: {
@@ -81,6 +82,32 @@ export function RoadmapView() {
   const router = useRouter();
   const [payload, setPayload] = useState<RoadmapPayload | null>(null);
   const [revision, setRevision] = useState(0);
+  const [optimisticCompleted, setOptimisticCompleted] = useState<Set<string>>(() => new Set());
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  const notify = useCallback((tone: ToastMessage["tone"], title: string, detail?: string) => {
+    setToast({ id: Date.now(), tone, title, detail });
+  }, []);
+
+  const dismissToast = useCallback((id: number) => {
+    setToast(current => current?.id === id ? null : current);
+  }, []);
+
+  const markOptimistic = useCallback((taskId: string) => {
+    setOptimisticCompleted(current => {
+      const next = new Set(current);
+      next.add(taskId);
+      return next;
+    });
+  }, []);
+
+  const rollbackOptimistic = useCallback((taskId: string) => {
+    setOptimisticCompleted(current => {
+      const next = new Set(current);
+      next.delete(taskId);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -90,7 +117,10 @@ export function RoadmapView() {
         await fetch("/api/roadmap/sync", { method: "POST" }).catch(() => null);
         const response = await fetch("/api/roadmap", { cache: "no-store" });
         const data = await response.json();
-        if (active) setPayload(data);
+        if (active) {
+          setPayload(data);
+          setOptimisticCompleted(new Set());
+        }
       } catch {
         if (active) setPayload({ ok: false, error: { message: "Could not load roadmap." } });
       }
@@ -134,7 +164,7 @@ export function RoadmapView() {
 
   const completedTasks = plan.weeks
     .flatMap(week => week.objectives.flatMap(objective => objective.tasks))
-    .filter(task => task.status === "COMPLETED").length;
+    .filter(task => task.status === "COMPLETED" || optimisticCompleted.has(task.id)).length;
   const totalTasks = plan.weeks.reduce(
     (total, week) => total + week.objectives.reduce((sum, objective) => sum + objective.tasks.length, 0),
     0
@@ -186,7 +216,7 @@ export function RoadmapView() {
         {plan.weeks.map(week => {
           const percent = Math.min(100, Math.round(100 * week.planned_minutes / Math.max(week.capacity_minutes, 1)));
           const weekTasks = week.objectives.flatMap(objective => objective.tasks);
-          const weekDone = weekTasks.filter(task => task.status === "COMPLETED").length;
+          const weekDone = weekTasks.filter(task => task.status === "COMPLETED" || optimisticCompleted.has(task.id)).length;
 
           return (
             <section key={week.id} className="surface-card overflow-hidden">
@@ -239,8 +269,12 @@ export function RoadmapView() {
                         <TaskCard
                           key={task.id}
                           task={task}
+                          completed={task.status === "COMPLETED" || optimisticCompleted.has(task.id)}
+                          onOptimistic={markOptimistic}
+                          onRollback={rollbackOptimistic}
                           onChanged={() => setRevision(value => value + 1)}
                           onOpen={href => router.push(href)}
+                          onNotify={notify}
                         />
                       ))}
                     </div>
@@ -251,30 +285,41 @@ export function RoadmapView() {
           );
         })}
       </div>
+      <ToastNotice toast={toast} onDismiss={dismissToast} />
     </div>
   );
 }
 
 function TaskCard({
   task,
+  completed,
+  onOptimistic,
+  onRollback,
   onChanged,
-  onOpen
+  onOpen,
+  onNotify
 }: {
   task: Task;
+  completed: boolean;
+  onOptimistic: (taskId: string) => void;
+  onRollback: (taskId: string) => void;
   onChanged: () => void;
   onOpen: (href: string) => void;
+  onNotify: (tone: ToastMessage["tone"], title: string, detail?: string) => void;
 }) {
   const resource = task.resource?.learning_resources;
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
   async function act() {
-    if (pending || task.status === "COMPLETED") return;
+    if (pending || completed) return;
     setPending(true);
     setError("");
 
+    const validation = task.type === "VALIDATE";
+    if (!validation) onOptimistic(task.id);
+
     try {
-      const validation = task.type === "VALIDATE";
       const response = await fetch(
         "/api/tasks/" + task.id + (validation ? "/validate" : "/complete"),
         { method: "POST" }
@@ -282,7 +327,10 @@ function TaskCard({
       const payload = await response.json();
 
       if (!response.ok || !payload.ok) {
-        setError(payload.error?.message ?? "Could not update this task.");
+        if (!validation) onRollback(task.id);
+        const detail = payload.error?.message ?? "Could not update this task.";
+        setError(detail);
+        onNotify("error", "Task was not updated", detail);
         return;
       }
 
@@ -292,9 +340,13 @@ function TaskCard({
         return;
       }
 
+      onNotify("success", "Task completed", "Your plan progress has been updated.");
       onChanged();
     } catch {
-      setError("Could not update this task.");
+      if (!validation) onRollback(task.id);
+      const detail = "Could not update this task.";
+      setError(detail);
+      onNotify("error", "Task was not updated", detail);
     } finally {
       setPending(false);
     }
@@ -313,8 +365,8 @@ function TaskCard({
     <div
       className={
         "rounded-xl border p-4 transition duration-200 " +
-        (task.status === "COMPLETED"
-          ? "border-emerald-100 bg-emerald-50/35"
+        (completed
+          ? "soft-pop border-emerald-100 bg-emerald-50/35"
           : "border-slate-200/80 bg-slate-50/55 hover:-translate-y-px hover:border-slate-300 hover:bg-white hover:shadow-soft")
       }
     >
@@ -353,10 +405,10 @@ function TaskCard({
       ) : null}
 
       <div className="mt-4">
-        {task.status === "COMPLETED" ? (
+        {completed ? (
           <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
-            <CheckCircle2 className="size-3.5" />
-            Completed
+            {pending ? <LoaderCircle className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5" />}
+            {pending ? "Saving completion…" : "Completed"}
           </span>
         ) : task.type === "VALIDATE" && task.validation_available === false ? (
           <div className="flex flex-wrap items-center gap-2">

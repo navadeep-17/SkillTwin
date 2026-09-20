@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { WeeklyReportCard } from "@/components/progress/weekly-report-card";
+import { ReadinessTrendChart } from "@/components/progress/readiness-trend-chart";
 
 export default async function ProgressPage() {
   const supabase = await createClient();
@@ -131,7 +132,7 @@ export default async function ProgressPage() {
         </div>
 
         {snapshots?.length ? (
-          <TrendChart snapshots={snapshots.map(snapshot => ({
+          <ReadinessTrendChart snapshots={snapshots.map(snapshot => ({
             id: snapshot.id,
             readiness: Number(snapshot.readiness),
             coverage: Number(snapshot.evidence_coverage),
@@ -268,65 +269,6 @@ export default async function ProgressPage() {
         </div>
       </section>
     </main>
-  );
-}
-
-function TrendChart({
-  snapshots
-}: {
-  snapshots: Array<{ id: string; readiness: number; coverage: number; createdAt: string }>;
-}) {
-  const width = 800;
-  const height = 220;
-  const insetX = 28;
-  const insetY = 24;
-  const plotWidth = width - insetX * 2;
-  const plotHeight = height - insetY * 2;
-
-  function points(key: "readiness" | "coverage") {
-    return snapshots.map((snapshot, index) => {
-      const x = snapshots.length === 1
-        ? width / 2
-        : insetX + (index / (snapshots.length - 1)) * plotWidth;
-      const y = insetY + (1 - Math.max(0, Math.min(100, snapshot[key])) / 100) * plotHeight;
-      return x + "," + y;
-    }).join(" ");
-  }
-
-  return (
-    <div className="mt-6">
-      <div className="overflow-x-auto">
-        <svg viewBox={"0 0 " + width + " " + height} className="h-56 min-w-[620px] w-full" role="img" aria-label="Readiness and evidence coverage trend">
-          {[0, 25, 50, 75, 100].map(value => {
-            const y = insetY + (1 - value / 100) * plotHeight;
-            return (
-              <g key={value}>
-                <line x1={insetX} y1={y} x2={width - insetX} y2={y} stroke="#EAECF0" strokeWidth="1" />
-                <text x="0" y={y + 4} fontSize="10" fill="#98A2B3">{value}</text>
-              </g>
-            );
-          })}
-          <polyline pathLength={1} className="chart-line-draw" points={points("coverage")} fill="none" stroke="#98A2B3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          <polyline pathLength={1} className="chart-line-draw chart-line-draw-delayed" points={points("readiness")} fill="none" stroke="#5B5CE2" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-          {snapshots.map((snapshot, index) => {
-            const x = snapshots.length === 1 ? width / 2 : insetX + (index / (snapshots.length - 1)) * plotWidth;
-            const y = insetY + (1 - Math.max(0, Math.min(100, snapshot.readiness)) / 100) * plotHeight;
-            return <circle key={snapshot.id} className="chart-dot-in" style={{ animationDelay: 240 + index * 55 + "ms" }} cx={x} cy={y} r="4.5" fill="#5B5CE2" stroke="white" strokeWidth="2" />;
-          })}
-        </svg>
-      </div>
-
-      <div className="mt-1 flex gap-6 overflow-x-auto pb-1">
-        {snapshots.map(snapshot => (
-          <div key={snapshot.id} className="min-w-20 text-center">
-            <p className="text-xs font-semibold text-slate-700">{Math.round(snapshot.readiness)}%</p>
-            <p className="mt-0.5 text-[10px] text-slate-400">
-              {new Date(snapshot.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 

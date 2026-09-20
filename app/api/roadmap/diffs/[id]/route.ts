@@ -2,6 +2,23 @@ import { getRequestId } from "@/lib/api/request-context";
 import { fail, ok } from "@/lib/api/responses";
 import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
 
+function parseJson(value: unknown): unknown {
+  let current = value;
+  for (let depth = 0; depth < 2 && typeof current === "string"; depth += 1) {
+    try {
+      current = JSON.parse(current);
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
+function jsonArray(value: unknown): unknown[] {
+  const parsed = parseJson(value);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
 export const dynamic = "force-dynamic";
 
 export async function GET(
@@ -33,16 +50,16 @@ export async function GET(
       toVersion: diff.to_version,
       headline: diff.summary,
       triggerLabel: diff.trigger_type === "ASSESSMENT_COMPLETED" ? "Completed assessment" : diff.trigger_type,
-      whatChanged: Array.isArray(diff.operations) ? diff.operations : [],
-      weeklyImpact: Array.isArray(diff.weekly_impact) ? diff.weekly_impact : [],
+      whatChanged: jsonArray(diff.operations),
+      weeklyImpact: jsonArray(diff.weekly_impact),
       timelineImpact: diff.timeline_impact,
       totalMinuteDelta: diff.total_minute_delta,
       touchCount: diff.touch_count,
       complexity: diff.complexity,
       canUndo: diff.can_undo,
       reason: diff.reason,
-      triggerRefs: diff.trigger_refs,
-      evidenceRefs: diff.evidence_refs,
+      triggerRefs: jsonArray(diff.trigger_refs),
+      evidenceRefs: jsonArray(diff.evidence_refs),
       generatorVersion: diff.generator_version,
       validatorVersion: diff.validator_version,
       createdAt: diff.created_at,

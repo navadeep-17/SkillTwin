@@ -59,7 +59,23 @@ export async function GET() {
     if (taskError) throw taskError;
 
     const taskIds = (tasks ?? []).map(task => task.id);
+    const skillIds = [...new Set((tasks ?? []).map(task => String(task.skill_id)))];
     let assignments: Array<Record<string, unknown>> = [];
+    const validationCounts = new Map<string, number>();
+
+    if (skillIds.length) {
+      const { data: bankRows, error: bankError } = await supabase
+        .from("assessment_question_bank")
+        .select("id,skill_id")
+        .in("skill_id", skillIds)
+        .eq("is_active", true)
+        .eq("type", "MCQ");
+      if (bankError) throw bankError;
+      for (const row of bankRows ?? []) {
+        const key = String(row.skill_id);
+        validationCounts.set(key, (validationCounts.get(key) ?? 0) + 1);
+      }
+    }
 
     if (taskIds.length) {
       const { data, error } = await supabase
@@ -83,6 +99,7 @@ export async function GET() {
             .filter(task => task.objective_id === objective.id)
             .map(task => ({
               ...task,
+              validation_available: task.type !== "VALIDATE" || (validationCounts.get(String(task.skill_id)) ?? 0) >= 4,
               resource: assignmentMap.get(task.id) ?? null
             }))
         }))

@@ -45,7 +45,9 @@ export async function POST(
       "PLAN_DIFF_INVALID_OPERATION",
       "PLAN_DIFF_STALE_BASELINE",
       "PLAN_DIFF_CAPACITY_EXCEEDED",
-      "PLAN_DIFF_REFERENCE_ERROR"
+      "PLAN_DIFF_REFERENCE_ERROR",
+      "PLAN_DIFF_UNSAFE_TASK_PROGRESS",
+      "PLAN_DIFF_RESOURCE_UNAVAILABLE"
     ].includes(message)) {
       return fail(requestId, 409, message, "This proposed roadmap change can no longer be applied safely.");
     }

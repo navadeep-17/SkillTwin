@@ -87,3 +87,32 @@ test("replanner rejects unsafe duration and resource patches", () => {
     reason: "invalid"
   }]));
 });
+
+
+import { evaluateConstructedWithFallback } from "../dist/lib/domain/constructed-assessment.js";
+
+test("constructed assessment falls back safely when AI fails", async () => {
+  const result = await evaluateConstructedWithFallback(
+    { expectedKeywords:["idempotency","retry"], conceptId:"http-idempotency" },
+    "I would use idempotency to make retries safe.",
+    async () => { throw new Error("provider down"); }
+  );
+  assert.equal(result.score, 1);
+  assert.equal(result.errorTag, null);
+  assert.ok(result.evaluatorConfidence > 0);
+});
+
+test("constructed assessment ignores invalid AI scores", async () => {
+  const result = await evaluateConstructedWithFallback(
+    { expectedKeywords:["transaction","rollback"], conceptId:"db-atomicity" },
+    "Use a transaction.",
+    async () => ({
+      score: 4,
+      evaluatorConfidence: 1,
+      feedback: "invalid",
+      errorTag: null
+    })
+  );
+  assert.equal(result.score, 0.5);
+  assert.equal(result.errorTag, "db-atomicity");
+});

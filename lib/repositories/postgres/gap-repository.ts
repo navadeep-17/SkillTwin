@@ -21,13 +21,7 @@ export class PostgresGapRepository {
     let rows = await sql<Record<string, unknown>[]>`
       select * from public.career_goals where user_id=${userId}::uuid and status='ACTIVE' limit 1
     `;
-    if (!rows[0]) {
-      rows = await sql<Record<string, unknown>[]>`
-        insert into public.career_goals(user_id, role_version_id)
-        values (${userId}::uuid, ${BACKEND_ROLE_VERSION_ID}::uuid)
-        returning *
-      `;
-    }
+    if (!rows[0]) throw new Error("ACTIVE_GOAL_NOT_FOUND");
     const row = rows[0];
     return {
       id: String(row.id),

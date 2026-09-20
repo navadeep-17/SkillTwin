@@ -387,7 +387,7 @@ export class AssessmentService {
 
       if (latestAttempt) {
         const recovered = await this.afterAttempt(userId, assessmentId, latestAttempt);
-        if (recovered.completed) {
+        if ("outcome" in recovered) {
           return {
             assessment: this.assessmentDto({ ...assessment, status: "COMPLETED" }, attemptRows.length),
             question: null,

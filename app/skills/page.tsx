@@ -185,7 +185,7 @@ export default async function SkillsPage() {
       <section className="grid gap-4 sm:grid-cols-3">
         <SummaryMetric icon={Network} label="Skills observed" value={String(userSkills?.length ?? 0)} detail={knownSkills + " with usable capability evidence"} />
         <SummaryMetric icon={ShieldCheck} label="High-confidence skills" value={String(highConfidence)} detail="Confidence ≥ 70%" />
-        <SummaryMetric icon={Database} label="Evidence records" value={String(evidenceRows)} detail="Accepted or non-aggregating observations"} />
+        <SummaryMetric icon={Database} label="Evidence records" value={String(evidenceRows)} detail="Accepted or non-aggregating observations" />
       </section>
 
       {requirements.length ? (

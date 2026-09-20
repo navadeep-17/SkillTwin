@@ -83,8 +83,8 @@ async function main() {
   const vertical = await app("/api/demo/vertical-slice");
   if (!vertical.response.ok) throw new Error("vertical slice endpoint failed");
 
-  const email = "skilltwin-smoke-" + Date.now() + "@gmail.com";
-  const password = "S!" + crypto.randomBytes(18).toString("base64url");
+  const email = "skilltwin-smoke-test-20260920@gmail.com";
+  const password = ["SkillTwin", "Smoke", "2026", "!"].join("-");
 
   const supabase = createServerClient(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
@@ -101,10 +101,16 @@ async function main() {
     }
   );
 
-  const { data: signup, error: signupError } = await supabase.auth.signUp({ email, password });
-  if (signupError) throw signupError;
+  let { data: signup, error: signupError } = await supabase.auth.signInWithPassword({ email, password });
 
-  print("auth signup", {
+  if (signupError) {
+    const created = await supabase.auth.signUp({ email, password });
+    if (created.error) throw created.error;
+    signup = created.data;
+    signupError = null;
+  }
+
+  print("auth session", {
     userCreated: Boolean(signup.user),
     sessionCreated: Boolean(signup.session),
     userId: signup.user?.id ?? null,

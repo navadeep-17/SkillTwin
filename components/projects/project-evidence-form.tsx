@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { CheckCircle2, FolderPlus, LoaderCircle, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export function ProjectEvidenceForm() {
@@ -11,6 +12,7 @@ export function ProjectEvidenceForm() {
   const [artifactUrl, setArtifactUrl] = useState("");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
+  const [success, setSuccess] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -18,6 +20,7 @@ export function ProjectEvidenceForm() {
 
     setPending(true);
     setMessage("");
+    setSuccess(false);
 
     try {
       const response = await fetch("/api/profile/projects", {
@@ -44,9 +47,10 @@ export function ProjectEvidenceForm() {
       setDescription("");
       setTechnologies("");
       setArtifactUrl("");
+      setSuccess(true);
       setMessage(
         payload.data.evidence?.deltas?.length
-          ? "Project processed and SkillTwin changed."
+          ? "Project processed and your SkillTwin changed."
           : "Project processed. Evidence was stored conservatively."
       );
       router.refresh();
@@ -57,70 +61,95 @@ export function ProjectEvidenceForm() {
     }
   }
 
+  const inputClass = "mt-2 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-brand-300 focus:ring-4 focus:ring-brand-50";
+
   return (
-    <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold">Add project evidence</h2>
+    <form onSubmit={submit} className="surface-card overflow-hidden">
+      <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+            <FolderPlus className="size-5" />
+          </span>
+          <div>
+            <h2 className="font-semibold tracking-tight text-slate-950">Add project evidence</h2>
+            <p className="mt-0.5 text-xs text-slate-500">Describe what you actually implemented, not just the stack.</p>
+          </div>
+        </div>
+      </div>
 
-      <label className="mt-5 block">
-        <span className="text-sm font-medium text-slate-700">Project title</span>
-        <input
-          value={title}
-          onChange={event => setTitle(event.target.value)}
-          required
-          minLength={2}
-          maxLength={160}
-          className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none ring-brand-500 focus:ring-2"
-          placeholder="InterviewHub"
-        />
-      </label>
+      <div className="p-5 sm:p-6">
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-700">Project title</span>
+          <input
+            value={title}
+            onChange={event => setTitle(event.target.value)}
+            required
+            minLength={2}
+            maxLength={160}
+            className={inputClass}
+            placeholder="InterviewHub"
+          />
+        </label>
 
-      <label className="mt-4 block">
-        <span className="text-sm font-medium text-slate-700">What did you build and how?</span>
-        <textarea
-          value={description}
-          onChange={event => setDescription(event.target.value)}
-          required
-          minLength={20}
-          maxLength={8000}
-          rows={8}
-          className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none ring-brand-500 focus:ring-2"
-          placeholder="Built a full-stack interview experience platform using React and Express. Implemented JWT authentication, REST endpoints, MongoDB persistence..."
-        />
-        <p className="mt-1 text-xs text-slate-400">Concrete usage sentences create stronger evidence than a technology list alone.</p>
-      </label>
+        <label className="mt-5 block">
+          <span className="text-sm font-semibold text-slate-700">What did you build and how?</span>
+          <textarea
+            value={description}
+            onChange={event => setDescription(event.target.value)}
+            required
+            minLength={20}
+            maxLength={8000}
+            rows={8}
+            className={inputClass + " resize-y leading-6"}
+            placeholder="Built a full-stack interview experience platform using React and Express. Implemented JWT authentication, REST endpoints, MongoDB persistence..."
+          />
+          <p className="mt-2 text-xs leading-5 text-slate-400">Concrete implementation and outcome sentences create stronger evidence than a technology list alone.</p>
+        </label>
 
-      <label className="mt-4 block">
-        <span className="text-sm font-medium text-slate-700">Technologies</span>
-        <input
-          value={technologies}
-          onChange={event => setTechnologies(event.target.value)}
-          className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none ring-brand-500 focus:ring-2"
-          placeholder="React, Node.js, Express, MongoDB, JWT"
-        />
-        <p className="mt-1 text-xs text-slate-400">Comma-separated. Mentions alone do not prove proficiency.</p>
-      </label>
+        <label className="mt-5 block">
+          <span className="text-sm font-semibold text-slate-700">Technologies</span>
+          <input
+            value={technologies}
+            onChange={event => setTechnologies(event.target.value)}
+            className={inputClass}
+            placeholder="React, Node.js, Express, MongoDB, JWT"
+          />
+          <p className="mt-2 text-xs text-slate-400">Comma-separated. Mentions alone do not prove proficiency.</p>
+        </label>
 
-      <label className="mt-4 block">
-        <span className="text-sm font-medium text-slate-700">GitHub / README URL (optional)</span>
-        <input
-          type="url"
-          value={artifactUrl}
-          onChange={event => setArtifactUrl(event.target.value)}
-          className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none ring-brand-500 focus:ring-2"
-          placeholder="https://github.com/..."
-        />
-        <p className="mt-1 text-xs text-slate-400">P0 stores the link as metadata; it does not crawl the repository.</p>
-      </label>
+        <label className="mt-5 block">
+          <span className="text-sm font-semibold text-slate-700">GitHub / README URL <span className="font-normal text-slate-400">(optional)</span></span>
+          <input
+            type="url"
+            value={artifactUrl}
+            onChange={event => setArtifactUrl(event.target.value)}
+            className={inputClass}
+            placeholder="https://github.com/..."
+          />
+          <p className="mt-2 text-xs text-slate-400">Stored as artifact metadata; SkillTwin does not silently crawl the repository.</p>
+        </label>
 
-      {message ? <p className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-700">{message}</p> : null}
+        <div className="mt-5 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
+          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+          Evidence remains traceable to this project submission. The Evidence Engine decides whether the learner state changes.
+        </div>
 
-      <button
-        type="submit"
-        disabled={pending || title.trim().length < 2 || description.trim().length < 20}
-        className="mt-5 rounded-xl bg-brand-600 px-5 py-2.5 font-medium text-white disabled:opacity-50"
-      >
-        {pending ? "Processing evidence…" : "Add project evidence"}
-      </button>
+        {message ? (
+          <div className={"mt-4 flex gap-2 rounded-xl border p-3 text-sm " + (success ? "border-emerald-100 bg-emerald-50 text-emerald-800" : "border-rose-100 bg-rose-50 text-rose-700")}>
+            {success ? <CheckCircle2 className="mt-0.5 size-4 shrink-0" /> : null}
+            <span>{message}</span>
+          </div>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={pending || title.trim().length < 2 || description.trim().length < 20}
+          className="btn-primary mt-5 w-full sm:w-auto"
+        >
+          {pending ? <LoaderCircle className="size-4 animate-spin" /> : <FolderPlus className="size-4" />}
+          {pending ? "Processing evidence" : "Add project evidence"}
+        </button>
+      </div>
     </form>
   );
 }

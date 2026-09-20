@@ -1,6 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  ChevronDown,
+  Clock3,
+  Layers3,
+  LoaderCircle,
+  RefreshCw,
+  Sparkles,
+  Target
+} from "lucide-react";
 
 type Recommendation = {
   id: string;
@@ -63,78 +72,85 @@ export function ProjectRecommendations() {
   }
 
   return (
-    <section className="mt-10">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">Gap-driven projects</p>
-          <h2 className="mt-1 text-2xl font-semibold">Build evidence that matters</h2>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            These ideas are generated from your latest target-role gap snapshot. They are learning projects, not generic portfolio filler.
+    <section className="surface-card mt-7 overflow-hidden">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:px-6">
+        <div className="max-w-3xl">
+          <div className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700">
+            <Sparkles className="size-3.5" />
+            Gap-driven projects
+          </div>
+          <h2 className="mt-3 text-xl font-semibold tracking-tight text-slate-950">Build evidence that closes a real gap</h2>
+          <p className="mt-1.5 text-sm leading-6 text-slate-500">
+            These are learning projects generated from your latest target-role gap snapshot, not generic portfolio filler.
           </p>
         </div>
         <button
           type="button"
           onClick={() => void generate()}
           disabled={generating}
-          className="rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 disabled:opacity-50"
+          className="btn-secondary"
         >
-          {generating ? "Generating…" : items.length ? "Refresh ideas" : "Generate project ideas"}
+          {generating ? <LoaderCircle className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+          {generating ? "Generating" : items.length ? "Refresh ideas" : "Generate ideas"}
         </button>
       </div>
 
-      {message ? <p className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">{message}</p> : null}
+      {message ? <p className="mx-5 mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 sm:mx-6">{message}</p> : null}
 
       {loading ? (
-        <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500">
-          Loading recommendations…
+        <div className="grid gap-4 p-5 lg:grid-cols-3 sm:p-6">
+          {[0, 1, 2].map(item => (
+            <div key={item} className="rounded-xl border border-slate-200 p-5">
+              <div className="skeleton h-5 w-24 rounded-lg" />
+              <div className="skeleton mt-4 h-6 w-4/5 rounded-lg" />
+              <div className="skeleton mt-3 h-4 w-full rounded-lg" />
+              <div className="skeleton mt-2 h-4 w-3/4 rounded-lg" />
+              <div className="skeleton mt-5 h-9 w-32 rounded-xl" />
+            </div>
+          ))}
         </div>
       ) : items.length ? (
-        <div className="mt-5 grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 p-5 lg:grid-cols-3 sm:p-6">
           {items.map(item => (
-            <article key={item.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <article key={item.id} className="rounded-xl border border-slate-200 bg-white p-5 transition duration-200 hover:-translate-y-px hover:border-brand-200 hover:shadow-soft">
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">{item.difficulty}</p>
-                  <h3 className="mt-1 text-lg font-semibold">{item.title}</h3>
-                </div>
-                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-500">
-                  {Math.round(item.estimated_minutes / 60)}h
+                <span className={"rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] " + difficultyTone(item.difficulty)}>
+                  {item.difficulty}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-500">
+                  <Clock3 className="size-3" />
+                  {formatMinutes(item.estimated_minutes)}
                 </span>
               </div>
 
-              <p className="mt-3 text-sm leading-6 text-slate-600">{item.summary}</p>
+              <h3 className="mt-3 text-lg font-semibold tracking-tight text-slate-950">{item.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{item.summary}</p>
 
               {item.skill_details?.length ? (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {item.skill_details.map(skill => (
-                    <span key={skill.id} className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">
-                      {skill.name}
-                    </span>
-                  ))}
+                <div className="mt-4">
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    <Target className="size-3.5" />
+                    Evidence targets
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {item.skill_details.map(skill => (
+                      <span key={skill.id} className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-medium text-brand-700">
+                        {skill.name}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               ) : null}
 
-              <details className="mt-4">
-                <summary className="cursor-pointer text-sm font-medium text-slate-700">Project plan</summary>
-                <div className="mt-3 space-y-4 text-sm text-slate-600">
-                  <div>
-                    <p className="font-medium text-slate-800">Requirements</p>
-                    <ul className="mt-1 list-disc space-y-1 pl-5">
-                      {item.requirements.map((value, index) => <li key={index}>{value}</li>)}
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-800">Milestones</p>
-                    <ol className="mt-1 list-decimal space-y-1 pl-5">
-                      {item.milestones.map((value, index) => <li key={index}>{value}</li>)}
-                    </ol>
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-800">Success criteria</p>
-                    <ul className="mt-1 list-disc space-y-1 pl-5">
-                      {item.success_criteria.map((value, index) => <li key={index}>{value}</li>)}
-                    </ul>
-                  </div>
+              <details className="group mt-5 border-t border-slate-100 pt-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-slate-700">
+                  Project plan
+                  <ChevronDown className="size-4 text-slate-400 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="mt-4 space-y-4 text-sm text-slate-600">
+                  <PlanList icon={Layers3} title="Requirements" items={item.requirements} ordered={false} />
+                  <PlanList icon={Target} title="Milestones" items={item.milestones} ordered />
+                  <PlanList icon={Sparkles} title="Success criteria" items={item.success_criteria} ordered={false} />
                 </div>
               </details>
 
@@ -143,10 +159,61 @@ export function ProjectRecommendations() {
           ))}
         </div>
       ) : (
-        <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
-          Generate recommendations after your profile and role gaps are available.
+        <div className="p-5 sm:p-6">
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-5 py-8 text-center">
+            <span className="mx-auto flex size-10 items-center justify-center rounded-xl bg-white text-brand-600 shadow-sm">
+              <Sparkles className="size-4.5" />
+            </span>
+            <p className="mt-3 text-sm font-semibold text-slate-800">No gap-driven ideas yet</p>
+            <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-slate-500">
+              Generate recommendations after your target role and latest gap snapshot are available.
+            </p>
+          </div>
         </div>
       )}
     </section>
   );
+}
+
+function PlanList({
+  icon: Icon,
+  title,
+  items,
+  ordered
+}: {
+  icon: typeof Target;
+  title: string;
+  items: string[];
+  ordered: boolean;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+        <Icon className="size-3.5 text-brand-500" />
+        {title}
+      </div>
+      {ordered ? (
+        <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-xs leading-5">
+          {items.map((value, index) => <li key={index}>{value}</li>)}
+        </ol>
+      ) : (
+        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-xs leading-5">
+          {items.map((value, index) => <li key={index}>{value}</li>)}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function difficultyTone(difficulty: Recommendation["difficulty"]) {
+  if (difficulty === "ADVANCED") return "bg-rose-50 text-rose-700";
+  if (difficulty === "STANDARD") return "bg-amber-50 text-amber-700";
+  return "bg-emerald-50 text-emerald-700";
+}
+
+function formatMinutes(minutes: number) {
+  if (minutes < 60) return minutes + "m";
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? hours + "h " + rest + "m" : hours + "h";
 }

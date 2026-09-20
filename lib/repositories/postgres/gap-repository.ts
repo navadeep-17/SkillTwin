@@ -115,7 +115,7 @@ export class PostgresGapRepository {
           user_id,goal_id,role_version_id,readiness,evidence_coverage,selected_alternatives,trigger_type,trigger_ref,as_of
         ) values (
           ${userId}::uuid,${goal.id}::uuid,${goal.roleVersionId}::uuid,${analysis.readiness},${analysis.evidenceCoverage},
-          ${JSON.stringify(analysis.selectedAlternatives)}::jsonb,${trigger.type},${trigger.ref},now()
+          ${JSON.stringify(analysis.selectedAlternatives)}::text::jsonb,${trigger.type},${trigger.ref},now()
         ) returning id
       `;
       const snapshotId = snapshots[0].id;
@@ -128,7 +128,7 @@ export class PostgresGapRepository {
             ${snapshotId}::uuid,${userId}::uuid,${gap.requirementId}::uuid,${gap.groupId}::uuid,${gap.skillId}::uuid,
             ${gap.currentScore},${gap.currentConfidence},${gap.targetScore},${gap.attainment},${gap.gapSeverity},
             ${gap.dependencyImpact},${gap.urgency},${gap.priorityScore},${gap.priorityBand},${gap.status},
-            ${gap.recommendedAction},${JSON.stringify(gap.reasonCodes)}::jsonb
+            ${gap.recommendedAction},${JSON.stringify(gap.reasonCodes)}::text::jsonb
           )
         `;
       }
@@ -137,8 +137,8 @@ export class PostgresGapRepository {
         values (
           ${userId}::uuid,'gap.analysis.completed',${trigger.type},${trigger.ref},
           ${`Career readiness recalculated to ${analysis.readiness}% for ${roleName}.`},
-          ${JSON.stringify([{type:"gap_snapshot",id:snapshotId},{type:"career_goal",id:goal.id}])}::jsonb,
-          ${JSON.stringify({readiness:analysis.readiness,evidenceCoverage:analysis.evidenceCoverage})}::jsonb
+          ${JSON.stringify([{type:"gap_snapshot",id:snapshotId},{type:"career_goal",id:goal.id}])}::text::jsonb,
+          ${JSON.stringify({readiness:analysis.readiness,evidenceCoverage:analysis.evidenceCoverage})}::text::jsonb
         )
       `;
       return snapshotId;

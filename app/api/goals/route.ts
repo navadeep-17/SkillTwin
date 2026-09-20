@@ -80,7 +80,7 @@ export async function POST(request: Request) {
 
       if (active && String(active.role_version_id) === input.roleVersionId) {
         savedRows = rows(await tx.unsafe(
-          "update public.career_goals set target_date=$1::date,hours_per_week=$2,preferred_session_minutes=$3,min_session_minutes=$4,learning_days=$5::jsonb,preferred_formats=$6::jsonb,adaptation_mode=$7 where id=$8::uuid and user_id=$9::uuid returning *",
+          "update public.career_goals set target_date=$1::date,hours_per_week=$2,preferred_session_minutes=$3,min_session_minutes=$4,learning_days=$1::text::jsonb,preferred_formats=$1::text::jsonb,adaptation_mode=$7 where id=$8::uuid and user_id=$9::uuid returning *",
           [
             input.targetDate ?? null,
             input.hoursPerWeek,
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
         }
 
         savedRows = rows(await tx.unsafe(
-          "insert into public.career_goals(user_id,role_version_id,target_date,hours_per_week,preferred_session_minutes,min_session_minutes,learning_days,preferred_formats,adaptation_mode) values ($1::uuid,$2::uuid,$3::date,$4,$5,$6,$7::jsonb,$8::jsonb,$9) returning *",
+          "insert into public.career_goals(user_id,role_version_id,target_date,hours_per_week,preferred_session_minutes,min_session_minutes,learning_days,preferred_formats,adaptation_mode) values ($1::uuid,$2::uuid,$3::date,$4,$5,$6,$1::text::jsonb,$1::text::jsonb,$9) returning *",
           [
             user.id,
             input.roleVersionId,
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
 
       const goal = savedRows[0];
       await tx.unsafe(
-        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,metadata) values ($1::uuid,'career.goal.updated','USER_ACTION',$2,$3,$4::jsonb,$5::jsonb)",
+        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,metadata) values ($1::uuid,'career.goal.updated','USER_ACTION',$2,$3,$1::text::jsonb,$1::text::jsonb)",
         [
           user.id,
           String(goal.id),

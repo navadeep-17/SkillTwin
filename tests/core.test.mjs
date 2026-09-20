@@ -116,3 +116,60 @@ test("constructed assessment ignores invalid AI scores", async () => {
   assert.equal(result.score, 0.5);
   assert.equal(result.errorTag, "db-atomicity");
 });
+
+
+import { adaptiveAssessmentState, selectAdaptiveCandidate } from "../dist/lib/domain/adaptive-assessment.js";
+
+test("adaptive assessment prioritizes uncovered concepts", () => {
+  const blueprint = {
+    conceptTargets: [
+      { conceptId:"headers", minObservations:1 },
+      { conceptId:"idempotency", minObservations:1 }
+    ],
+    difficultyMin:1,
+    difficultyMax:4,
+    startDifficulty:2,
+    minItems:2,
+    maxItems:4,
+    targetCoverage:1,
+    stopConfidence:0.8
+  };
+  const attempts = [{
+    bankQuestionId:"q1",
+    conceptId:"headers",
+    difficulty:2,
+    score:1,
+    type:"MCQ",
+    evaluatorConfidence:1
+  }];
+  const next = selectAdaptiveCandidate(blueprint, attempts, [
+    { id:"q2",conceptId:"headers",difficulty:3,type:"MCQ" },
+    { id:"q3",conceptId:"idempotency",difficulty:3,type:"SHORT_TEXT" }
+  ]);
+  assert.equal(next?.id,"q3");
+});
+
+test("adaptive assessment changes difficulty from performance and obeys max stop", () => {
+  const blueprint = {
+    conceptTargets:[{ conceptId:"rest",minObservations:1 }],
+    difficultyMin:1,
+    difficultyMax:4,
+    startDifficulty:2,
+    minItems:2,
+    maxItems:3,
+    targetCoverage:1,
+    stopConfidence:0.99
+  };
+  const one = adaptiveAssessmentState(blueprint,[{
+    bankQuestionId:"q1",conceptId:"rest",difficulty:2,score:1,type:"MCQ",evaluatorConfidence:1
+  }]);
+  assert.equal(one.nextDifficulty,3);
+  assert.equal(one.shouldStop,false);
+
+  const full = adaptiveAssessmentState(blueprint,[
+    { bankQuestionId:"q1",conceptId:"rest",difficulty:2,score:1,type:"MCQ",evaluatorConfidence:1 },
+    { bankQuestionId:"q2",conceptId:"rest",difficulty:3,score:0,type:"MCQ",evaluatorConfidence:1 },
+    { bankQuestionId:"q3",conceptId:"rest",difficulty:2,score:1,type:"SCENARIO",evaluatorConfidence:0.9 }
+  ]);
+  assert.equal(full.shouldStop,true);
+});

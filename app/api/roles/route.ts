@@ -1,7 +1,6 @@
 import { getRequestId } from "@/lib/api/request-context";
 import { fail, ok } from "@/lib/api/responses";
 import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
-import { getSql } from "@/lib/db/postgres";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,38 +9,31 @@ export async function GET() {
   const requestId = await getRequestId();
 
   try {
-    await requireUser();
-    const sql = getSql();
-    const rows = await sql<Record<string, unknown>[]>\`
-      select
-        tr.id,
-        tr.slug,
-        tr.name,
-        tr.family,
-        rv.id as role_version_id,
-        rv.version,
-        count(rsr.id)::int as requirement_count
-      from public.target_roles tr
-      join public.role_versions rv
-        on rv.role_id = tr.id
-       and rv.status = 'ACTIVE'
-      left join public.role_skill_requirements rsr
-        on rsr.role_version_id = rv.id
-      group by tr.id,tr.slug,tr.name,tr.family,rv.id,rv.version
-      order by tr.family nulls last,tr.name
-    \`;
+    const { supabase } = await requireUser();
+    const { data, error } = await supabase
+      .from("role_versions")
+      .select("id,version,target_roles!inner(id,slug,name,family),role_skill_requirements(id)")
+      .eq("status", "ACTIVE");
 
-    return ok(requestId, {
-      roles: rows.map(row => ({
-        id: String(row.id),
-        slug: String(row.slug),
-        name: String(row.name),
-        family: row.family ? String(row.family) : null,
-        roleVersionId: String(row.role_version_id),
+    if (error) throw error;
+
+    const roles = (data ?? []).map(row => {
+      const role = Array.isArray(row.target_roles) ? row.target_roles[0] : row.target_roles;
+      return {
+        id: String(role?.id ?? ""),
+        slug: String(role?.slug ?? ""),
+        name: String(role?.name ?? "Target role"),
+        family: role?.family ? String(role.family) : null,
+        roleVersionId: String(row.id),
         version: Number(row.version),
-        requirementCount: Number(row.requirement_count)
-      }))
+        requirementCount: Array.isArray(row.role_skill_requirements) ? row.role_skill_requirements.length : 0
+      };
+    }).sort((a, b) => {
+      const family = String(a.family ?? "").localeCompare(String(b.family ?? ""));
+      return family || a.name.localeCompare(b.name);
     });
+
+    return ok(requestId, { roles });
   } catch (error) {
     if (error instanceof UnauthenticatedError) {
       return fail(requestId, 401, "UNAUTHENTICATED", "Sign in to view target roles.");

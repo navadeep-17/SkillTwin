@@ -90,6 +90,12 @@ export function AuthForm({ initialMessage = "" }: { initialMessage?: string }) {
         {pending ? "Working..." : mode === "signin" ? "Sign in" : "Create account"}
       </button>
 
+      {mode === "signin" ? (
+        <a href="/forgot-password" className="block text-center text-sm font-medium text-slate-600 hover:text-slate-950">
+          Forgot password?
+        </a>
+      ) : null}
+
       <button
         className="w-full text-sm font-medium text-brand-700"
         type="button"

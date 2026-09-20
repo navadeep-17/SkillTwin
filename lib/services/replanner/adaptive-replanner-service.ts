@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { getSql } from "@/lib/db/postgres";
 
-export const REPLANNER_VERSION = "adaptive-replanner-f1";
+export const REPLANNER_VERSION = "adaptive-replanner-f2";
 export const REPLAN_VALIDATOR_VERSION = "replan-validator-f1";
 
 type Row = Record<string, unknown>;
@@ -550,60 +550,40 @@ export class AdaptiveReplannerService {
   async applyProposed(userId: string, diffId: string) {
     const sql = getSql();
 
-    const diffRows = rows(await sql.unsafe(
+    const diff = rows(await sql.unsafe(
       "select * from public.plan_diffs where id=$1::uuid and user_id=$2::uuid limit 1",
       [diffId, userId]
-    ));
-    const diff = diffRows[0];
+    ))[0];
     if (!diff) throw new Error("PLAN_DIFF_NOT_FOUND");
     if (String(diff.status) === "APPLIED") return this.diffDto(diff, true);
     if (String(diff.status) !== "PROPOSED") throw new Error("PLAN_DIFF_NOT_APPLICABLE");
 
-    const operationsValue = parseJsonValue(diff.operations);
-    const operations = Array.isArray(operationsValue)
-      ? operationsValue as Array<Record<string, unknown>>
+    const parsedOperations = parseJsonValue(diff.operations);
+    const operations = Array.isArray(parsedOperations)
+      ? parsedOperations as Array<Record<string, unknown>>
       : [];
-    if (operations.length !== 1 || String(operations[0].type) !== "ADD_TASK") {
-      throw new Error("PLAN_DIFF_UNSUPPORTED_PATCH_SHAPE");
+    if (!operations.length) throw new Error("PLAN_DIFF_INVALID_OPERATION");
+
+    const supported = new Set([
+      "ADD_TASK",
+      "REMOVE_TASK",
+      "MOVE_TASK",
+      "CHANGE_DIFFICULTY",
+      "CHANGE_DURATION",
+      "CHANGE_RESOURCE"
+    ]);
+    for (const operation of operations) {
+      if (!supported.has(String(operation.type))) {
+        throw new Error("PLAN_DIFF_UNSUPPORTED_PATCH_SHAPE");
+      }
     }
 
-    const operation = operations[0];
-    const taskValue = operation.task;
-    const task = taskValue && typeof taskValue === "object" && !Array.isArray(taskValue)
-      ? taskValue as Record<string, unknown>
-      : {};
-    const objectiveLogicalId = String(task.objectiveLogicalId ?? "");
-    const skillId = String(task.skillId ?? "");
-    const duration = Number(task.durationMinutes ?? 0);
-    const title = String(task.title ?? "");
-    const dueAt = task.dueAt == null ? null : String(task.dueAt);
-    const taskType = String(task.taskType ?? "PRACTICE");
-    const difficulty = String(task.difficulty ?? "BASIC");
-    const rationaleCode = String(task.rationaleCode ?? "ASSESSMENT_CONCEPT_WEAKNESS");
-
-    if (!objectiveLogicalId || !skillId || !title || !Number.isFinite(duration) || duration <= 0) {
-      throw new Error("PLAN_DIFF_INVALID_OPERATION");
-    }
-    if (!["LEARN","PRACTICE","BUILD","VALIDATE"].includes(taskType)) throw new Error("PLAN_DIFF_INVALID_OPERATION");
-    if (!["BASIC","STANDARD","ADVANCED"].includes(difficulty)) throw new Error("PLAN_DIFF_INVALID_OPERATION");
-
-    const activeRows = rows(await sql.unsafe(
+    const active = rows(await sql.unsafe(
       "select * from public.learning_plans where id=$1::uuid and user_id=$2::uuid and status='ACTIVE' limit 1",
       [String(diff.from_plan_id), userId]
-    ));
-    const active = activeRows[0];
+    ))[0];
     if (!active || Number(active.version) !== Number(diff.from_version)) {
       throw new Error("PLAN_DIFF_STALE_BASELINE");
-    }
-
-    const affectedRows = rows(await sql.unsafe(
-      "select o.id objective_id,o.logical_objective_id,o.week_id,w.week_index,w.capacity_minutes,w.planned_minutes from public.learning_objectives o join public.plan_weeks w on w.id=o.week_id where o.plan_id=$1::uuid and o.logical_objective_id=$2::uuid limit 1",
-      [String(active.id), objectiveLogicalId]
-    ));
-    const affected = affectedRows[0];
-    if (!affected) throw new Error("PLAN_DIFF_REFERENCE_ERROR");
-    if (Number(affected.planned_minutes) + duration > Number(affected.capacity_minutes)) {
-      throw new Error("PLAN_DIFF_CAPACITY_EXCEEDED");
     }
 
     let applied: Row | null = null;
@@ -647,7 +627,7 @@ export class AdaptiveReplannerService {
           String(active.constraint_fingerprint),
           String(active.planner_version),
           "apply-diff:" + diffId,
-          Number(active.planned_minutes) + duration,
+          Number(active.planned_minutes),
           Number(active.adaptation_buffer_minutes),
           JSON.stringify(jsonValue(active.rationale, {})),
           JSON.stringify(jsonValue(active.warnings, [])),
@@ -661,8 +641,9 @@ export class AdaptiveReplannerService {
         [String(active.id)]
       ));
       const weekMap = new Map<string,string>();
+      const weekByIndex = new Map<number,string>();
+
       for (const week of oldWeeks) {
-        const isAffected = String(week.id) === String(affected.week_id);
         const inserted = rows(await tx.unsafe(
           "insert into public.plan_weeks(plan_id,week_index,start_date,end_date,capacity_minutes,planned_minutes,focus_skill_ids,rationale) values ($1::uuid,$2,$3::date,$4::date,$5,$6,$7::jsonb,$8) returning id",
           [
@@ -671,12 +652,14 @@ export class AdaptiveReplannerService {
             dateOnly(week.start_date),
             dateOnly(week.end_date),
             Number(week.capacity_minutes),
-            Number(week.planned_minutes) + (isAffected ? duration : 0),
+            Number(week.planned_minutes),
             JSON.stringify(jsonValue(week.focus_skill_ids, [])),
             week.rationale == null ? null : String(week.rationale)
           ]
         ));
-        weekMap.set(String(week.id), String(inserted[0].id));
+        const newWeekId = String(inserted[0].id);
+        weekMap.set(String(week.id), newWeekId);
+        weekByIndex.set(Number(week.week_index), newWeekId);
       }
 
       const oldObjectives = rows(await tx.unsafe(
@@ -684,6 +667,8 @@ export class AdaptiveReplannerService {
         [String(active.id)]
       ));
       const objectiveMap = new Map<string,string>();
+      const objectiveByLogical = new Map<string,string>();
+
       for (const objective of oldObjectives) {
         const inserted = rows(await tx.unsafe(
           "insert into public.learning_objectives(plan_id,week_id,skill_id,requirement_id,type,start_score,target_score,success_criteria,priority_at_creation,status,logical_objective_id) values ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,$8,$9,$10,$11::uuid) returning id",
@@ -701,7 +686,9 @@ export class AdaptiveReplannerService {
             String(objective.logical_objective_id)
           ]
         ));
-        objectiveMap.set(String(objective.id), String(inserted[0].id));
+        const newObjectiveId = String(inserted[0].id);
+        objectiveMap.set(String(objective.id), newObjectiveId);
+        objectiveByLogical.set(String(objective.logical_objective_id), newObjectiveId);
       }
 
       const oldTasks = rows(await tx.unsafe(
@@ -750,28 +737,172 @@ export class AdaptiveReplannerService {
         );
       }
 
-      const newWeekId = weekMap.get(String(affected.week_id));
-      const oldAffectedObjective = oldObjectives.find(item => String(item.logical_objective_id) === objectiveLogicalId);
-      const newObjectiveId = oldAffectedObjective ? objectiveMap.get(String(oldAffectedObjective.id)) : null;
-      if (!newWeekId || !newObjectiveId) throw new Error("PLAN_DIFF_REFERENCE_ERROR");
+      const appliedOperations: Array<Record<string, unknown>> = [];
 
-      const newTaskRows = rows(await tx.unsafe(
-        "insert into public.learning_tasks(plan_id,week_id,objective_id,skill_id,type,title,duration_minutes,due_at,status,difficulty,flexible,rationale_code,inserted_by_plan_diff_id) values ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,$8::timestamptz,'PLANNED',$9,false,$10,$11::uuid) returning id,logical_task_id",
-        [nextPlanId,newWeekId,newObjectiveId,skillId,taskType,title,duration,dueAt,difficulty,rationaleCode,diffId]
+      for (const operation of operations) {
+        const type = String(operation.type);
+        const taskValue = operation.task;
+        const taskPayload = taskValue && typeof taskValue === "object" && !Array.isArray(taskValue)
+          ? taskValue as Record<string, unknown>
+          : {};
+        const afterValue = operation.after;
+        const after = afterValue && typeof afterValue === "object" && !Array.isArray(afterValue)
+          ? afterValue as Record<string, unknown>
+          : {};
+        const logicalTaskId = String(
+          operation.logicalTaskId
+          ?? taskPayload.logicalTaskId
+          ?? after.logicalTaskId
+          ?? ""
+        );
+
+        if (type === "ADD_TASK") {
+          const objectiveLogicalId = String(taskPayload.objectiveLogicalId ?? "");
+          const objectiveId = objectiveByLogical.get(objectiveLogicalId);
+          if (!objectiveId) throw new Error("PLAN_DIFF_REFERENCE_ERROR");
+
+          const objective = rows(await tx.unsafe(
+            "select * from public.learning_objectives where id=$1::uuid and plan_id=$2::uuid limit 1",
+            [objectiveId,nextPlanId]
+          ))[0];
+          if (!objective) throw new Error("PLAN_DIFF_REFERENCE_ERROR");
+
+          const requestedWeekIndex = taskPayload.weekIndex == null ? null : Number(taskPayload.weekIndex);
+          const weekId = requestedWeekIndex == null
+            ? String(objective.week_id)
+            : weekByIndex.get(requestedWeekIndex);
+          if (!weekId) throw new Error("PLAN_DIFF_REFERENCE_ERROR");
+
+          const duration = Number(taskPayload.durationMinutes ?? 0);
+          const taskType = String(taskPayload.taskType ?? "PRACTICE");
+          const difficulty = String(taskPayload.difficulty ?? "BASIC");
+          const title = String(taskPayload.title ?? "").trim();
+          const skillId = String(taskPayload.skillId ?? objective.skill_id);
+          const dueAt = taskPayload.dueAt == null ? null : String(taskPayload.dueAt);
+          const rationaleCode = String(taskPayload.rationaleCode ?? "ADAPTIVE_REPLAN");
+
+          if (!title || !skillId || !Number.isFinite(duration) || duration <= 0) throw new Error("PLAN_DIFF_INVALID_OPERATION");
+          if (!["LEARN","PRACTICE","BUILD","VALIDATE"].includes(taskType)) throw new Error("PLAN_DIFF_INVALID_OPERATION");
+          if (!["BASIC","STANDARD","ADVANCED"].includes(difficulty)) throw new Error("PLAN_DIFF_INVALID_OPERATION");
+
+          const inserted = rows(await tx.unsafe(
+            "insert into public.learning_tasks(plan_id,week_id,objective_id,skill_id,type,title,duration_minutes,due_at,status,difficulty,flexible,rationale_code,inserted_by_plan_diff_id) values ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,$8::timestamptz,'PLANNED',$9,false,$10,$11::uuid) returning id,logical_task_id",
+            [nextPlanId,weekId,objectiveId,skillId,taskType,title,duration,dueAt,difficulty,rationaleCode,diffId]
+          ));
+
+          appliedOperations.push({
+            ...operation,
+            task: {
+              ...taskPayload,
+              taskId: String(inserted[0].id),
+              logicalTaskId: String(inserted[0].logical_task_id)
+            }
+          });
+          continue;
+        }
+
+        if (!logicalTaskId) throw new Error("PLAN_DIFF_INVALID_OPERATION");
+
+        const targetTask = rows(await tx.unsafe(
+          "select * from public.learning_tasks where plan_id=$1::uuid and logical_task_id=$2::uuid limit 1",
+          [nextPlanId,logicalTaskId]
+        ))[0];
+        if (!targetTask) throw new Error("PLAN_DIFF_REFERENCE_ERROR");
+
+        if (type !== "CHANGE_RESOURCE" && String(targetTask.status) !== "PLANNED") {
+          throw new Error("PLAN_DIFF_UNSAFE_TASK_PROGRESS");
+        }
+
+        if (type === "REMOVE_TASK") {
+          await tx.unsafe(
+            "delete from public.learning_tasks where id=$1::uuid and plan_id=$2::uuid",
+            [String(targetTask.id),nextPlanId]
+          );
+        } else if (type === "MOVE_TASK") {
+          const toWeekIndex = Number(operation.toWeekIndex ?? after.weekIndex ?? taskPayload.weekIndex ?? 0);
+          const toWeekId = weekByIndex.get(toWeekIndex);
+          if (!toWeekId || toWeekIndex <= 0) throw new Error("PLAN_DIFF_REFERENCE_ERROR");
+          if (!Boolean(targetTask.flexible)) throw new Error("PLAN_DIFF_UNSAFE_TASK_PROGRESS");
+          await tx.unsafe(
+            "update public.learning_tasks set week_id=$1::uuid,due_at=coalesce($2::timestamptz,due_at),reschedule_count=reschedule_count+1 where id=$3::uuid and plan_id=$4::uuid",
+            [toWeekId,operation.dueAt ?? after.dueAt ?? null,String(targetTask.id),nextPlanId]
+          );
+        } else if (type === "CHANGE_DURATION") {
+          const duration = Number(operation.durationMinutes ?? after.durationMinutes ?? 0);
+          if (!Number.isFinite(duration) || duration <= 0) throw new Error("PLAN_DIFF_INVALID_OPERATION");
+          await tx.unsafe(
+            "update public.learning_tasks set duration_minutes=$1 where id=$2::uuid and plan_id=$3::uuid",
+            [duration,String(targetTask.id),nextPlanId]
+          );
+        } else if (type === "CHANGE_DIFFICULTY") {
+          const difficulty = String(operation.difficulty ?? after.difficulty ?? "");
+          if (!["BASIC","STANDARD","ADVANCED"].includes(difficulty)) throw new Error("PLAN_DIFF_INVALID_OPERATION");
+          await tx.unsafe(
+            "update public.learning_tasks set difficulty=$1 where id=$2::uuid and plan_id=$3::uuid",
+            [difficulty,String(targetTask.id),nextPlanId]
+          );
+        } else if (type === "CHANGE_RESOURCE") {
+          const resourceId = String(operation.resourceId ?? after.resourceId ?? "");
+          if (!resourceId) throw new Error("PLAN_DIFF_INVALID_OPERATION");
+          const resource = rows(await tx.unsafe(
+            "select id,quality,title from public.learning_resources where id=$1::uuid and is_verified=true and status='ACTIVE' limit 1",
+            [resourceId]
+          ))[0];
+          if (!resource) throw new Error("PLAN_DIFF_RESOURCE_UNAVAILABLE");
+
+          await tx.unsafe(
+            "delete from public.task_resource_assignments where task_id=$1::uuid",
+            [String(targetTask.id)]
+          );
+          await tx.unsafe(
+            "insert into public.task_resource_assignments(task_id,resource_id,rank_score,ranker_version,explanation) values ($1::uuid,$2::uuid,$3,'adaptive-replanner-f2','Changed by confirmed PlanDiff after validating resource availability.')",
+            [String(targetTask.id),resourceId,Number(resource.quality)]
+          );
+        }
+
+        appliedOperations.push(operation);
+      }
+
+      const weekTotals = rows(await tx.unsafe(
+        `select w.id,w.week_index,w.capacity_minutes,coalesce(sum(t.duration_minutes) filter (where t.status<>'SKIPPED'),0)::int planned
+         from public.plan_weeks w
+         left join public.learning_tasks t on t.week_id=w.id and t.plan_id=w.plan_id
+         where w.plan_id=$1::uuid
+         group by w.id,w.week_index,w.capacity_minutes
+         order by w.week_index`,
+        [nextPlanId]
       ));
 
-      const appliedOperation = {
-        ...operation,
-        task: {
-          ...task,
-          taskId: String(newTaskRows[0].id),
-          logicalTaskId: String(newTaskRows[0].logical_task_id)
+      for (const week of weekTotals) {
+        if (Number(week.planned) > Number(week.capacity_minutes)) {
+          throw new Error("PLAN_DIFF_CAPACITY_EXCEEDED");
         }
-      };
+        await tx.unsafe(
+          "update public.plan_weeks set planned_minutes=$1 where id=$2::uuid and plan_id=$3::uuid",
+          [Number(week.planned),String(week.id),nextPlanId]
+        );
+      }
+
+      const totalRows = rows(await tx.unsafe(
+        "select coalesce(sum(duration_minutes) filter (where status<>'SKIPPED'),0)::int total from public.learning_tasks where plan_id=$1::uuid",
+        [nextPlanId]
+      ));
+      const newTotal = Number(totalRows[0]?.total ?? 0);
+      await tx.unsafe(
+        "update public.learning_plans set planned_minutes=$1 where id=$2::uuid and user_id=$3::uuid",
+        [newTotal,nextPlanId,userId]
+      );
 
       applied = rows(await tx.unsafe(
-        "update public.plan_diffs set to_plan_id=$1::uuid,to_version=$2,status='APPLIED',operations=$3::jsonb,applied_at=now() where id=$4::uuid and user_id=$5::uuid returning *",
-        [nextPlanId,nextVersion,JSON.stringify([appliedOperation]),diffId,userId]
+        "update public.plan_diffs set to_plan_id=$1::uuid,to_version=$2,status='APPLIED',operations=$3::jsonb,total_minute_delta=$4,applied_at=now() where id=$5::uuid and user_id=$6::uuid returning *",
+        [
+          nextPlanId,
+          nextVersion,
+          JSON.stringify(appliedOperations),
+          newTotal - Number(active.planned_minutes),
+          diffId,
+          userId
+        ]
       ))[0];
 
       await tx.unsafe(
@@ -784,10 +915,13 @@ export class AdaptiveReplannerService {
         [
           userId,
           diffId,
-          "Applied confirmed roadmap change and created Plan v" + nextVersion + ".",
+          "Applied " + appliedOperations.length + " confirmed roadmap operation" + (appliedOperations.length === 1 ? "" : "s") + " and created Plan v" + nextVersion + ".",
           JSON.stringify([{ type: "plan_diff", id: diffId },{ type: "learning_plan", id: nextPlanId }]),
           JSON.stringify(jsonValue(diff.evidence_refs, [])),
-          JSON.stringify({ confirmed: true, operationCount: 1 })
+          JSON.stringify({
+            confirmed: true,
+            operations: appliedOperations.map(operation => String(operation.type))
+          })
         ]
       );
     });

@@ -112,7 +112,8 @@ export class ProfileAnalysisService {
           blocks: blocks.length,
           deterministicClaims: deterministicExtraction.claims.length,
           semanticClaims: semanticExtraction?.claims.length ?? 0,
-          mergedClaims: extraction.claims.length
+          mergedClaims: extraction.claims.length,
+          unresolvedTerms: extraction.unresolvedTerms?.length ?? 0
         },
         warnings
       );
@@ -122,7 +123,8 @@ export class ProfileAnalysisService {
         runId,
         sourceId: document.id,
         blocks,
-        claims: extraction.claims
+        claims: extraction.claims,
+        unresolvedTerms: extraction.unresolvedTerms ?? []
       });
 
       await this.repository.setStage(
@@ -134,7 +136,8 @@ export class ProfileAnalysisService {
           pages: parsed.quality.pageCount,
           blocks: blocks.length,
           mappedClaims: extraction.claims.length,
-          evidenceCandidates: extraction.evidence.length
+          evidenceCandidates: extraction.evidence.length,
+          unresolvedTerms: extraction.unresolvedTerms?.length ?? 0
         },
         warnings
       );
@@ -173,6 +176,7 @@ export class ProfileAnalysisService {
         quality: parsed.quality,
         blocks: blocks.length,
         claims: extraction.claims.length,
+        unresolvedTerms: extraction.unresolvedTerms?.length ?? 0,
         evidence: evidenceResult,
         gapAnalysis: gapResult
           ? {
@@ -194,6 +198,7 @@ export class ProfileAnalysisService {
           pages: parsed.quality.pageCount,
           blocks: blocks.length,
           mappedClaims: extraction.claims.length,
+          unresolvedTerms: extraction.unresolvedTerms?.length ?? 0,
           evidenceAccepted: evidenceResult.acceptedEvidenceIds.length,
           skillDeltas: evidenceResult.deltas.length
         },

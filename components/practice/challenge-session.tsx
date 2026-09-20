@@ -214,7 +214,7 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
 
         {completion.gapAnalysis?.readiness != null ? (
           <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
-            Backend Engineer readiness was recomputed to <strong>{completion.gapAnalysis.readiness}%</strong>.
+            Career readiness was recomputed to <strong>{completion.gapAnalysis.readiness}%</strong>.
           </div>
         ) : null}
 

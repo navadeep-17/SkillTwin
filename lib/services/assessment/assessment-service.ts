@@ -311,13 +311,14 @@ export class AssessmentService {
       );
 
       await tx.unsafe(
-        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,metadata) values ($1::uuid,'assessment.started','CHALLENGE_ME',$2,$3,$4::jsonb,$5::jsonb)",
+        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,metadata) values ($1::uuid,'assessment.started',$2,$3,$4,$5::jsonb,$6::jsonb)",
         [
           input.userId,
+          input.mode ?? "CHALLENGE_ME",
           assessmentId,
-          "Started adaptive validation for " + String(skill.canonical_name) + " with up to " + maxItems + " items.",
+          "Started adaptive " + (input.mode === "CALIBRATION" ? "calibration" : "validation") + " for " + String(skill.canonical_name) + " with up to " + maxItems + " items.",
           JSON.stringify([{ type: "assessment", id: assessmentId }, { type: "skill", id: targetSkillId }]),
-          JSON.stringify({ blueprintVersion: ASSESSMENT_BLUEPRINT_VERSION, maxItems, adaptive: true })
+          JSON.stringify({ blueprintVersion: ASSESSMENT_BLUEPRINT_VERSION, maxItems, adaptive: true, mode: input.mode ?? "CHALLENGE_ME" })
         ]
       );
     });

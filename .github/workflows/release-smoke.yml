@@ -1,0 +1,23 @@
+name: Release Smoke
+
+on:
+  workflow_dispatch:
+
+jobs:
+  production-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - name: Run production smoke checks
+        run: npm run smoke:release
+        env:
+          BASE_URL: https://skilltwin-production.up.railway.app
+          SUPABASE_URL: ${{ secrets.SMOKE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SMOKE_SUPABASE_ANON_KEY }}
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}

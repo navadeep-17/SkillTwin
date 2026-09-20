@@ -233,6 +233,34 @@ async function authenticatedChecks() {
   assert(roadmapBefore.response.status === 200 && roadmapBefore.payload?.data?.plan, "active roadmap missing");
   const versionBefore = Number(roadmapBefore.payload.data.plan.version);
 
+  const allTasksBefore = (roadmapBefore.payload.data.plan.weeks ?? [])
+    .flatMap(week => week.objectives ?? [])
+    .flatMap(objective => objective.tasks ?? []);
+  const completableTask = allTasksBefore.find(task => task.type !== "VALIDATE" && task.status !== "COMPLETED");
+
+  if (completableTask) {
+    const firstCompletion = await authRequest("/api/tasks/" + completableTask.id + "/complete", { method: "POST" });
+    assert(firstCompletion.response.status === 200 && firstCompletion.payload?.ok === true, "task completion failed");
+    assert(firstCompletion.payload?.data?.status === "COMPLETED", "task completion did not persist completed status");
+
+    const secondCompletion = await authRequest("/api/tasks/" + completableTask.id + "/complete", { method: "POST" });
+    assert(secondCompletion.response.status === 200 && secondCompletion.payload?.ok === true, "duplicate task completion was not idempotent");
+    assert(secondCompletion.payload?.data?.alreadyCompleted === true, "duplicate task completion did not report idempotent reuse");
+    console.log("TASK_IDEMPOTENCY=PASS");
+  } else {
+    console.log("TASK_IDEMPOTENCY=SKIPPED (no non-validation task available)");
+  }
+
+  const invalidPdf = new FormData();
+  invalidPdf.append("file", new File(["not-a-pdf"], "invalid.pdf", { type: "application/pdf" }));
+  const invalidUpload = await authRequest("/api/profile/documents", {
+    method: "POST",
+    body: invalidPdf
+  });
+  assert(invalidUpload.response.status === 415, "invalid PDF signature was not rejected");
+  assert(invalidUpload.payload?.ok === false, "invalid PDF signature returned an ok envelope");
+  console.log("UPLOAD_GUARD=PASS");
+
   const challenge = await authRequest("/api/assessments", {
     method: "POST",
     body: JSON.stringify({ mode: "CHALLENGE_ME" })
@@ -279,6 +307,15 @@ async function authenticatedChecks() {
   const versionAfter = Number(roadmapAfter.payload.data.plan.version);
   assert(versionAfter >= versionBefore, "roadmap version regressed");
 
+  const chat = await authRequest("/api/chat", {
+    method: "POST",
+    body: JSON.stringify({ message: "How ready am I for my target role?" })
+  });
+  assert(chat.response.status === 200 && chat.payload?.ok === true, "grounded Journey Chat request failed");
+  assert(chat.payload?.data?.message?.intent === "READINESS", "Journey Chat did not classify readiness intent");
+  assert((chat.payload?.data?.message?.refs?.length ?? 0) > 0, "Journey Chat readiness answer had no grounded references");
+  console.log("GROUNDED_CHAT=PASS");
+
   const activity = await authRequest("/api/agent-events?limit=50");
   const eventTypes = new Set((activity.payload?.data?.events ?? []).map(event => event.event_type));
   for (const required of ["career.goal.updated","project.evidence.processed","assessment.started","assessment.completed"]) {
@@ -286,6 +323,7 @@ async function authenticatedChecks() {
   }
 
   console.log("CAUSAL_E2E=PASS");
+  console.log("IDEMPOTENCY_AND_GUARDS=PASS");
 }
 
 await waitForExpectedDeployment();

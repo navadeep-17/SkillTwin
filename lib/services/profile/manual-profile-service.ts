@@ -3,6 +3,7 @@ import { getSql } from "@/lib/db/postgres";
 import { getEvidenceEngine } from "@/lib/services/skills/evidence-service";
 import { getGapAnalysisService } from "@/lib/services/gaps/gap-analysis-service";
 import { getInitialPlanService } from "@/lib/services/planner/initial-plan-service";
+import { getAdaptiveReplannerService } from "@/lib/services/replanner/adaptive-replanner-service";
 import { PostgresProfileAnalysisRepository } from "@/lib/repositories/postgres/profile-analysis-repository";
 import { extractMappedSkills } from "@/lib/profile/skill-mapper";
 import { extractSemanticSkillEvidence, mergeProfileExtractions } from "@/lib/profile/semantic-extractor";
@@ -82,11 +83,48 @@ export class ManualProfileService {
         ref: sourceId
       });
 
-      let plan = null;
+      let plan: unknown = null;
+      let replan: unknown = null;
+      const activePlan = rows(await sql.unsafe(
+        "select id,version from public.learning_plans where user_id=$1::uuid and goal_id=$2::uuid and status='ACTIVE' order by version desc limit 1",
+        [input.userId, String(gap.goal.id)]
+      ))[0];
+
       try {
-        plan = await getInitialPlanService().generate(input.userId);
+        if (activePlan && evidence.deltas.length) {
+          replan = await getAdaptiveReplannerService().considerEvidenceSignal({
+            userId: input.userId,
+            triggerType: "SKILL_DELTA_COMMITTED",
+            triggerRef: sourceId,
+            skillIds: evidence.deltas.map(delta => delta.skillId),
+            evidenceIds: evidence.acceptedEvidenceIds,
+            gapSnapshotId: gap.snapshotId
+          });
+          plan = {
+            planId: String(activePlan.id),
+            version: Number(activePlan.version),
+            reused: true,
+            reason: "ACTIVE_PLAN_REEVALUATED_FROM_PROFILE_EVIDENCE"
+          };
+        } else if (activePlan) {
+          plan = {
+            planId: String(activePlan.id),
+            version: Number(activePlan.version),
+            reused: true,
+            reason: "ACTIVE_PLAN_UNCHANGED"
+          };
+        } else {
+          plan = await getInitialPlanService().generate(input.userId);
+        }
       } catch {
-        plan = null;
+        plan = activePlan
+          ? {
+              planId: String(activePlan.id),
+              version: Number(activePlan.version),
+              reused: true,
+              reason: "ACTIVE_PLAN_UPDATE_FAILED"
+            }
+          : null;
       }
 
       const result = {
@@ -101,6 +139,7 @@ export class ManualProfileService {
             }
           : null,
         plan,
+        replan,
         unresolvedTerms: extraction.unresolvedTerms ?? []
       };
 

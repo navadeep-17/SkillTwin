@@ -95,6 +95,40 @@ assert(
   "adaptive replanner is missing verified-resource replacement generation"
 );
 
+const projectEvidenceService = read("lib/services/profile/project-evidence-service.ts");
+assert(
+  projectEvidenceService.includes('triggerType: "PROJECT_EVIDENCE_COMMITTED"')
+    && projectEvidenceService.includes("considerEvidenceSignal"),
+  "project evidence is not wired into the adaptive replanner"
+);
+
+const taskCompletionRoute = read("app/api/tasks/[id]/complete/route.ts");
+assert(
+  taskCompletionRoute.includes('triggerType: "TASK_BEHAVIOR_SIGNAL"')
+    && taskCompletionRoute.includes("considerEvidenceSignal"),
+  "task behavior is not wired into the adaptive replanner"
+);
+
+const goalRoute = read("app/api/goals/route.ts");
+assert(
+  goalRoute.includes("considerConstraintChange"),
+  "constraint changes are not wired into the adaptive replanner"
+);
+
+const resumeAnalysis = read("lib/services/profile/profile-analysis-service.ts");
+assert(
+  resumeAnalysis.includes('triggerType: "SKILL_DELTA_COMMITTED"')
+    && resumeAnalysis.includes("considerEvidenceSignal"),
+  "resume SkillDelta is not wired into the adaptive replanner"
+);
+
+const manualAnalysis = read("lib/services/profile/manual-profile-service.ts");
+assert(
+  manualAnalysis.includes('triggerType: "SKILL_DELTA_COMMITTED"')
+    && manualAnalysis.includes("considerEvidenceSignal"),
+  "manual profile SkillDelta is not wired into the adaptive replanner"
+);
+
 const assessmentService = read("lib/services/assessment/assessment-service.ts");
 for (const questionType of ["MCQ", "SHORT_TEXT", "SCENARIO"]) {
   assert(assessmentService.includes(questionType), "assessment service missing " + questionType);

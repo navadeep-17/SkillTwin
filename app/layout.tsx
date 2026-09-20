@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppNav } from "@/components/shell/app-nav";
 import { ProductRealtimeSync } from "@/components/realtime/product-sync";
+import { AgentDock } from "@/components/shell/agent-dock";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <AppNav />
         {data.user ? <ProductRealtimeSync userId={data.user.id} /> : null}
         {children}
+        {data.user ? <AgentDock /> : null}
       </body>
     </html>
   );

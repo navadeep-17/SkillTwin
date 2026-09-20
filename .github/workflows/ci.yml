@@ -19,6 +19,7 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - run: npm run qa:audit
       - run: npm run lint
       - run: npm run qa:static
       - run: npm run typecheck:core

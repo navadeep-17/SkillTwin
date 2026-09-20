@@ -483,6 +483,15 @@ For repeat demo rehearsals, the dedicated reset endpoint can clear only the sign
 
 ---
 
+## Hackathon submission materials
+
+- [Submission Pack](./docs/HACKATHON_SUBMISSION.md)
+- [Final Demo Video Script](./docs/DEMO_VIDEO_SCRIPT.md)
+
+These files contain the evaluator-facing form copy, agent link, demo sequence, and final pre-submit checklist.
+
+---
+
 ## Known release limitations
 
 - Text-based PDF resumes are supported for the demo path.

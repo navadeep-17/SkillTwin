@@ -158,6 +158,13 @@ const roleGenerator = read("app/api/roles/generate/route.ts");
 assert(roleGenerator.includes("assertAcyclic"), "custom role generation is missing DAG validation");
 assert(roleGenerator.includes("canonical"), "custom role generation is not constrained to canonical skills");
 
+const geminiClient = read("lib/ai/gemini-interactions.ts");
+assert(
+  geminiClient.includes("GEMINI_INVALID_STRUCTURED_OUTPUT")
+    && geminiClient.includes("formatting/schema repair only"),
+  "structured AI output is missing a bounded repair-and-fail path"
+);
+
 const releaseSmoke = read("scripts/release-smoke.mjs");
 for (const marker of [
   "PUBLIC_SMOKE=PASS",

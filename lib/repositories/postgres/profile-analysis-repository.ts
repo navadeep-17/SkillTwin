@@ -1,6 +1,6 @@
 import "server-only";
 import { getSql } from "@/lib/db/postgres";
-import type { CanonicalSkillEntry, CandidateSkillClaim } from "@/lib/profile/skill-mapper";
+import type { CanonicalSkillEntry, CandidateSkillClaim, UnresolvedSkillTermProposal } from "@/lib/profile/skill-mapper";
 import type { ProfileSourceBlock } from "@/lib/profile/segmenter";
 import { PDF_PARSER_VERSION, type ParsedPdf } from "@/lib/profile/pdf-parser";
 
@@ -85,9 +85,14 @@ export class PostgresProfileAnalysisRepository {
     sourceId: string;
     blocks: ProfileSourceBlock[];
     claims: CandidateSkillClaim[];
+    unresolvedTerms?: UnresolvedSkillTermProposal[];
   }) {
     const sql = getSql();
     await sql.begin(async tx => {
+      await tx.unsafe(
+        "delete from public.unresolved_skill_terms where analysis_run_id=$1::uuid and user_id=$2::uuid",
+        [input.runId, input.userId]
+      );
       await tx.unsafe(
         "delete from public.candidate_skill_claims where analysis_run_id=$1::uuid and user_id=$2::uuid",
         [input.runId, input.userId]
@@ -111,6 +116,19 @@ export class PostgresProfileAnalysisRepository {
             block.pageStart,
             block.pageEnd,
             block.ordinal
+          ]
+        );
+      }
+
+      for (const unresolved of input.unresolvedTerms ?? []) {
+        await tx.unsafe(
+          "insert into public.unresolved_skill_terms(user_id,analysis_run_id,source_block_id,raw_term,context,status) values ($1::uuid,$2::uuid,$3,$4,$5,'UNRESOLVED')",
+          [
+            input.userId,
+            input.runId,
+            unresolved.sourceBlockId,
+            unresolved.rawTerm,
+            unresolved.context
           ]
         );
       }

@@ -16,14 +16,35 @@ function rows(value: unknown): Row[] {
   return value as Row[];
 }
 
+function parseJsonValue(value: unknown): unknown {
+  let current = value;
+  for (let depth = 0; depth < 2 && typeof current === "string"; depth += 1) {
+    try {
+      current = JSON.parse(current);
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
 function jsonArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.map(String) : [];
+  const parsed = parseJsonValue(value);
+  return Array.isArray(parsed) ? parsed.map(String) : [];
 }
 
 function jsonObject(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
+  const parsed = parseJsonValue(value);
+  return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+    ? parsed as Record<string, unknown>
     : {};
+}
+
+function optionArray(value: unknown): Array<Record<string, unknown>> {
+  const parsed = parseJsonValue(value);
+  return Array.isArray(parsed)
+    ? parsed.filter(item => item && typeof item === "object") as Array<Record<string, unknown>>
+    : [];
 }
 
 function publicQuestion(row: Row) {
@@ -34,7 +55,7 @@ function publicQuestion(row: Row) {
     conceptIds: jsonArray(row.concept_ids),
     difficulty: Number(row.difficulty),
     prompt: String(row.prompt),
-    options: Array.isArray(row.options) ? row.options : []
+    options: optionArray(row.options)
   };
 }
 
@@ -240,10 +261,12 @@ export class AssessmentService {
         "select * from public.skill_assessment_outcomes where assessment_id=$1::uuid limit 1",
         [assessmentId]
       ));
+      const rawOutcome = outcomeRows[0] ?? null;
+      const outcome = rawOutcome ? this.outcomeDto(rawOutcome) : null;
       return {
         assessment: this.assessmentDto(assessment, attemptRows.length),
         question: null,
-        outcome: outcomeRows[0] ?? null
+        outcome
       };
     }
 
@@ -394,9 +417,10 @@ export class AssessmentService {
       [assessmentId, userId]
     ));
     if (existingOutcomeRows[0]?.evidence_batch_result) {
+      const existingOutcome = this.outcomeDto(existingOutcomeRows[0]);
       return {
-        outcome: existingOutcomeRows[0],
-        evidence: existingOutcomeRows[0].evidence_batch_result,
+        outcome: existingOutcome,
+        evidence: parseJsonValue(existingOutcomeRows[0].evidence_batch_result),
         gapAnalysis: existingOutcomeRows[0].gap_snapshot_id
           ? { snapshotId: String(existingOutcomeRows[0].gap_snapshot_id) }
           : null
@@ -565,7 +589,7 @@ export class AssessmentService {
     outcome = refreshed[0] ?? outcome;
 
     return {
-      outcome,
+      outcome: this.outcomeDto(outcome),
       evidence: evidenceResult,
       gapAnalysis: gapResult
         ? {
@@ -576,6 +600,16 @@ export class AssessmentService {
         : null,
       replan: replanResult,
       warnings: replanWarning ? [replanWarning] : []
+    };
+  }
+
+  private outcomeDto(outcome: Row) {
+    return {
+      ...outcome,
+      strengths: jsonArray(outcome.strengths),
+      weaknesses: jsonArray(outcome.weaknesses),
+      concept_summary: jsonObject(outcome.concept_summary),
+      evidence_batch_result: parseJsonValue(outcome.evidence_batch_result)
     };
   }
 

@@ -2,7 +2,11 @@ import { z } from "zod";
 import { getRequestId } from "@/lib/api/request-context";
 import { fail, ok } from "@/lib/api/responses";
 import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
+import { getSql } from "@/lib/db/postgres";
 import { getGapAnalysisService } from "@/lib/services/gaps/gap-analysis-service";
+
+type Row = Record<string, unknown>;
+const rows = (value: unknown) => value as Row[];
 
 const day = z.enum(["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]);
 const schema = z.object({
@@ -58,65 +62,100 @@ export async function POST(request: Request) {
       .eq("id", input.roleVersionId)
       .eq("status", "ACTIVE")
       .maybeSingle();
+
     if (roleError) throw roleError;
     if (!role) return fail(requestId, 404, "ROLE_NOT_FOUND", "That target role is not available.");
 
-    const { data: existing, error: existingError } = await supabase
-      .from("career_goals")
-      .select("id,role_version_id")
-      .eq("user_id", user.id)
-      .eq("status", "ACTIVE")
-      .limit(1)
-      .maybeSingle();
-    if (existingError) throw existingError;
+    const roleMeta = Array.isArray(role.target_roles) ? role.target_roles[0] : role.target_roles;
+    const sql = getSql();
 
-    const payload = {
-      role_version_id: input.roleVersionId,
-      target_date: input.targetDate ?? null,
-      hours_per_week: input.hoursPerWeek,
-      preferred_session_minutes: input.preferredSessionMinutes,
-      min_session_minutes: input.minSessionMinutes,
-      learning_days: input.learningDays,
-      preferred_formats: input.preferredFormats,
-      adaptation_mode: input.adaptationMode
-    };
+    const saved = await sql.begin(async tx => {
+      const active = rows(await tx.unsafe(
+        "select id,role_version_id from public.career_goals where user_id=$1::uuid and status='ACTIVE' limit 1 for update",
+        [user.id]
+      ))[0];
 
-    let saved;
-    if (existing) {
-      const { data, error } = await supabase
-        .from("career_goals")
-        .update(payload)
-        .eq("id", existing.id)
-        .eq("user_id", user.id)
-        .select("*")
-        .single();
-      if (error) throw error;
-      saved = data;
-    } else {
-      const { data, error } = await supabase
-        .from("career_goals")
-        .insert({ user_id: user.id, ...payload })
-        .select("*")
-        .single();
-      if (error) throw error;
-      saved = data;
-    }
+      let savedRows: Row[];
 
-    const { count, error: skillCountError } = await supabase
-      .from("user_skills")
-      .select("skill_id", { count: "exact", head: true })
-      .eq("user_id", user.id);
-    if (skillCountError) throw skillCountError;
+      if (active && String(active.role_version_id) === input.roleVersionId) {
+        savedRows = rows(await tx.unsafe(
+          "update public.career_goals set target_date=$1::date,hours_per_week=$2,preferred_session_minutes=$3,min_session_minutes=$4,learning_days=$5::jsonb,preferred_formats=$6::jsonb,adaptation_mode=$7 where id=$8::uuid and user_id=$9::uuid returning *",
+          [
+            input.targetDate ?? null,
+            input.hoursPerWeek,
+            input.preferredSessionMinutes,
+            input.minSessionMinutes,
+            JSON.stringify(input.learningDays),
+            JSON.stringify(input.preferredFormats),
+            input.adaptationMode,
+            String(active.id),
+            user.id
+          ]
+        ));
+      } else {
+        if (active) {
+          await tx.unsafe(
+            "update public.learning_plans set status='ARCHIVED' where goal_id=$1::uuid and user_id=$2::uuid and status='ACTIVE'",
+            [String(active.id), user.id]
+          );
+          await tx.unsafe(
+            "update public.career_goals set status='ARCHIVED' where id=$1::uuid and user_id=$2::uuid",
+            [String(active.id), user.id]
+          );
+        }
+
+        savedRows = rows(await tx.unsafe(
+          "insert into public.career_goals(user_id,role_version_id,target_date,hours_per_week,preferred_session_minutes,min_session_minutes,learning_days,preferred_formats,adaptation_mode) values ($1::uuid,$2::uuid,$3::date,$4,$5,$6,$7::jsonb,$8::jsonb,$9) returning *",
+          [
+            user.id,
+            input.roleVersionId,
+            input.targetDate ?? null,
+            input.hoursPerWeek,
+            input.preferredSessionMinutes,
+            input.minSessionMinutes,
+            JSON.stringify(input.learningDays),
+            JSON.stringify(input.preferredFormats),
+            input.adaptationMode
+          ]
+        ));
+      }
+
+      const goal = savedRows[0];
+      await tx.unsafe(
+        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,metadata) values ($1::uuid,'career.goal.updated','USER_ACTION',$2,$3,$4::jsonb,$5::jsonb)",
+        [
+          user.id,
+          String(goal.id),
+          "Target role set to " + String(roleMeta?.name ?? "target role") + ".",
+          JSON.stringify([
+            { type: "career_goal", id: String(goal.id) },
+            { type: "role_version", id: input.roleVersionId }
+          ]),
+          JSON.stringify({
+            roleName: String(roleMeta?.name ?? "Target role"),
+            hoursPerWeek: input.hoursPerWeek,
+            preferredSessionMinutes: input.preferredSessionMinutes,
+            adaptationMode: input.adaptationMode
+          })
+        ]
+      );
+
+      return goal;
+    });
+
+    const skillCount = rows(await sql.unsafe(
+      "select count(*)::int as count from public.user_skills where user_id=$1::uuid",
+      [user.id]
+    ));
 
     let gapAnalysis: unknown = null;
-    if ((count ?? 0) > 0) {
+    if (Number(skillCount[0]?.count ?? 0) > 0) {
       gapAnalysis = await getGapAnalysisService().recompute(user.id, {
         type: "GOAL_CHANGE",
         ref: String(saved.id)
       });
     }
 
-    const roleMeta = Array.isArray(role.target_roles) ? role.target_roles[0] : role.target_roles;
     return ok(requestId, {
       goal: saved,
       role: roleMeta,

@@ -9,16 +9,20 @@ export default function HomePage() {
           A learning agent that evolves as you do.
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-          Evidence-backed skill intelligence, active validation, and a roadmap that changes only when new evidence justifies it.
+          Build an evidence-backed model of your skills, compare it with your target career,
+          follow a personalized roadmap, validate what you know, and let the plan adapt when new evidence justifies it.
         </p>
-        <div className="mt-8 flex gap-3">
-          <Link href="/overview" className="rounded-xl bg-brand-600 px-5 py-3 font-medium text-white shadow-sm hover:bg-brand-700">
-            Open demo
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link href="/onboarding" className="rounded-xl bg-brand-600 px-5 py-3 font-medium text-white shadow-sm hover:bg-brand-700">
+            Build my SkillTwin
           </Link>
-          <Link href="/api/demo/vertical-slice" className="rounded-xl border border-slate-300 bg-white px-5 py-3 font-medium text-slate-700">
-            Inspect vertical slice
+          <Link href="/login" className="rounded-xl border border-slate-300 bg-white px-5 py-3 font-medium text-slate-700">
+            Sign in
           </Link>
         </div>
+        <p className="mt-6 text-sm text-slate-500">
+          Your profile, evidence, roadmap, assessments, and plan history are persisted to your account.
+        </p>
       </div>
     </main>
   );

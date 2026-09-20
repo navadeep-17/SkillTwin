@@ -173,3 +173,25 @@ test("adaptive assessment changes difficulty from performance and obeys max stop
   ]);
   assert.equal(full.shouldStop,true);
 });
+
+
+test("adaptive assessment starts near calibrated difficulty", () => {
+  const blueprint = {
+    conceptTargets:[
+      { conceptId:"advanced-concept",minObservations:1 },
+      { conceptId:"basic-concept",minObservations:1 }
+    ],
+    difficultyMin:1,
+    difficultyMax:4,
+    startDifficulty:1,
+    minItems:2,
+    maxItems:4,
+    targetCoverage:1,
+    stopConfidence:0.8
+  };
+  const first = selectAdaptiveCandidate(blueprint, [], [
+    { id:"advanced",conceptId:"advanced-concept",difficulty:4,type:"MCQ" },
+    { id:"basic",conceptId:"basic-concept",difficulty:1,type:"MCQ" }
+  ]);
+  assert.equal(first?.id,"basic");
+});

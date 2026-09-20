@@ -141,8 +141,7 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
         body: JSON.stringify({
           questionId: question.id,
           optionId: constructed ? undefined : selected,
-          answerText: constructed ? answerText.trim() : undefined,
-          idempotencyKey: assessmentId + ":" + question.id + ":" + (constructed ? answerText.trim() : selected)
+          answerText: constructed ? answerText.trim() : undefined
         })
       });
       const payload = await response.json();

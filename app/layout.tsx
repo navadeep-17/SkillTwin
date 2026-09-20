@@ -8,8 +8,15 @@ import { ProductRealtimeSync } from "@/components/realtime/product-sync";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "SkillTwin",
-  description: "A learning agent that evolves as you do."
+  title: {
+    default: "SkillTwin — Adaptive Learning Agent",
+    template: "%s · SkillTwin"
+  },
+  description: "Build an evidence-backed model of your skills, follow an adaptive roadmap, validate what you know, and see exactly why your plan changes.",
+  applicationName: "SkillTwin",
+  icons: {
+    icon: "/icon.svg"
+  }
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

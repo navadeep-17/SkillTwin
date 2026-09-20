@@ -111,7 +111,7 @@ export class PostgresGapRepository {
     });
   }
 
-  async persistSnapshot(userId: string, goal: CareerGoal, analysis: GapAnalysis, trigger: {type:string;ref:string}) {
+  async persistSnapshot(userId: string, goal: CareerGoal, analysis: GapAnalysis, trigger: {type:string;ref:string}, roleName = "target role") {
     const sql = getSql();
     return sql.begin(async tx => {
       const snapshots = await tx<{id:string}[]>`
@@ -140,7 +140,7 @@ export class PostgresGapRepository {
         insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,metadata)
         values (
           ${userId}::uuid,'gap.analysis.completed',${trigger.type},${trigger.ref},
-          ${`Career readiness recalculated to ${analysis.readiness}% for Backend Engineer.`},
+          ${`Career readiness recalculated to ${analysis.readiness}% for ${roleName}.`},
           ${JSON.stringify([{type:"gap_snapshot",id:snapshotId},{type:"career_goal",id:goal.id}])}::jsonb,
           ${JSON.stringify({readiness:analysis.readiness,evidenceCoverage:analysis.evidenceCoverage})}::jsonb
         )

@@ -3,6 +3,7 @@ import { fail, ok } from "@/lib/api/responses";
 import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
 import { getSql } from "@/lib/db/postgres";
 import { getEvidenceEngine } from "@/lib/services/skills/evidence-service";
+import { getAdaptiveReplannerService } from "@/lib/services/replanner/adaptive-replanner-service";
 
 type Row = Record<string, unknown>;
 const rows = (value: unknown) => value as Row[];
@@ -95,11 +96,34 @@ export async function POST(
       }]
     });
 
+    let replan: unknown = null;
+    let replanWarning: string | null = null;
+    if (!alreadyCompleted) {
+      try {
+        replan = await getAdaptiveReplannerService().considerEvidenceSignal({
+          userId: user.id,
+          triggerType: "TASK_BEHAVIOR",
+          triggerRef: id,
+          skillIds: [String(task.skill_id)],
+          evidenceIds: evidence.acceptedEvidenceIds,
+          gapSnapshotId: null
+        });
+      } catch (error) {
+        replanWarning = "TASK_BEHAVIOR_REPLAN_FAILED";
+        console.error("task.behavior.replan.failed", {
+          taskId: id,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    }
+
     return ok(requestId, {
       taskId: id,
       alreadyCompleted,
       status: "COMPLETED",
-      evidence
+      evidence,
+      replan,
+      warnings: replanWarning ? [replanWarning] : []
     }, {
       skill_delta: evidence.deltas,
       notifications: [{

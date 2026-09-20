@@ -3,6 +3,7 @@ import { getSql } from "@/lib/db/postgres";
 import type { EvidenceCandidate } from "@/lib/domain/skills";
 import { getEvidenceEngine } from "@/lib/services/skills/evidence-service";
 import { getGapAnalysisService } from "@/lib/services/gaps/gap-analysis-service";
+import { getAdaptiveReplannerService } from "@/lib/services/replanner/adaptive-replanner-service";
 import { PostgresProfileAnalysisRepository } from "@/lib/repositories/postgres/profile-analysis-repository";
 
 export const PROJECT_ANALYZER_VERSION = "project-analyzer-b1";
@@ -140,6 +141,27 @@ export class ProjectEvidenceService {
           )
         : null;
 
+      let replan: unknown = null;
+      let replanWarning: string | null = null;
+      if (evidenceResult.deltas.length) {
+        try {
+          replan = await getAdaptiveReplannerService().considerEvidenceSignal({
+            userId: input.userId,
+            triggerType: "PROJECT_EVIDENCE",
+            triggerRef: projectId,
+            skillIds: evidenceResult.deltas.map(delta => delta.skillId),
+            evidenceIds: evidenceResult.acceptedEvidenceIds,
+            gapSnapshotId: gapResult?.snapshotId ?? null
+          });
+        } catch (error) {
+          replanWarning = "PROJECT_REPLAN_FAILED";
+          console.error("project.replan.failed", {
+            projectId,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+
       const result = {
         projectId,
         matchedSkills: candidates.length,
@@ -150,7 +172,9 @@ export class ProjectEvidenceService {
               readiness: gapResult.readiness,
               evidenceCoverage: gapResult.evidenceCoverage
             }
-          : null
+          : null,
+        replan,
+        warnings: replanWarning ? [replanWarning] : []
       };
 
       await sql.begin(async tx => {

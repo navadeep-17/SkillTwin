@@ -195,3 +195,60 @@ test("adaptive assessment starts near calibrated difficulty", () => {
   ]);
   assert.equal(first?.id,"basic");
 });
+
+
+import { selectEvidencePlanOperation } from "../dist/lib/domain/replan-policy.js";
+
+test("evidence replanner removes a redundant flexible future task once target is met", () => {
+  const operation = selectEvidencePlanOperation([{
+    taskId: "task-1",
+    logicalTaskId: "logical-1",
+    taskType: "LEARN",
+    difficulty: "BASIC",
+    flexible: true,
+    durationMinutes: 45,
+    weekIndex: 2,
+    weekPlannedMinutes: 240,
+    gapStatus: "STRONG",
+    capabilityScore: 2.2,
+    targetScore: 2
+  }]);
+  assert.equal(operation?.type, "REMOVE_TASK");
+  assert.equal(operation?.logicalTaskId, "logical-1");
+});
+
+test("evidence replanner can raise future practice difficulty without changing workload", () => {
+  const operation = selectEvidencePlanOperation([{
+    taskId: "task-2",
+    logicalTaskId: "logical-2",
+    taskType: "PRACTICE",
+    difficulty: "BASIC",
+    flexible: false,
+    durationMinutes: 30,
+    weekIndex: 1,
+    weekPlannedMinutes: 180,
+    gapStatus: "DEVELOPING",
+    capabilityScore: 1.8,
+    targetScore: 2.5
+  }]);
+  assert.equal(operation?.type, "CHANGE_DIFFICULTY");
+  assert.equal(operation?.from, "BASIC");
+  assert.equal(operation?.to, "STANDARD");
+});
+
+test("evidence replanner is conservative when evidence does not justify a future patch", () => {
+  const operation = selectEvidencePlanOperation([{
+    taskId: "task-3",
+    logicalTaskId: "logical-3",
+    taskType: "LEARN",
+    difficulty: "BASIC",
+    flexible: false,
+    durationMinutes: 30,
+    weekIndex: 1,
+    weekPlannedMinutes: 180,
+    gapStatus: "GAP",
+    capabilityScore: 0.8,
+    targetScore: 2
+  }]);
+  assert.equal(operation, null);
+});

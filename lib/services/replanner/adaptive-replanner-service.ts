@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { getSql } from "@/lib/db/postgres";
+import { selectEvidencePlanOperation, type EvidencePlanCandidate } from "@/lib/domain/replan-policy";
 
 export const REPLANNER_VERSION = "adaptive-replanner-f2";
 export const REPLAN_VALIDATOR_VERSION = "replan-validator-f1";
@@ -54,6 +55,14 @@ function reinforcementTitle(weaknesses: string[], skillName?: string) {
   return "Targeted " + (skillName || "skill") + " concept reinforcement";
 }
 
+function triggerLabel(triggerType: string) {
+  if (triggerType === "PROJECT_EVIDENCE") return "Project evidence";
+  if (triggerType === "TASK_BEHAVIOR") return "Learning behavior";
+  if (triggerType === "CONSTRAINT_CHANGED") return "Learning constraints";
+  if (triggerType === "UNDO") return "Undo";
+  return "Completed assessment";
+}
+
 function dueInsideWeek(endDate: unknown) {
   const now = new Date();
   const proposed = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
@@ -68,6 +77,15 @@ export interface AssessmentReplanInput {
   assessmentId: string;
   skillId: string;
   weaknesses: string[];
+  evidenceIds: string[];
+  gapSnapshotId?: string | null;
+}
+
+export interface EvidenceSignalReplanInput {
+  userId: string;
+  triggerType: "PROJECT_EVIDENCE" | "TASK_BEHAVIOR";
+  triggerRef: string;
+  skillIds: string[];
   evidenceIds: string[];
   gapSnapshotId?: string | null;
 }
@@ -150,6 +168,302 @@ export class AdaptiveReplannerService {
     }
 
     return this.applyMinorAddTask(input, active, affected, fingerprint, reinforcementMinutes);
+  }
+
+  async considerEvidenceSignal(input: EvidenceSignalReplanInput) {
+    const sql = getSql();
+    const active = rows(await sql.unsafe(
+      "select p.*,g.adaptation_mode from public.learning_plans p join public.career_goals g on g.id=p.goal_id where p.user_id=$1::uuid and p.status='ACTIVE' order by p.version desc limit 1",
+      [input.userId]
+    ))[0];
+
+    if (!active) {
+      return this.storeSignalNoOp(
+        input,
+        null,
+        "NO_ACTIVE_PLAN",
+        "There is no active roadmap to adapt."
+      );
+    }
+
+    const skillIds = [...new Set(input.skillIds.filter(Boolean))].sort();
+    const fingerprint = createHash("sha256")
+      .update(JSON.stringify({
+        triggerType: input.triggerType,
+        triggerRef: input.triggerRef,
+        skillIds,
+        evidenceIds: [...input.evidenceIds].sort(),
+        gapSnapshotId: input.gapSnapshotId ?? null,
+        activePlanId: String(active.id),
+        activeVersion: Number(active.version),
+        replannerVersion: REPLANNER_VERSION
+      }))
+      .digest("hex");
+
+    const existingDiff = rows(await sql.unsafe(
+      "select * from public.plan_diffs where user_id=$1::uuid and input_fingerprint=$2 limit 1",
+      [input.userId, fingerprint]
+    ))[0];
+    if (existingDiff) return this.diffDto(existingDiff, true);
+
+    const existingDecision = rows(await sql.unsafe(
+      "select * from public.replan_decisions where user_id=$1::uuid and input_fingerprint=$2 limit 1",
+      [input.userId, fingerprint]
+    ))[0];
+    if (existingDecision && !Boolean(existingDecision.material)) {
+      return { changed: false, reused: true, decision: existingDecision };
+    }
+
+    if (!skillIds.length) {
+      return this.storeSignalNoOp(
+        input,
+        active,
+        "NO_SKILL_SIGNAL",
+        "The trigger did not identify a canonical skill that could affect future work.",
+        fingerprint
+      );
+    }
+
+    let gapSnapshotId = input.gapSnapshotId ?? null;
+    if (!gapSnapshotId) {
+      const snapshot = rows(await sql.unsafe(
+        "select id from public.gap_snapshots where user_id=$1::uuid and goal_id=$2::uuid order by created_at desc limit 1",
+        [input.userId, String(active.goal_id)]
+      ))[0];
+      gapSnapshotId = snapshot?.id ? String(snapshot.id) : null;
+    }
+
+    const candidates: EvidencePlanCandidate[] = [];
+    for (const skillId of skillIds) {
+      const taskRows = rows(await sql.unsafe(
+        `select
+           t.id task_id,
+           t.logical_task_id,
+           t.type task_type,
+           t.difficulty,
+           t.flexible,
+           t.duration_minutes,
+           w.week_index,
+           w.planned_minutes week_planned_minutes,
+           us.capability_score,
+           o.target_score,
+           sgr.status gap_status
+         from public.learning_tasks t
+         join public.plan_weeks w on w.id=t.week_id
+         join public.learning_objectives o on o.id=t.objective_id
+         left join public.user_skills us
+           on us.user_id=$1::uuid and us.skill_id=t.skill_id
+         left join public.skill_gap_results sgr
+           on sgr.snapshot_id=$4::uuid and sgr.skill_id=t.skill_id
+         where t.plan_id=$2::uuid
+           and t.skill_id=$3::uuid
+           and t.status='PLANNED'
+           and w.end_date>=current_date
+         order by w.week_index,t.created_at`,
+        [input.userId, String(active.id), skillId, gapSnapshotId]
+      ));
+
+      for (const task of taskRows) {
+        const taskType = String(task.task_type);
+        const difficulty = String(task.difficulty);
+        if (!["LEARN","PRACTICE","BUILD","VALIDATE"].includes(taskType)) continue;
+        if (!["BASIC","STANDARD","ADVANCED"].includes(difficulty)) continue;
+
+        candidates.push({
+          taskId: String(task.task_id),
+          logicalTaskId: String(task.logical_task_id),
+          taskType: taskType as EvidencePlanCandidate["taskType"],
+          difficulty: difficulty as EvidencePlanCandidate["difficulty"],
+          flexible: Boolean(task.flexible),
+          durationMinutes: Number(task.duration_minutes),
+          weekIndex: Number(task.week_index),
+          weekPlannedMinutes: Number(task.week_planned_minutes),
+          gapStatus: task.gap_status == null
+            ? null
+            : String(task.gap_status) as EvidencePlanCandidate["gapStatus"],
+          capabilityScore: task.capability_score == null ? null : Number(task.capability_score),
+          targetScore: task.target_score == null ? null : Number(task.target_score)
+        });
+      }
+    }
+
+    const selected = selectEvidencePlanOperation(candidates);
+    if (!selected) {
+      return this.storeSignalNoOp(
+        input,
+        active,
+        "NO_SAFE_FUTURE_PATCH",
+        "New evidence was committed, but it did not justify changing any unstarted future task.",
+        fingerprint
+      );
+    }
+
+    const operation = selected.type === "REMOVE_TASK"
+      ? {
+          type: "REMOVE_TASK",
+          taskId: selected.taskId,
+          logicalTaskId: selected.logicalTaskId,
+          reasonRefs: [input.triggerRef, selected.reasonCode]
+        }
+      : {
+          type: "CHANGE_DIFFICULTY",
+          taskId: selected.taskId,
+          logicalTaskId: selected.logicalTaskId,
+          difficulty: selected.to,
+          before: { difficulty: selected.from },
+          after: { difficulty: selected.to },
+          reasonRefs: [input.triggerRef, selected.reasonCode]
+        };
+
+    const minuteDelta = selected.type === "REMOVE_TASK" ? -selected.durationMinutes : 0;
+    const weeklyImpact = [{
+      weekIndex: selected.weekIndex,
+      beforeMinutes: selected.weekPlannedMinutes,
+      afterMinutes: Math.max(0, selected.weekPlannedMinutes + minuteDelta)
+    }];
+
+    const headline = selected.type === "REMOVE_TASK"
+      ? "Roadmap can skip redundant future work"
+      : "Roadmap can increase the next practice challenge";
+    const reason = selected.type === "REMOVE_TASK"
+      ? "Committed evidence now meets the target for this skill, so one flexible unstarted learning task can be removed without rewriting history."
+      : "Committed evidence supports a stronger capability estimate, so the next unstarted practice task can move from basic to standard difficulty.";
+
+    const proposed = await this.createSignalProposal({
+      input,
+      active,
+      fingerprint,
+      operation,
+      weeklyImpact,
+      minuteDelta,
+      headline,
+      reason,
+      reasonCode: selected.reasonCode
+    });
+
+    if (String(active.adaptation_mode) === "AUTOMATIC") {
+      return this.applyProposed(input.userId, proposed.diff.diffId);
+    }
+
+    return proposed;
+  }
+
+  private async storeSignalNoOp(
+    input: EvidenceSignalReplanInput,
+    active: Row | null,
+    reasonCode: string,
+    reason: string,
+    knownFingerprint?: string
+  ) {
+    const sql = getSql();
+    const goal = active ?? rows(await sql.unsafe(
+      "select id goal_id from public.career_goals where user_id=$1::uuid and status='ACTIVE' limit 1",
+      [input.userId]
+    ))[0];
+    const goalId = active ? String(active.goal_id) : String(goal?.goal_id ?? goal?.id ?? "");
+
+    if (!goalId) {
+      return {
+        changed: false,
+        reused: false,
+        decision: { material: false, reasonCode, reason }
+      };
+    }
+
+    const fingerprint = knownFingerprint ?? createHash("sha256")
+      .update(JSON.stringify({
+        triggerType: input.triggerType,
+        triggerRef: input.triggerRef,
+        skillIds: [...input.skillIds].sort(),
+        evidenceIds: [...input.evidenceIds].sort(),
+        activePlanId: active?.id ?? null,
+        activeVersion: active?.version ?? null,
+        reasonCode,
+        replannerVersion: REPLANNER_VERSION
+      }))
+      .digest("hex");
+
+    const inserted = rows(await sql.unsafe(
+      "insert into public.replan_decisions(user_id,goal_id,from_plan_id,from_version,trigger_type,trigger_ref,material,decision,reason_code,reason,input_fingerprint) values ($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,false,'NO_OP',$7,$8,$9) on conflict(user_id,input_fingerprint) do update set input_fingerprint=excluded.input_fingerprint returning *",
+      [
+        input.userId,
+        goalId,
+        active?.id == null ? null : String(active.id),
+        active?.version == null ? null : Number(active.version),
+        input.triggerType,
+        input.triggerRef,
+        reasonCode,
+        reason,
+        fingerprint
+      ]
+    ));
+
+    return { changed: false, reused: false, decision: inserted[0] };
+  }
+
+  private async createSignalProposal(args: {
+    input: EvidenceSignalReplanInput;
+    active: Row;
+    fingerprint: string;
+    operation: Record<string, unknown>;
+    weeklyImpact: Array<Record<string, unknown>>;
+    minuteDelta: number;
+    headline: string;
+    reason: string;
+    reasonCode: string;
+  }) {
+    const sql = getSql();
+    const diff = rows(await sql.unsafe(
+      "insert into public.plan_diffs(user_id,goal_id,from_plan_id,from_version,status,trigger_type,trigger_refs,evidence_refs,summary,reason,operations,weekly_impact,timeline_impact,total_minute_delta,touch_count,complexity,can_undo,generator_version,validator_version,input_fingerprint) values ($1::uuid,$2::uuid,$3::uuid,$4,'PROPOSED',$5,$6::jsonb,$7::jsonb,$8,$9,$10::jsonb,$11::jsonb,$12,$13,1,'MINOR',false,$14,$15,$16) returning *",
+      [
+        args.input.userId,
+        String(args.active.goal_id),
+        String(args.active.id),
+        Number(args.active.version),
+        args.input.triggerType,
+        JSON.stringify([args.input.triggerRef, args.input.gapSnapshotId].filter(Boolean)),
+        JSON.stringify(args.input.evidenceIds),
+        args.headline,
+        args.reason,
+        JSON.stringify([args.operation]),
+        JSON.stringify(args.weeklyImpact),
+        args.minuteDelta < 0 ? "IMPROVED" : "NONE",
+        args.minuteDelta,
+        REPLANNER_VERSION,
+        REPLAN_VALIDATOR_VERSION,
+        args.fingerprint
+      ]
+    ))[0];
+
+    await sql.unsafe(
+      "insert into public.replan_decisions(user_id,goal_id,from_plan_id,from_version,trigger_type,trigger_ref,material,decision,reason_code,reason,input_fingerprint) values ($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,true,'PROPOSE',$7,$8,$9) on conflict(user_id,input_fingerprint) do nothing",
+      [
+        args.input.userId,
+        String(args.active.goal_id),
+        String(args.active.id),
+        Number(args.active.version),
+        args.input.triggerType,
+        args.input.triggerRef,
+        args.reasonCode,
+        args.reason,
+        args.fingerprint
+      ]
+    );
+
+    await sql.unsafe(
+      "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,evidence_refs,metadata) values ($1::uuid,'plan.change.proposed',$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb)",
+      [
+        args.input.userId,
+        args.input.triggerType,
+        args.input.triggerRef,
+        args.headline,
+        JSON.stringify([{ type: "plan_diff", id: String(diff.id) }, { type: "learning_plan", id: String(args.active.id) }]),
+        JSON.stringify(args.input.evidenceIds),
+        JSON.stringify({ operation: String(args.operation.type), reasonCode: args.reasonCode })
+      ]
+    );
+
+    return this.diffDto(diff, false);
   }
 
   private fingerprint(
@@ -1151,7 +1465,7 @@ export class AdaptiveReplannerService {
         toPlanId: diff.to_plan_id ? String(diff.to_plan_id) : null,
         toVersion: diff.to_version == null ? null : Number(diff.to_version),
         headline: String(diff.summary),
-        triggerLabel: "Completed assessment",
+        triggerLabel: triggerLabel(String(diff.trigger_type)),
         whatChanged: Array.isArray(parseJsonValue(diff.operations)) ? parseJsonValue(diff.operations) as unknown[] : [],
         weeklyImpact: Array.isArray(parseJsonValue(diff.weekly_impact)) ? parseJsonValue(diff.weekly_impact) as unknown[] : [],
         timelineImpact: String(diff.timeline_impact),

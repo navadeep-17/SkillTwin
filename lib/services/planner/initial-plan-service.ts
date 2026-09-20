@@ -166,7 +166,7 @@ export class InitialPlanService {
     ));
 
     const runRows = rows(await sql.unsafe(
-      "insert into public.plan_generation_runs(user_id,goal_id,gap_snapshot_id,constraint_fingerprint,generation_key,status,warnings,planner_version) values ($1::uuid,$2::uuid,$3::uuid,$4,$5,'RUNNING',$1::text::jsonb,$7) returning id",
+      "insert into public.plan_generation_runs(user_id,goal_id,gap_snapshot_id,constraint_fingerprint,generation_key,status,warnings,planner_version) values ($1::uuid,$2::uuid,$3::uuid,$4,$5,'RUNNING',$6::jsonb,$7) returning id",
       [
         userId,
         String(goal.id),
@@ -198,7 +198,7 @@ export class InitialPlanService {
         };
 
         const planRows = rows(await tx.unsafe(
-          "insert into public.learning_plans(user_id,goal_id,version,status,start_date,end_date,gap_snapshot_id,constraint_fingerprint,planner_version,generation_key,planned_minutes,adaptation_buffer_minutes,rationale,warnings) values ($1::uuid,$2::uuid,1,'ACTIVE',$3::date,$4::date,$5::uuid,$6,$7,$8,$9,$10,$1::text::jsonb,$1::text::jsonb) returning id",
+          "insert into public.learning_plans(user_id,goal_id,version,status,start_date,end_date,gap_snapshot_id,constraint_fingerprint,planner_version,generation_key,planned_minutes,adaptation_buffer_minutes,rationale,warnings) values ($1::uuid,$2::uuid,1,'ACTIVE',$3::date,$4::date,$5::uuid,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb) returning id",
           [
             userId,
             String(goal.id),
@@ -220,7 +220,7 @@ export class InitialPlanService {
           const weekStart = addDays(start, (week.weekIndex - 1) * 7);
           const weekEnd = addDays(weekStart, 6);
           const weekRows = rows(await tx.unsafe(
-            "insert into public.plan_weeks(plan_id,week_index,start_date,end_date,capacity_minutes,planned_minutes,focus_skill_ids,rationale) values ($1::uuid,$2,$3::date,$4::date,$5,$6,$1::text::jsonb,$8) returning id",
+            "insert into public.plan_weeks(plan_id,week_index,start_date,end_date,capacity_minutes,planned_minutes,focus_skill_ids,rationale) values ($1::uuid,$2,$3::date,$4::date,$5,$6,$7::jsonb,$8) returning id",
             [
               planId,
               week.weekIndex,
@@ -297,7 +297,7 @@ export class InitialPlanService {
         }
 
         await tx.unsafe(
-          "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,metadata) values ($1::uuid,'plan.created','GAP_SNAPSHOT',$2,$3,$1::text::jsonb,$1::text::jsonb)",
+          "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,metadata) values ($1::uuid,'plan.created','GAP_SNAPSHOT',$2,$3,$4::jsonb,$5::jsonb)",
           [
             userId,
             String(snapshot.id),

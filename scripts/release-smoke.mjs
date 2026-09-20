@@ -115,6 +115,19 @@ async function publicChecks() {
   assert(readinessPayload?.data?.checks?.database === "ready", "production database readiness is not ready");
   assert(readinessPayload?.data?.checks?.databaseSecurity === "ready", "production database security readiness is not ready");
 
+  const verticalSlice = await request("/api/demo/vertical-slice");
+  assert(verticalSlice.response.status === 200, "deterministic vertical-slice endpoint is not 200");
+  const verticalSlicePayload = jsonBody(verticalSlice, "vertical-slice endpoint");
+  assert(verticalSlicePayload?.ok === true, "vertical-slice endpoint did not return an ok API envelope");
+  const beforeReadiness = Number(verticalSlicePayload?.data?.before?.readiness);
+  const afterReadiness = Number(verticalSlicePayload?.data?.after?.readiness);
+  const planDiff = verticalSlicePayload?.data?.planDiff;
+  assert(Number.isFinite(beforeReadiness) && Number.isFinite(afterReadiness), "vertical-slice readiness values are missing");
+  assert(afterReadiness > beforeReadiness, "vertical-slice assessment did not improve readiness");
+  assert(planDiff?.fromVersion === 1 && planDiff?.toVersion === 2, "vertical-slice plan version transition is invalid");
+  assert((planDiff?.operations?.length ?? 0) > 0, "vertical-slice did not produce a PlanDiff operation");
+  console.log("VERTICAL_SLICE=PASS " + beforeReadiness + "->" + afterReadiness);
+
   const protectedPage = await request("/overview");
   assert(
     [301,302,303,307,308].includes(protectedPage.response.status)

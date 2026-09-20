@@ -547,6 +547,285 @@ export class AdaptiveReplannerService {
     return this.diffDto(appliedDiff!, false);
   }
 
+  async applyProposed(userId: string, diffId: string) {
+    const sql = getSql();
+
+    const diffRows = rows(await sql.unsafe(
+      "select * from public.plan_diffs where id=$1::uuid and user_id=$2::uuid limit 1",
+      [diffId, userId]
+    ));
+    const diff = diffRows[0];
+    if (!diff) throw new Error("PLAN_DIFF_NOT_FOUND");
+    if (String(diff.status) === "APPLIED") return this.diffDto(diff, true);
+    if (String(diff.status) !== "PROPOSED") throw new Error("PLAN_DIFF_NOT_APPLICABLE");
+
+    const operationsValue = parseJsonValue(diff.operations);
+    const operations = Array.isArray(operationsValue)
+      ? operationsValue as Array<Record<string, unknown>>
+      : [];
+    if (operations.length !== 1 || String(operations[0].type) !== "ADD_TASK") {
+      throw new Error("PLAN_DIFF_UNSUPPORTED_PATCH_SHAPE");
+    }
+
+    const operation = operations[0];
+    const taskValue = operation.task;
+    const task = taskValue && typeof taskValue === "object" && !Array.isArray(taskValue)
+      ? taskValue as Record<string, unknown>
+      : {};
+    const objectiveLogicalId = String(task.objectiveLogicalId ?? "");
+    const skillId = String(task.skillId ?? "");
+    const duration = Number(task.durationMinutes ?? 0);
+    const title = String(task.title ?? "");
+    const dueAt = task.dueAt == null ? null : String(task.dueAt);
+    const taskType = String(task.taskType ?? "PRACTICE");
+    const difficulty = String(task.difficulty ?? "BASIC");
+    const rationaleCode = String(task.rationaleCode ?? "ASSESSMENT_CONCEPT_WEAKNESS");
+
+    if (!objectiveLogicalId || !skillId || !title || !Number.isFinite(duration) || duration <= 0) {
+      throw new Error("PLAN_DIFF_INVALID_OPERATION");
+    }
+    if (!["LEARN","PRACTICE","BUILD","VALIDATE"].includes(taskType)) throw new Error("PLAN_DIFF_INVALID_OPERATION");
+    if (!["BASIC","STANDARD","ADVANCED"].includes(difficulty)) throw new Error("PLAN_DIFF_INVALID_OPERATION");
+
+    const activeRows = rows(await sql.unsafe(
+      "select * from public.learning_plans where id=$1::uuid and user_id=$2::uuid and status='ACTIVE' limit 1",
+      [String(diff.from_plan_id), userId]
+    ));
+    const active = activeRows[0];
+    if (!active || Number(active.version) !== Number(diff.from_version)) {
+      throw new Error("PLAN_DIFF_STALE_BASELINE");
+    }
+
+    const affectedRows = rows(await sql.unsafe(
+      "select o.id objective_id,o.logical_objective_id,o.week_id,w.week_index,w.capacity_minutes,w.planned_minutes from public.learning_objectives o join public.plan_weeks w on w.id=o.week_id where o.plan_id=$1::uuid and o.logical_objective_id=$2::uuid limit 1",
+      [String(active.id), objectiveLogicalId]
+    ));
+    const affected = affectedRows[0];
+    if (!affected) throw new Error("PLAN_DIFF_REFERENCE_ERROR");
+    if (Number(affected.planned_minutes) + duration > Number(affected.capacity_minutes)) {
+      throw new Error("PLAN_DIFF_CAPACITY_EXCEEDED");
+    }
+
+    let applied: Row | null = null;
+
+    await sql.begin(async tx => {
+      const locked = rows(await tx.unsafe(
+        "select * from public.learning_plans where id=$1::uuid and user_id=$2::uuid for update",
+        [String(active.id), userId]
+      ))[0];
+      if (!locked || String(locked.status) !== "ACTIVE" || Number(locked.version) !== Number(active.version)) {
+        throw new Error("PLAN_DIFF_STALE_BASELINE");
+      }
+
+      const latestDiff = rows(await tx.unsafe(
+        "select * from public.plan_diffs where id=$1::uuid and user_id=$2::uuid for update",
+        [diffId, userId]
+      ))[0];
+      if (!latestDiff) throw new Error("PLAN_DIFF_NOT_FOUND");
+      if (String(latestDiff.status) === "APPLIED") {
+        applied = latestDiff;
+        return;
+      }
+      if (String(latestDiff.status) !== "PROPOSED") throw new Error("PLAN_DIFF_NOT_APPLICABLE");
+
+      const nextVersion = Number(active.version) + 1;
+
+      await tx.unsafe(
+        "update public.learning_plans set status='SUPERSEDED' where id=$1::uuid and status='ACTIVE'",
+        [String(active.id)]
+      );
+
+      const nextPlan = rows(await tx.unsafe(
+        "insert into public.learning_plans(user_id,goal_id,version,status,start_date,end_date,gap_snapshot_id,constraint_fingerprint,planner_version,generation_key,planned_minutes,adaptation_buffer_minutes,rationale,warnings,parent_plan_id) values ($1::uuid,$2::uuid,$3,'ACTIVE',$4::date,$5::date,$6::uuid,$7,$8,$9,$10,$11,$12::jsonb,$13::jsonb,$14::uuid) returning *",
+        [
+          userId,
+          String(active.goal_id),
+          nextVersion,
+          dateOnly(active.start_date),
+          dateOnly(active.end_date),
+          String(active.gap_snapshot_id),
+          String(active.constraint_fingerprint),
+          String(active.planner_version),
+          "apply-diff:" + diffId,
+          Number(active.planned_minutes) + duration,
+          Number(active.adaptation_buffer_minutes),
+          JSON.stringify(jsonValue(active.rationale, {})),
+          JSON.stringify(jsonValue(active.warnings, [])),
+          String(active.id)
+        ]
+      ))[0];
+      const nextPlanId = String(nextPlan.id);
+
+      const oldWeeks = rows(await tx.unsafe(
+        "select * from public.plan_weeks where plan_id=$1::uuid order by week_index",
+        [String(active.id)]
+      ));
+      const weekMap = new Map<string,string>();
+      for (const week of oldWeeks) {
+        const isAffected = String(week.id) === String(affected.week_id);
+        const inserted = rows(await tx.unsafe(
+          "insert into public.plan_weeks(plan_id,week_index,start_date,end_date,capacity_minutes,planned_minutes,focus_skill_ids,rationale) values ($1::uuid,$2,$3::date,$4::date,$5,$6,$7::jsonb,$8) returning id",
+          [
+            nextPlanId,
+            Number(week.week_index),
+            dateOnly(week.start_date),
+            dateOnly(week.end_date),
+            Number(week.capacity_minutes),
+            Number(week.planned_minutes) + (isAffected ? duration : 0),
+            JSON.stringify(jsonValue(week.focus_skill_ids, [])),
+            week.rationale == null ? null : String(week.rationale)
+          ]
+        ));
+        weekMap.set(String(week.id), String(inserted[0].id));
+      }
+
+      const oldObjectives = rows(await tx.unsafe(
+        "select * from public.learning_objectives where plan_id=$1::uuid order by created_at,id",
+        [String(active.id)]
+      ));
+      const objectiveMap = new Map<string,string>();
+      for (const objective of oldObjectives) {
+        const inserted = rows(await tx.unsafe(
+          "insert into public.learning_objectives(plan_id,week_id,skill_id,requirement_id,type,start_score,target_score,success_criteria,priority_at_creation,status,logical_objective_id) values ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,$8,$9,$10,$11::uuid) returning id",
+          [
+            nextPlanId,
+            weekMap.get(String(objective.week_id)) ?? null,
+            String(objective.skill_id),
+            String(objective.requirement_id),
+            String(objective.type),
+            objective.start_score == null ? null : Number(objective.start_score),
+            Number(objective.target_score),
+            String(objective.success_criteria),
+            Number(objective.priority_at_creation),
+            String(objective.status),
+            String(objective.logical_objective_id)
+          ]
+        ));
+        objectiveMap.set(String(objective.id), String(inserted[0].id));
+      }
+
+      const oldTasks = rows(await tx.unsafe(
+        "select * from public.learning_tasks where plan_id=$1::uuid order by created_at,id",
+        [String(active.id)]
+      ));
+      const taskMap = new Map<string,string>();
+      for (const oldTask of oldTasks) {
+        const inserted = rows(await tx.unsafe(
+          "insert into public.learning_tasks(plan_id,week_id,objective_id,skill_id,type,title,duration_minutes,due_at,status,difficulty,flexible,rationale_code,inserted_by_plan_diff_id,completed_at,logical_task_id,started_at,skipped_at,actual_minutes,reschedule_count) values ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,$8::timestamptz,$9,$10,$11,$12,$13::uuid,$14::timestamptz,$15::uuid,$16::timestamptz,$17::timestamptz,$18,$19) returning id",
+          [
+            nextPlanId,
+            weekMap.get(String(oldTask.week_id)) ?? null,
+            objectiveMap.get(String(oldTask.objective_id)) ?? null,
+            String(oldTask.skill_id),
+            String(oldTask.type),
+            String(oldTask.title),
+            Number(oldTask.duration_minutes),
+            oldTask.due_at == null ? null : String(oldTask.due_at),
+            String(oldTask.status),
+            String(oldTask.difficulty),
+            Boolean(oldTask.flexible),
+            String(oldTask.rationale_code),
+            oldTask.inserted_by_plan_diff_id == null ? null : String(oldTask.inserted_by_plan_diff_id),
+            oldTask.completed_at == null ? null : String(oldTask.completed_at),
+            String(oldTask.logical_task_id),
+            oldTask.started_at == null ? null : String(oldTask.started_at),
+            oldTask.skipped_at == null ? null : String(oldTask.skipped_at),
+            oldTask.actual_minutes == null ? null : Number(oldTask.actual_minutes),
+            Number(oldTask.reschedule_count ?? 0)
+          ]
+        ));
+        taskMap.set(String(oldTask.id), String(inserted[0].id));
+      }
+
+      const assignments = rows(await tx.unsafe(
+        "select a.* from public.task_resource_assignments a join public.learning_tasks t on t.id=a.task_id where t.plan_id=$1::uuid",
+        [String(active.id)]
+      ));
+      for (const assignment of assignments) {
+        const newTaskId = taskMap.get(String(assignment.task_id));
+        if (!newTaskId) continue;
+        await tx.unsafe(
+          "insert into public.task_resource_assignments(task_id,resource_id,rank_score,ranker_version,explanation) values ($1::uuid,$2::uuid,$3,$4,$5)",
+          [newTaskId,String(assignment.resource_id),Number(assignment.rank_score),String(assignment.ranker_version),String(assignment.explanation)]
+        );
+      }
+
+      const newWeekId = weekMap.get(String(affected.week_id));
+      const oldAffectedObjective = oldObjectives.find(item => String(item.logical_objective_id) === objectiveLogicalId);
+      const newObjectiveId = oldAffectedObjective ? objectiveMap.get(String(oldAffectedObjective.id)) : null;
+      if (!newWeekId || !newObjectiveId) throw new Error("PLAN_DIFF_REFERENCE_ERROR");
+
+      const newTaskRows = rows(await tx.unsafe(
+        "insert into public.learning_tasks(plan_id,week_id,objective_id,skill_id,type,title,duration_minutes,due_at,status,difficulty,flexible,rationale_code,inserted_by_plan_diff_id) values ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,$8::timestamptz,'PLANNED',$9,false,$10,$11::uuid) returning id,logical_task_id",
+        [nextPlanId,newWeekId,newObjectiveId,skillId,taskType,title,duration,dueAt,difficulty,rationaleCode,diffId]
+      ));
+
+      const appliedOperation = {
+        ...operation,
+        task: {
+          ...task,
+          taskId: String(newTaskRows[0].id),
+          logicalTaskId: String(newTaskRows[0].logical_task_id)
+        }
+      };
+
+      applied = rows(await tx.unsafe(
+        "update public.plan_diffs set to_plan_id=$1::uuid,to_version=$2,status='APPLIED',operations=$3::jsonb,applied_at=now() where id=$4::uuid and user_id=$5::uuid returning *",
+        [nextPlanId,nextVersion,JSON.stringify([appliedOperation]),diffId,userId]
+      ))[0];
+
+      await tx.unsafe(
+        "update public.replan_decisions set decision='APPLY',reason=reason || ' User confirmed the proposed roadmap change.' where user_id=$1::uuid and input_fingerprint=$2",
+        [userId,String(diff.input_fingerprint)]
+      );
+
+      await tx.unsafe(
+        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,evidence_refs,metadata) values ($1::uuid,'plan.adapted','USER_CONFIRMATION',$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)",
+        [
+          userId,
+          diffId,
+          "Applied confirmed roadmap change and created Plan v" + nextVersion + ".",
+          JSON.stringify([{ type: "plan_diff", id: diffId },{ type: "learning_plan", id: nextPlanId }]),
+          JSON.stringify(jsonValue(diff.evidence_refs, [])),
+          JSON.stringify({ confirmed: true, operationCount: 1 })
+        ]
+      );
+    });
+
+    return this.diffDto(applied!, false);
+  }
+
+  async rejectProposed(userId: string, diffId: string) {
+    const sql = getSql();
+    const updated = rows(await sql.unsafe(
+      "update public.plan_diffs set status='REJECTED',can_undo=false where id=$1::uuid and user_id=$2::uuid and status='PROPOSED' returning *",
+      [diffId,userId]
+    ))[0];
+    if (!updated) {
+      const current = rows(await sql.unsafe(
+        "select * from public.plan_diffs where id=$1::uuid and user_id=$2::uuid limit 1",
+        [diffId,userId]
+      ))[0];
+      if (!current) throw new Error("PLAN_DIFF_NOT_FOUND");
+      if (String(current.status) === "REJECTED") return this.diffDto(current, true);
+      throw new Error("PLAN_DIFF_NOT_REJECTABLE");
+    }
+
+    await sql.unsafe(
+      "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,evidence_refs,metadata) values ($1::uuid,'plan.change.rejected','USER_CONFIRMATION',$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)",
+      [
+        userId,
+        diffId,
+        "Kept the current roadmap and rejected the proposed change.",
+        JSON.stringify([{ type: "plan_diff", id: diffId }]),
+        JSON.stringify(jsonValue(updated.evidence_refs, [])),
+        JSON.stringify({ confirmed: false })
+      ]
+    );
+
+    return this.diffDto(updated, false);
+  }
+
   async undo(userId: string, diffId: string) {
     const sql = getSql();
 

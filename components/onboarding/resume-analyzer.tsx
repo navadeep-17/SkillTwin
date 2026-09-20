@@ -25,7 +25,11 @@ const analysisHints = [
   "Preparing the gaps that will shape your roadmap"
 ];
 
-export function ResumeAnalyzer() {
+export function ResumeAnalyzer({
+  onAnalysisComplete
+}: {
+  onAnalysisComplete?: (summary: { readiness?: number; evidenceCoverage?: number; claims?: number }) => void;
+}) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [stage, setStage] = useState<"idle" | "uploading" | "analyzing" | "done" | "error">("idle");
@@ -74,6 +78,11 @@ export function ResumeAnalyzer() {
 
       setResult(analyzed.data);
       setStage("done");
+      onAnalysisComplete?.({
+        readiness: analyzed.data?.result?.gapAnalysis?.readiness,
+        evidenceCoverage: analyzed.data?.result?.gapAnalysis?.evidenceCoverage,
+        claims: analyzed.data?.result?.claims
+      });
     } catch {
       setStage("error");
       setMessage("We could not finish the resume analysis. Your last valid SkillTwin state is unchanged.");

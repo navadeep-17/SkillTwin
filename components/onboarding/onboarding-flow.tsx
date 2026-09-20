@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ResumeAnalyzer } from "@/components/onboarding/resume-analyzer";
 import { UnresolvedSkillTerms } from "@/components/onboarding/unresolved-skill-terms";
 import { ManualProfileEvidence } from "@/components/onboarding/manual-profile-evidence";
+import { OnboardingProgress } from "@/components/onboarding/onboarding-progress";
 
 type Role = {
   id: string;
@@ -54,6 +55,8 @@ export function OnboardingFlow() {
   const [customRoleName, setCustomRoleName] = useState("");
   const [customRoleDescription, setCustomRoleDescription] = useState("");
   const [generatingRole, setGeneratingRole] = useState(false);
+  const [skillTwinReady, setSkillTwinReady] = useState(false);
+  const [planReady, setPlanReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,13 +64,21 @@ export function OnboardingFlow() {
     async function load() {
       setLoading(true);
       try {
-        const [rolesResponse, goalResponse] = await Promise.all([
+        const [rolesResponse, goalResponse, gapsResponse, roadmapResponse] = await Promise.all([
           fetch("/api/roles", { cache: "no-store" }),
-          fetch("/api/goals", { cache: "no-store" })
+          fetch("/api/goals", { cache: "no-store" }),
+          fetch("/api/gaps", { cache: "no-store" }),
+          fetch("/api/roadmap", { cache: "no-store" })
         ]);
 
         const roleJson = await rolesResponse.json() as RolesEnvelope;
         const goalJson = await goalResponse.json() as GoalEnvelope;
+        const gapsJson = gapsResponse.ok
+          ? await gapsResponse.json() as { ok: boolean; data?: { analysis?: unknown | null } }
+          : null;
+        const roadmapJson = roadmapResponse.ok
+          ? await roadmapResponse.json() as { ok: boolean; data?: { plan?: unknown | null } }
+          : null;
 
         if (!rolesResponse.ok || !roleJson.ok) {
           throw new Error(roleJson.error?.message ?? "Could not load target roles.");
@@ -80,6 +91,8 @@ export function OnboardingFlow() {
 
         const loadedRoles = roleJson.data?.roles ?? [];
         setRoles(loadedRoles);
+        setSkillTwinReady(Boolean(gapsJson?.ok && gapsJson.data?.analysis));
+        setPlanReady(Boolean(roadmapJson?.ok && roadmapJson.data?.plan));
 
         const goal = goalJson.data?.goal;
         if (goal) {
@@ -171,6 +184,8 @@ export function OnboardingFlow() {
       ]);
       setSelectedRole(newRole.roleVersionId);
       setGoalSaved(false);
+      setSkillTwinReady(false);
+      setPlanReady(false);
       setMessage("Custom role generated and selected. Review your schedule, then save the career goal.");
       setCustomRoleName("");
       setCustomRoleDescription("");
@@ -178,6 +193,18 @@ export function OnboardingFlow() {
       setMessage(error instanceof Error ? error.message : "Could not generate this custom role.");
     } finally {
       setGeneratingRole(false);
+    }
+  }
+
+  async function handleAnalysisComplete() {
+    setSkillTwinReady(true);
+
+    try {
+      const response = await fetch("/api/roadmap", { cache: "no-store" });
+      const json = await response.json() as { ok: boolean; data?: { plan?: unknown | null } };
+      setPlanReady(Boolean(response.ok && json.ok && json.data?.plan));
+    } catch {
+      // The SkillTwin state is still valid even if roadmap status cannot be refreshed here.
     }
   }
 
@@ -244,6 +271,12 @@ export function OnboardingFlow() {
 
   return (
     <div className="space-y-8">
+      <OnboardingProgress
+        goalReady={goalSaved}
+        skillTwinReady={goalSaved && skillTwinReady}
+        planReady={goalSaved && skillTwinReady && planReady}
+      />
+
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -270,6 +303,8 @@ export function OnboardingFlow() {
                 onClick={() => {
                   setSelectedRole(item.roleVersionId);
                   setGoalSaved(false);
+                  setSkillTwinReady(false);
+                  setPlanReady(false);
                 }}
                 className={[
                   "rounded-xl border p-4 text-left transition",
@@ -433,7 +468,7 @@ export function OnboardingFlow() {
             Resume evidence is mapped into your persistent SkillTwin, then compared with {role?.name ?? "your selected role"}.
           </p>
         </div>
-        <ResumeAnalyzer />
+        <ResumeAnalyzer onAnalysisComplete={() => void handleAnalysisComplete()} />
         <ManualProfileEvidence />
         {goalSaved ? <UnresolvedSkillTerms /> : null}
         {!goalSaved ? (

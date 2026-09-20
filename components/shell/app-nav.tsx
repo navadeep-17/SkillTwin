@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 const links = [
   { href: "/overview", label: "Overview" },
@@ -19,7 +20,7 @@ export async function AppNav() {
 
   return (
     <header className="border-b border-slate-200 bg-white/95">
-      <div className="mx-auto flex max-w-7xl items-center gap-6 px-6 py-3">
+      <div className="mx-auto flex max-w-7xl items-center gap-4 px-6 py-3">
         <Link href="/overview" className="shrink-0 font-semibold tracking-tight text-slate-950">
           SkillTwin
         </Link>
@@ -40,6 +41,7 @@ export async function AppNav() {
         >
           Add evidence
         </Link>
+        <LogoutButton />
       </div>
     </header>
   );

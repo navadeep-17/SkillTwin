@@ -1,4 +1,4 @@
-export const PDF_PARSER_VERSION = "pdfjs-b1";
+export const PDF_PARSER_VERSION = "pdfjs-b2";
 
 export interface ParsedPdfPage {
   page: number;
@@ -28,8 +28,23 @@ function normalizePageText(value: string) {
     .trim();
 }
 
+async function ensurePdfWorkerLoaded() {
+  const workerGlobal = globalThis as typeof globalThis & {
+    pdfjsWorker?: unknown;
+  };
+
+  if (workerGlobal.pdfjsWorker) return;
+
+  // Static module specifier is intentional. Next.js can trace and bundle the
+  // worker module, while PDF.js can reuse it as its main-thread fake worker.
+  // @ts-expect-error pdfjs-dist does not publish types for the worker entry.
+  workerGlobal.pdfjsWorker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+}
+
 export async function parsePdf(bytes: Uint8Array): Promise<ParsedPdf> {
+  await ensurePdfWorkerLoaded();
   const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+
   const task = getDocument({
     data: bytes,
     isEvalSupported: false,

@@ -45,16 +45,18 @@ export async function AppNav({ userId, email }: { userId: string; email?: string
           </span>
         </Link>
 
-        <AppNavLinks />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 [scrollbar-width:thin]">
+          <AppNavLinks />
+        </div>
 
-        <div className="mt-auto space-y-3">
+        <div className="shrink-0 space-y-3 border-t border-slate-200/80 pt-3">
           <Link
             href="/onboarding"
-            className="block rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 transition hover:border-brand-200 hover:bg-brand-50/50"
+            className="block rounded-2xl border border-slate-200 bg-slate-50/80 p-3 transition hover:border-brand-200 hover:bg-brand-50/50"
           >
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Target</p>
             <p className="mt-1 truncate text-sm font-semibold text-slate-900">{roleName}</p>
-            <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+            <div className="mt-2.5 flex items-center justify-between text-xs text-slate-500">
               <span>{readiness == null ? "Add evidence" : "Role readiness"}</span>
               <span className="font-semibold text-slate-700">{readiness == null ? "Set up" : Math.round(readiness) + "%"}</span>
             </div>
@@ -65,7 +67,7 @@ export async function AppNav({ userId, email }: { userId: string; email?: string
             ) : null}
           </Link>
 
-          <div className="flex items-center justify-between gap-2 px-1">
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-white px-1 py-0.5">
             <div className="min-w-0">
               <p className="truncate text-xs font-medium text-slate-700">{email ?? "Signed in"}</p>
             </div>

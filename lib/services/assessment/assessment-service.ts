@@ -168,7 +168,7 @@ export class AssessmentService {
       .digest("hex");
 
     const assessmentRows = rows(await sql.unsafe(
-      "insert into public.skill_assessments(user_id,skill_id,mode,status,blueprint_json,blueprint_version,source_task_id,current_question_index) values ($1::uuid,$2::uuid,$3,'ACTIVE',$4::jsonb,$5,$6::uuid,0) returning *",
+      "insert into public.skill_assessments(user_id,skill_id,mode,status,blueprint_json,blueprint_version,source_task_id,current_question_index) values ($1::uuid,$2::uuid,$3,'ACTIVE',$1::text::jsonb,$5,$6::uuid,0) returning *",
       [
         input.userId,
         targetSkillId,
@@ -185,7 +185,7 @@ export class AssessmentService {
       for (let index = 0; index < selected.length; index += 1) {
         const question = selected[index];
         await tx.unsafe(
-          "insert into public.skill_assessment_questions(assessment_id,bank_question_id,ordinal,type,concept_ids,difficulty,prompt,options,answer_key,rubric,source,generator_version) values ($1::uuid,$2::uuid,$3,$4,$5::jsonb,$6,$7,$8::jsonb,$9::jsonb,$10::jsonb,$11,$12)",
+          "insert into public.skill_assessment_questions(assessment_id,bank_question_id,ordinal,type,concept_ids,difficulty,prompt,options,answer_key,rubric,source,generator_version) values ($1::uuid,$2::uuid,$3,$4,$1::text::jsonb,$6,$7,$1::text::jsonb,$1::text::jsonb,$1::text::jsonb,$11,$12)",
           [
             assessmentId,
             String(question.id),
@@ -209,7 +209,7 @@ export class AssessmentService {
       );
 
       await tx.unsafe(
-        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,metadata) values ($1::uuid,'assessment.started','CHALLENGE_ME',$2,$3,$4::jsonb,$5::jsonb)",
+        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,metadata) values ($1::uuid,'assessment.started','CHALLENGE_ME',$2,$3,$1::text::jsonb,$1::text::jsonb)",
         [
           input.userId,
           assessmentId,
@@ -331,7 +331,7 @@ export class AssessmentService {
     let attempt: Row | null = null;
     await sql.begin(async tx => {
       const inserted = rows(await tx.unsafe(
-        "insert into public.skill_assessment_attempts(assessment_id,question_id,user_id,answer_payload,status,score,evaluator_confidence,feedback,error_tag,evaluation_version,idempotency_key) values ($1::uuid,$2::uuid,$3::uuid,$4::jsonb,'EVALUATED',$5,$6,$7,$8,$9,$10) returning *",
+        "insert into public.skill_assessment_attempts(assessment_id,question_id,user_id,answer_payload,status,score,evaluator_confidence,feedback,error_tag,evaluation_version,idempotency_key) values ($1::uuid,$2::uuid,$3::uuid,$1::text::jsonb,'EVALUATED',$5,$6,$7,$8,$9,$10) returning *",
         [
           input.assessmentId,
           input.questionId,
@@ -489,7 +489,7 @@ export class AssessmentService {
     const levelSignal = Math.min(3.5, Math.max(0.4, 0.4 + normalizedScore * 2.5));
 
     const outcomeRows = rows(await sql.unsafe(
-      "insert into public.skill_assessment_outcomes(assessment_id,user_id,skill_id,normalized_score,level_signal,coverage,assessment_confidence,strengths,weaknesses,concept_summary,aggregator_version) values ($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8::jsonb,$9::jsonb,$10::jsonb,$11) on conflict(assessment_id) do update set normalized_score=excluded.normalized_score,level_signal=excluded.level_signal,coverage=excluded.coverage,assessment_confidence=excluded.assessment_confidence,strengths=excluded.strengths,weaknesses=excluded.weaknesses,concept_summary=excluded.concept_summary returning *",
+      "insert into public.skill_assessment_outcomes(assessment_id,user_id,skill_id,normalized_score,level_signal,coverage,assessment_confidence,strengths,weaknesses,concept_summary,aggregator_version) values ($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$1::text::jsonb,$1::text::jsonb,$1::text::jsonb,$11) on conflict(assessment_id) do update set normalized_score=excluded.normalized_score,level_signal=excluded.level_signal,coverage=excluded.coverage,assessment_confidence=excluded.assessment_confidence,strengths=excluded.strengths,weaknesses=excluded.weaknesses,concept_summary=excluded.concept_summary returning *",
       [
         assessmentId,
         userId,
@@ -557,7 +557,7 @@ export class AssessmentService {
 
     await sql.begin(async tx => {
       await tx.unsafe(
-        "update public.skill_assessment_outcomes set evidence_batch_result=$1::jsonb,gap_snapshot_id=$2::uuid where assessment_id=$3::uuid and user_id=$4::uuid",
+        "update public.skill_assessment_outcomes set evidence_batch_result=$1::text::jsonb,gap_snapshot_id=$2::uuid where assessment_id=$3::uuid and user_id=$4::uuid",
         [
           JSON.stringify(evidenceResult),
           gapResult?.snapshotId ?? null,
@@ -570,7 +570,7 @@ export class AssessmentService {
         [assessmentId, userId]
       );
       await tx.unsafe(
-        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,evidence_refs,metadata) values ($1::uuid,'assessment.completed','ASSESSMENT',$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)",
+        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,evidence_refs,metadata) values ($1::uuid,'assessment.completed','ASSESSMENT',$2,$3,$1::text::jsonb,$1::text::jsonb,$1::text::jsonb)",
         [
           userId,
           assessmentId,

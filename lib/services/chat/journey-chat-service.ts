@@ -87,7 +87,7 @@ export class JourneyChatService {
 
     if (generated.action) {
       const proposalRows = rows(await sql.unsafe(
-        "insert into public.chat_action_proposals(thread_id,user_id,source_message_id,action_type,payload,baseline_ref,status) values ($1::uuid,$2::uuid,$3::uuid,$4,$5::jsonb,$6::jsonb,'PROPOSED') returning *",
+        "insert into public.chat_action_proposals(thread_id,user_id,source_message_id,action_type,payload,baseline_ref,status) values ($1::uuid,$2::uuid,$3::uuid,$4,$1::text::jsonb,$1::text::jsonb,'PROPOSED') returning *",
         [
           threadId,
           input.userId,
@@ -108,7 +108,7 @@ export class JourneyChatService {
     }
 
     const assistantRows = rows(await sql.unsafe(
-      "insert into public.journey_chat_messages(thread_id,user_id,role,content,intent,entity_refs,evidence_refs,metadata) values ($1::uuid,$2::uuid,'ASSISTANT',$3,$4,$5::jsonb,$6::jsonb,$7::jsonb) returning id,created_at",
+      "insert into public.journey_chat_messages(thread_id,user_id,role,content,intent,entity_refs,evidence_refs,metadata) values ($1::uuid,$2::uuid,'ASSISTANT',$3,$4,$1::text::jsonb,$1::text::jsonb,$1::text::jsonb) returning id,created_at",
       [
         threadId,
         input.userId,

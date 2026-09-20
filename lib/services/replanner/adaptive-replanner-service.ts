@@ -83,11 +83,21 @@ export interface AssessmentReplanInput {
 
 export interface EvidenceSignalReplanInput {
   userId: string;
-  triggerType: "PROJECT_EVIDENCE" | "TASK_BEHAVIOR";
+  triggerType: "PROJECT_EVIDENCE_COMMITTED" | "TASK_BEHAVIOR_SIGNAL" | "CONSTRAINT_CHANGED";
   triggerRef: string;
   skillIds: string[];
   evidenceIds: string[];
   gapSnapshotId?: string | null;
+}
+
+export interface ConstraintReplanInput {
+  userId: string;
+  goalId: string;
+  triggerRef: string;
+  hoursPerWeek: number;
+  preferredSessionMinutes: number;
+  minSessionMinutes: number;
+  learningDays: string[];
 }
 
 export class AdaptiveReplannerService {
@@ -342,6 +352,235 @@ export class AdaptiveReplannerService {
     });
 
     if (String(active.adaptation_mode) === "AUTOMATIC") {
+      return this.applyProposed(input.userId, proposed.diff.diffId);
+    }
+
+    return proposed;
+  }
+
+  async considerConstraintChange(input: ConstraintReplanInput) {
+    const sql = getSql();
+    const active = rows(await sql.unsafe(
+      "select p.*,g.adaptation_mode from public.learning_plans p join public.career_goals g on g.id=p.goal_id where p.user_id=$1::uuid and p.goal_id=$2::uuid and p.status='ACTIVE' order by p.version desc limit 1",
+      [input.userId, input.goalId]
+    ))[0];
+
+    const signal: EvidenceSignalReplanInput = {
+      userId: input.userId,
+      triggerType: "CONSTRAINT_CHANGED",
+      triggerRef: input.triggerRef,
+      skillIds: [],
+      evidenceIds: [],
+      gapSnapshotId: null
+    };
+
+    if (!active) {
+      return this.storeSignalNoOp(
+        signal,
+        null,
+        "NO_ACTIVE_PLAN",
+        "The updated learning constraints will be used when the first roadmap is generated."
+      );
+    }
+
+    const constraints = {
+      hoursPerWeek: input.hoursPerWeek,
+      learningDays: [...input.learningDays],
+      preferredSessionMinutes: input.preferredSessionMinutes,
+      minSessionMinutes: input.minSessionMinutes
+    };
+    const constraintFingerprint = createHash("sha256")
+      .update(JSON.stringify(constraints))
+      .digest("hex");
+
+    const fingerprint = createHash("sha256")
+      .update(JSON.stringify({
+        triggerType: "CONSTRAINT_CHANGED",
+        triggerRef: input.triggerRef,
+        activePlanId: String(active.id),
+        activeVersion: Number(active.version),
+        constraintFingerprint,
+        replannerVersion: REPLANNER_VERSION
+      }))
+      .digest("hex");
+
+    if (constraintFingerprint === String(active.constraint_fingerprint)) {
+      return this.storeSignalNoOp(
+        signal,
+        active,
+        "CONSTRAINTS_UNCHANGED",
+        "The saved learning constraints match the active roadmap.",
+        fingerprint
+      );
+    }
+
+    const existingDiff = rows(await sql.unsafe(
+      "select * from public.plan_diffs where user_id=$1::uuid and input_fingerprint=$2 limit 1",
+      [input.userId, fingerprint]
+    ))[0];
+    if (existingDiff) return this.diffDto(existingDiff, true);
+
+    const existingDecision = rows(await sql.unsafe(
+      "select * from public.replan_decisions where user_id=$1::uuid and input_fingerprint=$2 limit 1",
+      [input.userId, fingerprint]
+    ))[0];
+    if (existingDecision && !Boolean(existingDecision.material)) {
+      return { changed: false, reused: true, decision: existingDecision };
+    }
+
+    const weeklyCapacity = Math.round(input.hoursPerWeek * 60);
+    const adaptationBuffer = Math.max(30, Math.round(weeklyCapacity * 0.10));
+    const plannableMinutes = Math.max(0, weeklyCapacity - adaptationBuffer);
+
+    const weekRows = rows(await sql.unsafe(
+      "select * from public.plan_weeks where plan_id=$1::uuid and end_date>=current_date order by week_index",
+      [String(active.id)]
+    ));
+
+    const operations: Array<Record<string, unknown>> = [];
+    const weeklyImpact: Array<Record<string, unknown>> = [];
+    let totalMinuteDelta = 0;
+
+    for (const week of weekRows) {
+      const beforeMinutes = Number(week.planned_minutes);
+      let simulatedMinutes = beforeMinutes;
+
+      if (simulatedMinutes > plannableMinutes) {
+        const tasks = rows(await sql.unsafe(
+          `select
+             t.id,
+             t.logical_task_id,
+             t.type,
+             t.title,
+             t.duration_minutes,
+             t.difficulty,
+             t.flexible,
+             t.due_at,
+             o.priority_at_creation
+           from public.learning_tasks t
+           join public.learning_objectives o on o.id=t.objective_id
+           where t.plan_id=$1::uuid
+             and t.week_id=$2::uuid
+             and t.status='PLANNED'
+           order by o.priority_at_creation asc,t.duration_minutes desc,t.created_at desc`,
+          [String(active.id), String(week.id)]
+        ));
+
+        for (const task of tasks) {
+          if (simulatedMinutes <= plannableMinutes || operations.length >= 6) break;
+
+          const currentDuration = Number(task.duration_minutes);
+          const desiredDuration = Math.max(
+            input.minSessionMinutes,
+            Math.min(currentDuration, input.preferredSessionMinutes)
+          );
+          const reduction = currentDuration - desiredDuration;
+
+          if (reduction >= 10) {
+            operations.push({
+              type: "CHANGE_DURATION",
+              taskId: String(task.id),
+              logicalTaskId: String(task.logical_task_id),
+              durationMinutes: desiredDuration,
+              before: { durationMinutes: currentDuration },
+              after: { durationMinutes: desiredDuration },
+              reasonRefs: [input.triggerRef, "CONSTRAINT_WEEKLY_CAPACITY"]
+            });
+            simulatedMinutes -= reduction;
+            totalMinuteDelta -= reduction;
+            continue;
+          }
+
+          if (String(task.type) !== "VALIDATE") {
+            operations.push({
+              type: "REMOVE_TASK",
+              taskId: String(task.id),
+              logicalTaskId: String(task.logical_task_id),
+              before: {
+                title: String(task.title),
+                durationMinutes: currentDuration,
+                dueAt: task.due_at == null ? null : String(task.due_at)
+              },
+              after: null,
+              reasonRefs: [input.triggerRef, "CONSTRAINT_WEEKLY_CAPACITY"]
+            });
+            simulatedMinutes -= currentDuration;
+            totalMinuteDelta -= currentDuration;
+          }
+        }
+
+        if (simulatedMinutes > plannableMinutes) {
+          return this.storeSignalNoOp(
+            signal,
+            active,
+            "CONSTRAINT_REQUIRES_MANUAL_RESCHEDULE",
+            "The new weekly capacity is lower than the immutable/completed workload can safely accommodate. SkillTwin kept the current roadmap unchanged.",
+            fingerprint
+          );
+        }
+      }
+
+      weeklyImpact.push({
+        weekIndex: Number(week.week_index),
+        beforeMinutes,
+        afterMinutes: simulatedMinutes,
+        capacityBefore: Number(week.capacity_minutes),
+        capacityAfter: weeklyCapacity,
+        adaptationBufferAfter: adaptationBuffer
+      });
+    }
+
+    if (!operations.length) {
+      return this.storeSignalNoOp(
+        signal,
+        active,
+        "CONSTRAINT_CHANGE_NON_MATERIAL",
+        "The new learning constraints do not require a safe future-task patch right now.",
+        fingerprint
+      );
+    }
+
+    const complexity = operations.length > 2 || operations.some(operation => operation.type === "REMOVE_TASK")
+      ? "MAJOR"
+      : "MINOR";
+
+    const diff = rows(await sql.unsafe(
+      "insert into public.plan_diffs(user_id,goal_id,from_plan_id,from_version,status,trigger_type,trigger_refs,evidence_refs,summary,reason,operations,weekly_impact,timeline_impact,total_minute_delta,touch_count,complexity,can_undo,generator_version,validator_version,input_fingerprint) values ($1::uuid,$2::uuid,$3::uuid,$4,'PROPOSED','CONSTRAINT_CHANGED',$5::jsonb,'[]'::jsonb,$6,$7,$8::jsonb,$9::jsonb,$10,$11,$12,false,$13,$14,$15) returning *",
+      [
+        input.userId,
+        String(active.goal_id),
+        String(active.id),
+        Number(active.version),
+        JSON.stringify([input.triggerRef]),
+        "Roadmap needs a capacity-safe adjustment",
+        "Your learning availability changed. SkillTwin proposed the smallest future-only duration/removal patch that fits the new weekly capacity while preserving completed work.",
+        JSON.stringify(operations),
+        JSON.stringify(weeklyImpact),
+        totalMinuteDelta < 0 ? "IMPROVED" : "NONE",
+        totalMinuteDelta,
+        operations.length,
+        complexity,
+        REPLANNER_VERSION,
+        REPLAN_VALIDATOR_VERSION,
+        fingerprint
+      ]
+    ))[0];
+
+    await sql.unsafe(
+      "insert into public.replan_decisions(user_id,goal_id,from_plan_id,from_version,trigger_type,trigger_ref,material,decision,reason_code,reason,input_fingerprint) values ($1::uuid,$2::uuid,$3::uuid,$4,'CONSTRAINT_CHANGED',$5,true,'PROPOSE','LEARNING_CONSTRAINT_CHANGED',$6,$7) on conflict(user_id,input_fingerprint) do nothing",
+      [
+        input.userId,
+        String(active.goal_id),
+        String(active.id),
+        Number(active.version),
+        input.triggerRef,
+        "Learning constraints require a future-only roadmap patch.",
+        fingerprint
+      ]
+    );
+
+    const proposed = this.diffDto(diff, false);
+    if (String(active.adaptation_mode) === "AUTOMATIC" && complexity === "MINOR") {
       return this.applyProposed(input.userId, proposed.diff.diffId);
     }
 
@@ -1177,6 +1416,35 @@ export class AdaptiveReplannerService {
         }
 
         appliedOperations.push(operation);
+      }
+
+      if (String(diff.trigger_type) === "CONSTRAINT_CHANGED") {
+        const goal = rows(await tx.unsafe(
+          "select hours_per_week,preferred_session_minutes,min_session_minutes,learning_days from public.career_goals where id=$1::uuid and user_id=$2::uuid limit 1",
+          [String(active.goal_id), userId]
+        ))[0];
+        if (!goal) throw new Error("PLAN_DIFF_REFERENCE_ERROR");
+
+        const constraintPayload = {
+          hoursPerWeek: Number(goal.hours_per_week),
+          learningDays: arrayOfStrings(goal.learning_days),
+          preferredSessionMinutes: Number(goal.preferred_session_minutes),
+          minSessionMinutes: Number(goal.min_session_minutes)
+        };
+        const nextConstraintFingerprint = createHash("sha256")
+          .update(JSON.stringify(constraintPayload))
+          .digest("hex");
+        const nextCapacity = Math.round(Number(goal.hours_per_week) * 60);
+        const nextBuffer = Math.max(30, Math.round(nextCapacity * 0.10));
+
+        await tx.unsafe(
+          "update public.learning_plans set constraint_fingerprint=$1,adaptation_buffer_minutes=$2 where id=$3::uuid and user_id=$4::uuid",
+          [nextConstraintFingerprint,nextBuffer,nextPlanId,userId]
+        );
+        await tx.unsafe(
+          "update public.plan_weeks set capacity_minutes=$1 where plan_id=$2::uuid",
+          [nextCapacity,nextPlanId]
+        );
       }
 
       const weekTotals = rows(await tx.unsafe(

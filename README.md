@@ -105,12 +105,12 @@ A production deployment is considered ready when:
 - migrations and seed data exist
 - the deterministic fallback remains enabled for hackathon reliability
 
-## Vercel deployment
+## Railway production deployment
 
-Create/import the GitHub repository in Vercel, then configure these Production + Preview variables:
+SkillTwin production runs on Railway. Configure the existing production service with these variables:
 
 \`\`\`
-NEXT_PUBLIC_APP_URL=https://<your-domain>
+NEXT_PUBLIC_APP_URL=https://skilltwin-production.up.railway.app
 NEXT_PUBLIC_SUPABASE_URL=https://eozvilqmrhtujqtdmrri.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_vAoB9dpwSkPb-zTrhXNnAA_MalFJ8bK
 SUPABASE_DB_URL=<server-only Supabase Postgres URL>
@@ -148,3 +148,26 @@ npm run db:push
 \`\`\`
 
 Remote production migrations are already versioned under \`supabase/migrations/\`; keep the repository and live project in sync.
+
+
+## Release QA
+
+The frozen architecture is enforced by a repository-level contract check:
+
+```bash
+npm run qa:contracts
+```
+
+Production/database smoke tooling:
+
+```bash
+npm run qa:db
+npm run smoke:release
+```
+
+Operational procedures and the judge-demo checklist live in:
+
+- `docs/RELEASE_AND_DEMO_RUNBOOK.md`
+- `docs/QA_MATRIX.md`
+
+Railway is the production compute target. Supabase remains the canonical database, Auth, Storage, RLS, and realtime platform.

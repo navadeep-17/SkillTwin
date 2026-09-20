@@ -60,3 +60,30 @@ test("low-confidence important gap starts with validation", () => {
   });
   assert.equal(plan.weeks[0].objectives[0].tasks[0].type, "VALIDATE");
 });
+
+
+import { SUPPORTED_PLAN_OPERATIONS, validatePlanOperations } from "../dist/lib/domain/replanner.js";
+
+test("replanner exposes the complete patch vocabulary", () => {
+  assert.deepEqual(
+    [...SUPPORTED_PLAN_OPERATIONS].sort(),
+    ["ADD_TASK","MOVE_TASK","REMOVE_TASK","CHANGE_DIFFICULTY","CHANGE_DURATION","CHANGE_RESOURCE"].sort()
+  );
+});
+
+test("replanner rejects unsafe duration and resource patches", () => {
+  assert.throws(() => validatePlanOperations([{
+    type: "CHANGE_DURATION",
+    taskId: "task-1",
+    fromMinutes: 30,
+    toMinutes: 0,
+    reason: "invalid"
+  }]));
+  assert.throws(() => validatePlanOperations([{
+    type: "CHANGE_RESOURCE",
+    taskId: "task-1",
+    fromResourceId: null,
+    toResourceId: "",
+    reason: "invalid"
+  }]));
+});

@@ -23,7 +23,7 @@ export class GapAnalysisService {
       preferredAlternatives: goal.preferredAlternatives,
       remainingWeeks: remainingWeeks(goal.targetDate)
     });
-    const snapshotId = await this.repository.persistSnapshot(userId, goal, analysis, trigger);
+    const snapshotId = await this.repository.persistSnapshot(userId, goal, analysis, trigger, role.roleName);
     return { snapshotId, goal, role:{id:role.roleId,name:role.roleName,version:role.version}, ...analysis };
   }
 

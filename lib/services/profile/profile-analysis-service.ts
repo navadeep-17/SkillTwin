@@ -9,7 +9,7 @@ import { segmentResume } from "@/lib/profile/segmenter";
 import { extractMappedSkills } from "@/lib/profile/skill-mapper";
 import { extractSemanticSkillEvidence, mergeProfileExtractions } from "@/lib/profile/semantic-extractor";
 
-export const PROFILE_ANALYZER_SCHEMA_VERSION = "profile-analyzer-b1";
+export const PROFILE_ANALYZER_SCHEMA_VERSION = "profile-analyzer-b2";
 
 export class ProfileAnalysisService {
   constructor(private readonly repository = new PostgresProfileAnalysisRepository()) {}

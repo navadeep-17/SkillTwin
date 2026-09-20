@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AuthForm } from "@/components/auth/auth-form";
+import { AuthShell } from "@/components/auth/auth-shell";
 
 export default async function LoginPage({
   searchParams
@@ -17,17 +18,12 @@ export default async function LoginPage({
     : "/onboarding";
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md items-center px-6 py-12">
-      <div className="w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-600">SkillTwin</p>
-        <h1 className="mt-2 text-2xl font-semibold">Sign in to build your SkillTwin</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Create an account, verify your email, then continue into your persistent learner profile.
-        </p>
-        <div className="mt-6">
-          <AuthForm initialMessage={params.error ?? ""} nextPath={nextPath} />
-        </div>
-      </div>
-    </main>
+    <AuthShell
+      eyebrow="Your learning state, remembered"
+      title="Welcome to SkillTwin"
+      description="Sign in to continue your persistent learner profile, target-role analysis, and adaptive roadmap."
+    >
+      <AuthForm initialMessage={params.error ?? ""} nextPath={nextPath} />
+    </AuthShell>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppNav } from "@/components/shell/app-nav";
+import { GlobalAssistantDock } from "@/components/shell/global-assistant-dock";
 import { PageTransition } from "@/components/shell/page-transition";
 import { ProductRealtimeSync } from "@/components/realtime/product-sync";
 import { createClient } from "@/lib/supabase/server";
@@ -23,6 +24,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <div className={user ? "min-h-screen pb-20 lg:pb-0 lg:pl-64" : "min-h-screen"}>
           <PageTransition>{children}</PageTransition>
         </div>
+        {user ? <GlobalAssistantDock /> : null}
       </body>
     </html>
   );

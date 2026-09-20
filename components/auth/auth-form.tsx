@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
+import { Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -15,6 +17,7 @@ export function AuthForm({
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState(initialMessage);
   const [pending, setPending] = useState(false);
 
@@ -44,7 +47,7 @@ export function AuthForm({
     }
 
     if (mode === "signup" && !result.data.session) {
-      setMessage("Account created. Check your email and confirm your address, then SkillTwin will continue onboarding.");
+      setMessage("Account created. Check your email to verify your address, then continue onboarding.");
       return;
     }
 
@@ -53,65 +56,94 @@ export function AuthForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <label className="block">
-        <span className="text-sm font-medium text-slate-700">Email</span>
-        <input
-          className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none ring-brand-500 focus:ring-2"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={event => setEmail(event.target.value)}
-        />
-      </label>
-      <label className="block">
-        <span className="text-sm font-medium text-slate-700">Password</span>
-        <input
-          className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none ring-brand-500 focus:ring-2"
-          type="password"
-          autoComplete={mode === "signin" ? "current-password" : "new-password"}
-          minLength={8}
-          required
-          value={password}
-          onChange={event => setPassword(event.target.value)}
-        />
-      </label>
+    <div>
+      <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1">
+        <button
+          type="button"
+          onClick={() => {
+            setMode("signin");
+            setMessage("");
+          }}
+          className={"rounded-lg px-3 py-2 text-sm font-semibold transition " + (mode === "signin" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500")}
+        >
+          Sign in
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMode("signup");
+            setMessage("");
+          }}
+          className={"rounded-lg px-3 py-2 text-sm font-semibold transition " + (mode === "signup" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500")}
+        >
+          Create account
+        </button>
+      </div>
 
-      {mode === "signup" ? (
-        <p className="text-xs leading-5 text-slate-500">
-          Use at least 8 characters. If email confirmation is enabled, you will receive a verification link before onboarding.
-        </p>
-      ) : null}
+      <form onSubmit={submit} className="mt-6 space-y-4">
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-700">Email</span>
+          <input
+            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-50"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            required
+            value={email}
+            onChange={event => setEmail(event.target.value)}
+          />
+        </label>
 
-      {message ? (
-        <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700">{message}</p>
-      ) : null}
+        <label className="block">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm font-semibold text-slate-700">Password</span>
+            {mode === "signin" ? (
+              <Link href="/forgot-password" className="text-xs font-semibold text-brand-600 hover:text-brand-700">
+                Forgot password?
+              </Link>
+            ) : null}
+          </div>
+          <div className="relative mt-2">
+            <input
+              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 pr-11 text-sm outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-50"
+              type={showPassword ? "text" : "password"}
+              autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              minLength={8}
+              placeholder="At least 8 characters"
+              required
+              value={password}
+              onChange={event => setPassword(event.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(value => !value)}
+              className="absolute inset-y-0 right-0 inline-flex w-11 items-center justify-center text-slate-400 transition hover:text-slate-700"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
+        </label>
 
-      <button
-        className="w-full rounded-xl bg-brand-600 px-4 py-2.5 font-medium text-white disabled:opacity-50"
-        disabled={pending}
-        type="submit"
-      >
-        {pending ? "Working..." : mode === "signin" ? "Sign in" : "Create account"}
-      </button>
+        {mode === "signup" ? (
+          <p className="text-xs leading-5 text-slate-500">
+            Use at least 8 characters. If email confirmation is enabled, we will send a verification link before onboarding.
+          </p>
+        ) : null}
 
-      {mode === "signin" ? (
-        <a href="/forgot-password" className="block text-center text-sm font-medium text-slate-600 hover:text-slate-950">
-          Forgot password?
-        </a>
-      ) : null}
+        {message ? (
+          <p className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm leading-6 text-slate-700">{message}</p>
+        ) : null}
 
-      <button
-        className="w-full text-sm font-medium text-brand-700"
-        type="button"
-        onClick={() => {
-          setMode(mode === "signin" ? "signup" : "signin");
-          setMessage("");
-        }}
-      >
-        {mode === "signin" ? "Need an account? Sign up" : "Already have an account? Sign in"}
-      </button>
-    </form>
+        <button className="btn-primary w-full !py-3" disabled={pending} type="submit">
+          {pending ? <LoaderCircle className="size-4 animate-spin" /> : null}
+          {pending ? "Working" : mode === "signin" ? "Continue to SkillTwin" : "Create my SkillTwin"}
+        </button>
+      </form>
+
+      <p className="mt-5 text-center text-xs leading-5 text-slate-400">
+        By continuing, your learner state remains private to your account and protected by row-level access controls.
+      </p>
+    </div>
   );
 }

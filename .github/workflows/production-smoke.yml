@@ -1,5 +1,5 @@
 name: Production Smoke
-# one-time deployment verification retry
+# one-time deployment verification auth-bootstrap
 on:
   push:
     branches: [main]

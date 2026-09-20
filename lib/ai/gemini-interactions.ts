@@ -43,11 +43,14 @@ export class GeminiStructuredClient {
     validator: z.ZodType<T>;
   }) {
     const env = getServerEnv();
+    const apiKey = env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY_MISSING");
+
     const response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": env.GEMINI_API_KEY
+        "x-goog-api-key": apiKey
       },
       body: JSON.stringify({
         model: env.GEMINI_MODEL,

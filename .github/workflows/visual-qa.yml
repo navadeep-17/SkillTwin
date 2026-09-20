@@ -1,0 +1,51 @@
+name: Production Visual QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      require_authenticated:
+        description: "Fail if authenticated visual QA cannot run"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-visual-qa
+  cancel-in-progress: true
+
+jobs:
+  visual-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Audit production at desktop and mobile widths
+        run: node scripts/visual-qa.mjs
+        env:
+          BASE_URL: https://skilltwin-production.up.railway.app
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          REQUIRE_AUTH_VISUAL: ${{ inputs.require_authenticated }}
+
+      - name: Upload visual QA artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-qa-production
+          path: artifacts/visual-qa
+          if-no-files-found: error

@@ -55,6 +55,9 @@ export async function POST(
     if (message === "PROFILE_DOCUMENT_NOT_FOUND") {
       return fail(requestId, 404, "NOT_FOUND", "Resume document not found.");
     }
+    if (message === "ACTIVE_GOAL_NOT_FOUND") {
+      return fail(requestId, 409, "ACTIVE_GOAL_NOT_FOUND", "Choose and save a target role before analyzing your resume.");
+    }
     if (message === "TEXT_EXTRACTION_TOO_LOW") {
       return fail(
         requestId,

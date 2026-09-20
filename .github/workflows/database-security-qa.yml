@@ -1,0 +1,19 @@
+name: Database Security QA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  database-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - name: Verify RLS, server-owned writes, realtime, and private storage
+        run: npm run qa:db
+        env:
+          SUPABASE_DB_URL: ${{ secrets.QA_SUPABASE_DB_URL }}

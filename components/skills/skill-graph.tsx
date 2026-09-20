@@ -107,7 +107,7 @@ export function SkillGraph({
                   </div>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/70">
                     <div
-                      className="h-full rounded-full"
+                      className="progress-fill h-full rounded-full"
                       style={{
                         width: Math.max(4, Math.min(100, ((item.capabilityScore ?? 0) / Math.max(item.targetScore, 0.1)) * 100)) + "%",
                         background: tones.accent
@@ -128,7 +128,9 @@ export function SkillGraph({
               boxShadow: selectedNode
                 ? "0 0 0 3px rgba(91,92,226,0.15), 0 10px 30px rgba(16,24,40,0.10)"
                 : "0 1px 3px rgba(16,24,40,0.07)",
-              transition: "opacity 180ms ease, box-shadow 180ms ease, transform 180ms ease"
+              transition: "opacity 180ms ease, box-shadow 180ms ease, transform 180ms ease",
+              animation: "node-reveal 300ms cubic-bezier(0.22,1,0.36,1) both",
+              animationDelay: Math.min(360, (stage - 1) * 70 + index * 28) + "ms"
             }
           });
         });

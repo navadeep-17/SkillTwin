@@ -60,7 +60,7 @@ export async function AppNav({ userId, email }: { userId: string; email?: string
             </div>
             {readiness != null ? (
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
-                <div className="h-full rounded-full bg-brand-500 transition-all duration-500" style={{ width: Math.max(2, Math.min(100, readiness)) + "%" }} />
+                <div className="progress-fill h-full rounded-full bg-brand-500 transition-all duration-500" style={{ width: Math.max(2, Math.min(100, readiness)) + "%" }} />
               </div>
             ) : null}
           </Link>

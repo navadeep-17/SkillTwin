@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, CheckCircle2, ChevronRight, Sparkles, Target, TrendingUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { AnimatedReadinessRing } from "@/components/ui/animated-readiness-ring";
 
 export default async function OverviewPage() {
   const supabase = await createClient();
@@ -150,16 +151,7 @@ export default async function OverviewPage() {
           </div>
 
           <div className="flex items-center justify-center lg:justify-end">
-            <div className="relative flex size-44 items-center justify-center rounded-full bg-slate-100 p-3 sm:size-48">
-              <div
-                className="absolute inset-0 rounded-full transition-all duration-700"
-                style={{ background: "conic-gradient(#5B5CE2 " + readiness * 3.6 + "deg, #E9EAEE 0deg)" }}
-              />
-              <div className="relative flex size-[calc(100%-14px)] flex-col items-center justify-center rounded-full bg-white shadow-sm">
-                <span className="text-4xl font-semibold tracking-tight text-slate-950">{Math.round(readiness)}%</span>
-                <span className="mt-1 text-xs font-medium text-slate-500">role readiness</span>
-              </div>
-            </div>
+            <AnimatedReadinessRing value={readiness} />
           </div>
         </div>
       </section>
@@ -218,7 +210,7 @@ export default async function OverviewPage() {
                   </div>
                   <div className="hidden w-28 sm:block">
                     <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-                      <div className="h-full rounded-full bg-brand-400" style={{ width: Math.max(4, Math.min(100, gapPercent)) + "%" }} />
+                      <div className="progress-fill h-full rounded-full bg-brand-400" style={{ width: Math.max(4, Math.min(100, gapPercent)) + "%" }} />
                     </div>
                   </div>
                   <ChevronRight className="size-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-500" />

@@ -161,7 +161,7 @@ export function RoadmapView() {
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-brand-500 transition-all duration-700"
+                className="progress-fill h-full rounded-full bg-brand-500 transition-all duration-700"
                 style={{ width: Math.max(completion ? 4 : 0, completion) + "%" }}
               />
             </div>
@@ -213,7 +213,7 @@ export function RoadmapView() {
                       <span className="font-semibold text-slate-700">{percent}% capacity</span>
                     </div>
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                      <div className="h-full rounded-full bg-brand-400 transition-all duration-700" style={{ width: percent + "%" }} />
+                      <div className="progress-fill h-full rounded-full bg-brand-400 transition-all duration-700" style={{ width: percent + "%" }} />
                     </div>
                   </div>
                 </div>

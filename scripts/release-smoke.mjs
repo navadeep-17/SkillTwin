@@ -113,6 +113,7 @@ async function publicChecks() {
   assert(readinessPayload?.ok === true, "readiness endpoint did not return an ok API envelope");
   assert(readinessPayload?.data?.status === "ready", "production readiness did not report ready");
   assert(readinessPayload?.data?.checks?.database === "ready", "production database readiness is not ready");
+  assert(readinessPayload?.data?.checks?.databaseSecurity === "ready", "production database security readiness is not ready");
 
   const protectedPage = await request("/overview");
   assert(

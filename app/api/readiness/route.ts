@@ -3,6 +3,7 @@ import { ok } from "@/lib/api/responses";
 import { getServerEnv } from "@/lib/config/env";
 import { getSql } from "@/lib/db/postgres";
 import { getDeploymentIdentity } from "@/lib/runtime/deployment";
+import { checkDatabaseSecurity } from "@/lib/qa/database-security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ export async function GET() {
   let databaseError: string | null = null;
   let schemaMigration: { version: string; name: string } | null = null;
   let systemMetadata: Record<string, string> = {};
+  let databaseSecurity: Awaited<ReturnType<typeof checkDatabaseSecurity>> | null = null;
 
   if (env.SUPABASE_DB_URL) {
     try {
@@ -36,6 +38,8 @@ export async function GET() {
       systemMetadata = Object.fromEntries(
         metadataRows.map(row => [String(row.key), String(row.value)])
       );
+
+      databaseSecurity = await checkDatabaseSecurity();
     } catch (error) {
       database = "unreachable";
       databaseError = error instanceof Error ? error.message.slice(0, 180) : "Database check failed";
@@ -47,7 +51,9 @@ export async function GET() {
       ? Boolean(env.GEMINI_API_KEY)
       : Boolean(env.OPENAI_API_KEY);
 
-  const requiredReady = database === "ready";
+  const requiredReady =
+    database === "ready"
+    && databaseSecurity?.status === "ready";
 
   return ok(requestId, {
     status: requiredReady ? "ready" : "not_ready",
@@ -56,9 +62,11 @@ export async function GET() {
     checks: {
       publicSupabase: "configured",
       database,
+      databaseSecurity: databaseSecurity?.status ?? "not_checked",
       aiEnhancement: aiConfigured ? "configured" : "optional_not_configured",
       deterministicFallback: env.DEMO_FALLBACK_ENABLED === "true" ? "enabled" : "disabled"
     },
+    security: databaseSecurity,
     releaseState: {
       schemaMigration,
       schemaContractVersion: systemMetadata.schema_contract_version ?? null,
@@ -66,6 +74,11 @@ export async function GET() {
       resourceCatalogVersion: systemMetadata.resource_catalog_version ?? null,
       demoFixtureVersion: systemMetadata.demo_fixture_version ?? null
     },
-    notes: databaseError ? ["Database check failed: " + databaseError] : []
+    notes: [
+      ...(databaseError ? ["Database check failed: " + databaseError] : []),
+      ...(databaseSecurity?.status === "failed"
+        ? ["Database security invariants are not fully satisfied."]
+        : [])
+    ]
   });
 }

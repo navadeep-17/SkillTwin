@@ -4,7 +4,13 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 
-export function AuthForm({ initialMessage = "" }: { initialMessage?: string }) {
+export function AuthForm({
+  initialMessage = "",
+  nextPath = "/onboarding"
+}: {
+  initialMessage?: string;
+  nextPath?: string;
+}) {
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -42,7 +48,7 @@ export function AuthForm({ initialMessage = "" }: { initialMessage?: string }) {
       return;
     }
 
-    router.replace("/onboarding");
+    router.replace(mode === "signin" ? nextPath : "/onboarding");
     router.refresh();
   }
 

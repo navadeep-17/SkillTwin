@@ -56,10 +56,18 @@ export async function POST(
 
     const payload = parseJsonObject(proposal.payload);
 
-    await sql.unsafe(
-      "update public.chat_action_proposals set status='CONFIRMED' where id=$1::uuid and user_id=$2::uuid and status='PROPOSED'",
+    const claimed = rows(await sql.unsafe(
+      "update public.chat_action_proposals set status='CONFIRMED' where id=$1::uuid and user_id=$2::uuid and status='PROPOSED' returning id",
       [id, user.id]
-    );
+    ));
+    if (!claimed[0]) {
+      return fail(
+        requestId,
+        409,
+        "ACTION_ALREADY_CLAIMED",
+        "This action proposal was already confirmed or changed by another request."
+      );
+    }
 
     let result: unknown;
     try {

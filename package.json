@@ -16,7 +16,8 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:push": "supabase db push",
-    "smoke:release": "node scripts/release-smoke.mjs"
+    "smoke:release": "node scripts/release-smoke.mjs",
+    "qa:db": "node scripts/database-security-qa.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

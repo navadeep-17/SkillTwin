@@ -90,7 +90,7 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
     } finally {
       setReplanPending(false);
     }
-  }, [assessmentId, retryReplan]);
+  }, [assessmentId]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -120,7 +120,7 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
     } finally {
       setLoading(false);
     }
-  }, [assessmentId]);
+  }, [assessmentId, retryReplan]);
 
   useEffect(() => {
     void load();

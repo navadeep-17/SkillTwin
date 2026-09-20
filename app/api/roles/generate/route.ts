@@ -83,9 +83,12 @@ function assertAcyclic(
 
 export async function POST(request: Request) {
   const requestId = await getRequestId();
+  let generationRunId: string | null = null;
+  let generationUserId: string | null = null;
 
   try {
     const { user } = await requireUser();
+    generationUserId = user.id;
     const parsed = inputSchema.safeParse(await request.json().catch(() => ({})));
     if (!parsed.success) {
       return fail(requestId, 400, "VALIDATION_ERROR", "Enter a role name and a short description.", parsed.error.flatten().fieldErrors);
@@ -96,7 +99,7 @@ export async function POST(request: Request) {
       "insert into public.role_generation_runs(user_id,requested_role_name,requested_level,goal_description,status,provider,model_version) values ($1::uuid,$2,$3,$4,'RUNNING','GEMINI','configured') returning id",
       [user.id, parsed.data.name, parsed.data.level, parsed.data.description]
     ));
-    const generationRunId = String(runRows[0].id);
+    generationRunId = String(runRows[0].id);
 
     const catalog = rows(await sql.unsafe(
       "select id,slug,canonical_name,category,description from public.skills order by category,canonical_name"
@@ -325,6 +328,19 @@ export async function POST(request: Request) {
     }
 
     const message = error instanceof Error ? error.message : String(error);
+
+    if (generationRunId && generationUserId) {
+      try {
+        const sql = getSql();
+        await sql.unsafe(
+          "update public.role_generation_runs set status='FAILED',error_code=$1,error_message=$2,completed_at=now() where id=$3::uuid and user_id=$4::uuid and status='RUNNING'",
+          [message.split(":")[0].slice(0, 120), message.slice(0, 600), generationRunId, generationUserId]
+        );
+      } catch {
+        // Preserve the original generation failure.
+      }
+    }
+
     console.error("role.generate.failed", { requestId, error: message });
 
     if (message.startsWith("GEMINI_")) {

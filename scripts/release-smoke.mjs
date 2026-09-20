@@ -114,6 +114,22 @@ async function publicChecks() {
   assert(readinessPayload?.data?.status === "ready", "production readiness did not report ready");
   assert(readinessPayload?.data?.checks?.database === "ready", "production database readiness is not ready");
 
+  const vertical = await request("/api/demo/vertical-slice");
+  assert(vertical.response.status === 200, "deterministic vertical slice is not 200");
+  const verticalPayload = jsonBody(vertical, "deterministic vertical slice");
+  assert(verticalPayload?.ok === true, "deterministic vertical slice did not return an ok API envelope");
+
+  const beforeReadiness = Number(verticalPayload?.data?.before?.readiness);
+  const afterReadiness = Number(verticalPayload?.data?.after?.readiness);
+  const operations = verticalPayload?.data?.planDiff?.operations ?? [];
+  assert(Number.isFinite(beforeReadiness), "vertical slice before readiness missing");
+  assert(Number.isFinite(afterReadiness), "vertical slice after readiness missing");
+  assert(afterReadiness > beforeReadiness, "vertical slice assessment did not improve readiness");
+  assert(
+    Array.isArray(operations) && operations.some(operation => operation?.type === "ADD_TASK"),
+    "vertical slice did not produce the expected minimal PlanDiff"
+  );
+
   const protectedPage = await request("/overview");
   assert(
     [301,302,303,307,308].includes(protectedPage.response.status)

@@ -49,6 +49,9 @@ export function OnboardingFlow() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [customRoleName, setCustomRoleName] = useState("");
+  const [customRoleDescription, setCustomRoleDescription] = useState("");
+  const [generatingRole, setGeneratingRole] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,6 +116,67 @@ export function OnboardingFlow() {
         ? current.filter(item => item !== day)
         : [...current, day]
     );
+  }
+
+  async function generateCustomRole() {
+    if (!customRoleName.trim() || !customRoleDescription.trim()) return;
+    setGeneratingRole(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/roles/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: customRoleName.trim(),
+          description: customRoleDescription.trim()
+        })
+      });
+      const json = await response.json() as {
+        ok: boolean;
+        data?: {
+          role?: {
+            roleId: string;
+            roleVersionId: string;
+            slug: string;
+            name: string;
+            family: string | null;
+            version: number;
+            requirementCount: number;
+          };
+        };
+        error?: { message?: string };
+      };
+
+      if (!response.ok || !json.ok || !json.data?.role) {
+        throw new Error(json.error?.message ?? "Could not generate this custom role.");
+      }
+
+      const generated = json.data.role;
+      const newRole: Role = {
+        id: generated.roleId,
+        slug: generated.slug,
+        name: generated.name,
+        family: generated.family,
+        roleVersionId: generated.roleVersionId,
+        version: generated.version,
+        requirementCount: generated.requirementCount
+      };
+
+      setRoles(currentRoles => [
+        ...currentRoles.filter(item => item.roleVersionId !== newRole.roleVersionId),
+        newRole
+      ]);
+      setSelectedRole(newRole.roleVersionId);
+      setGoalSaved(false);
+      setMessage("Custom role generated and selected. Review your schedule, then save the career goal.");
+      setCustomRoleName("");
+      setCustomRoleDescription("");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not generate this custom role.");
+    } finally {
+      setGeneratingRole(false);
+    }
   }
 
   async function saveGoal() {
@@ -201,6 +265,47 @@ export function OnboardingFlow() {
             );
           })}
         </div>
+
+        <details className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+          <summary className="cursor-pointer font-medium text-slate-800">
+            Can&apos;t find your career? Generate a custom role
+          </summary>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Describe the role you want. SkillTwin will map it only to skills in the canonical catalog,
+            validate the dependency graph, and create a versioned AI-generated role model.
+          </p>
+          <div className="mt-4 grid gap-3 lg:grid-cols-[.8fr_1.5fr_auto] lg:items-end">
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700">Role name</span>
+              <input
+                value={customRoleName}
+                onChange={event => setCustomRoleName(event.target.value)}
+                placeholder="e.g. Cloud Security Engineer"
+                maxLength={80}
+                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700">What should this role do?</span>
+              <textarea
+                value={customRoleDescription}
+                onChange={event => setCustomRoleDescription(event.target.value)}
+                placeholder="Describe the responsibilities, level, and kind of work you are targeting."
+                rows={3}
+                maxLength={1200}
+                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={generateCustomRole}
+              disabled={generatingRole || customRoleName.trim().length < 3 || customRoleDescription.trim().length < 10}
+              className="rounded-xl border border-brand-300 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 disabled:opacity-50"
+            >
+              {generatingRole ? "Generating…" : "Generate role"}
+            </button>
+          </div>
+        </details>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <label className="block">

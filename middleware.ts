@@ -10,7 +10,8 @@ const PROTECTED_PREFIXES = [
   "/projects",
   "/progress",
   "/journey",
-  "/activity"
+  "/activity",
+  "/settings"
 ];
 
 function isProtected(pathname: string) {

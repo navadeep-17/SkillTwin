@@ -10,7 +10,8 @@ export default async function OverviewPage() {
   const [
     { data: skills, error: skillsError },
     { data: snapshot, error: snapshotError },
-    { data: activity, error: activityError }
+    { data: activity, error: activityError },
+    { data: goal, error: goalError }
   ] = await Promise.all([
     supabase
       .from("user_skills")
@@ -29,12 +30,30 @@ export default async function OverviewPage() {
       .select("id,event_type,summary,created_at")
       .eq("user_id", auth.user.id)
       .order("created_at", { ascending: false })
-      .limit(6)
+      .limit(6),
+    supabase
+      .from("career_goals")
+      .select("id,role_versions!inner(version,target_roles!inner(name,slug,family))")
+      .eq("user_id", auth.user.id)
+      .eq("status", "ACTIVE")
+      .limit(1)
+      .maybeSingle()
   ]);
 
   if (skillsError) throw skillsError;
   if (snapshotError) throw snapshotError;
   if (activityError) throw activityError;
+  if (goalError) throw goalError;
+
+  const roleVersion = goal?.role_versions as {
+    version?: number;
+    target_roles?: { name?: string; slug?: string; family?: string | null } | Array<{ name?: string; slug?: string; family?: string | null }>;
+  } | null;
+  const targetRole = Array.isArray(roleVersion?.target_roles)
+    ? roleVersion?.target_roles[0]
+    : roleVersion?.target_roles;
+  const roleName = targetRole?.name ?? "Target role";
+  const roleVersionNumber = roleVersion?.version ?? 1;
 
   let gaps: Array<Record<string, unknown>> = [];
   if (snapshot?.id) {
@@ -54,7 +73,7 @@ export default async function OverviewPage() {
         <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-600">SkillTwin</p>
         <h1 className="mt-2 text-3xl font-semibold">Your SkillTwin needs evidence</h1>
         <p className="mt-3 max-w-2xl text-slate-600">
-          Upload your resume to build the first evidence-backed skill state and Backend Engineer gap analysis.
+          Choose your target role and upload your resume to build the first evidence-backed skill state and career gap analysis.
         </p>
         <Link
           href="/onboarding"
@@ -76,7 +95,7 @@ export default async function OverviewPage() {
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-600">
-            Backend Engineer · Live SkillTwin
+            {roleName} · Live SkillTwin
           </p>
           <h1 className="mt-2 text-3xl font-semibold">Your current learning state</h1>
           <p className="mt-2 text-slate-600">
@@ -89,7 +108,7 @@ export default async function OverviewPage() {
       </header>
 
       <section className="grid gap-4 md:grid-cols-4">
-        <Metric label="Career readiness" value={snapshot ? String(snapshot.readiness) + "%" : "—"} detail="Target: Backend Engineer v1" />
+        <Metric label="Career readiness" value={snapshot ? String(snapshot.readiness) + "%" : "—"} detail={"Target: " + roleName + " v" + roleVersionNumber} />
         <Metric label="Evidence coverage" value={snapshot ? String(snapshot.evidence_coverage) + "%" : "—"} detail="Separate from capability" />
         <Metric label="Skills with evidence" value={String(strongSkills)} detail={String(skills?.length ?? 0) + " SkillTwin rows"} />
         <Metric label="Average confidence" value={String(avgConfidence) + "%"} detail="Confidence is not capability" />

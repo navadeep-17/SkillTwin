@@ -83,7 +83,7 @@ async function main() {
   const vertical = await app("/api/demo/vertical-slice");
   if (!vertical.response.ok) throw new Error("vertical slice endpoint failed");
 
-  const email = "skilltwin-smoke-" + Date.now() + "@example.com";
+  const email = "skilltwin-smoke-" + Date.now() + "@gmail.com";
   const password = "S!" + crypto.randomBytes(18).toString("base64url");
 
   const supabase = createServerClient(

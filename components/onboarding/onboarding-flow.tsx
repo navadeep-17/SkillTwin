@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ResumeAnalyzer } from "@/components/onboarding/resume-analyzer";
 import { UnresolvedSkillTerms } from "@/components/onboarding/unresolved-skill-terms";
+import { ManualProfileEvidence } from "@/components/onboarding/manual-profile-evidence";
 
 type Role = {
   id: string;
@@ -415,6 +416,7 @@ export function OnboardingFlow() {
           </p>
         </div>
         <ResumeAnalyzer />
+        <ManualProfileEvidence />
         {goalSaved ? <UnresolvedSkillTerms /> : null}
         {!goalSaved ? (
           <p className="mt-3 text-sm text-amber-700">Save your target role before analyzing your resume.</p>

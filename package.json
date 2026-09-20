@@ -23,7 +23,8 @@
     "qa:db": "node scripts/verify-release-db.mjs",
     "smoke:production": "node scripts/smoke-production.mjs",
     "release:verify": "npm run lint && npm run qa:static && npm run typecheck:core && npm run test:core && npm run typecheck && npm run build",
-    "qa:rls": "node scripts/test-rls.mjs"
+    "qa:rls": "node scripts/test-rls.mjs",
+    "qa:audit": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

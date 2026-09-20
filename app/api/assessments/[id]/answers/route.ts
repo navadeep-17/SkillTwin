@@ -92,6 +92,12 @@ export async function POST(
     if (message === "ASSESSMENT_NOT_ACTIVE") {
       return fail(requestId, 409, "ASSESSMENT_NOT_ACTIVE", "This assessment is no longer active.");
     }
+    if (message === "ASSESSMENT_ATTEMPT_CONFLICT") {
+      return fail(requestId, 409, message, "This answer was already being processed. Reload the challenge to continue safely.");
+    }
+    if (message === "QUESTION_BANK_SELECTION_FAILED") {
+      return fail(requestId, 409, message, "SkillTwin could not select another valid challenge item. Reload the challenge to recover.");
+    }
 
     console.error("assessment.answer.failed", { requestId, error: message });
     return fail(requestId, 500, "ANSWER_SUBMIT_FAILED", "Could not evaluate this answer.");

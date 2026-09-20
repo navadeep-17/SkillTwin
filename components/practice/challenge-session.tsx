@@ -70,6 +70,7 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
   const [question, setQuestion] = useState<Question | null>(null);
   const [pendingQuestion, setPendingQuestion] = useState<Question | null>(null);
   const [selected, setSelected] = useState("");
+  const [answerText, setAnswerText] = useState("");
   const [feedback, setFeedback] = useState<{ score: number; text: string } | null>(null);
   const [completion, setCompletion] = useState<CompletionResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -127,7 +128,9 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
   }, [load]);
 
   async function submit() {
-    if (!question || !selected || submitting) return;
+    if (!question || submitting) return;
+    const constructed = question.type === "SHORT_TEXT" || question.type === "SCENARIO";
+    if (constructed ? answerText.trim().length < 3 : !selected) return;
 
     setSubmitting(true);
     setError("");
@@ -137,8 +140,9 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           questionId: question.id,
-          optionId: selected,
-          idempotencyKey: assessmentId + ":" + question.id + ":" + selected
+          optionId: constructed ? undefined : selected,
+          answerText: constructed ? answerText.trim() : undefined,
+          idempotencyKey: assessmentId + ":" + question.id + ":" + (constructed ? answerText.trim() : selected)
         })
       });
       const payload = await response.json();
@@ -180,6 +184,7 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
     setQuestion(pendingQuestion);
     setPendingQuestion(null);
     setSelected("");
+    setAnswerText("");
     setFeedback(null);
   }
 
@@ -306,32 +311,58 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
       <div className="mt-7 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h1 className="text-xl font-semibold leading-8">{question.prompt}</h1>
 
-        <div className="mt-5 space-y-3">
-          {question.options.map(option => (
-            <button
-              key={option.id}
-              type="button"
+        {question.type === "MCQ" ? (
+          <div className="mt-5 space-y-3">
+            {question.options.map(option => (
+              <button
+                key={option.id}
+                type="button"
+                disabled={Boolean(feedback)}
+                onClick={() => setSelected(option.id)}
+                className={
+                  "w-full rounded-xl border p-4 text-left transition " +
+                  (selected === option.id
+                    ? "border-brand-500 bg-indigo-50"
+                    : "border-slate-200 bg-white hover:border-slate-300") +
+                  (feedback ? " cursor-default" : "")
+                }
+              >
+                <span className="mr-3 font-semibold text-slate-500">{option.id.toUpperCase()}.</span>
+                {option.text}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <label className="mt-5 block">
+            <span className="text-sm font-medium text-slate-700">
+              {question.type === "SCENARIO" ? "Your reasoning" : "Your answer"}
+            </span>
+            <textarea
+              value={answerText}
+              onChange={event => setAnswerText(event.target.value)}
               disabled={Boolean(feedback)}
-              onClick={() => setSelected(option.id)}
-              className={
-                "w-full rounded-xl border p-4 text-left transition " +
-                (selected === option.id
-                  ? "border-brand-500 bg-indigo-50"
-                  : "border-slate-200 bg-white hover:border-slate-300") +
-                (feedback ? " cursor-default" : "")
-              }
-            >
-              <span className="mr-3 font-semibold text-slate-500">{option.id.toUpperCase()}.</span>
-              {option.text}
-            </button>
-          ))}
-        </div>
+              rows={question.type === "SCENARIO" ? 7 : 4}
+              maxLength={3000}
+              placeholder={question.type === "SCENARIO"
+                ? "Explain the decision you would make and why."
+                : "Answer in your own words."}
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white p-4 text-sm leading-6 outline-none ring-brand-500 focus:ring-2 disabled:bg-slate-50"
+            />
+            <p className="mt-2 text-xs text-slate-400">
+              Evaluated against the stored rubric. Your text is treated as learner content, not as instructions to the evaluator.
+            </p>
+          </label>
+        )}
 
         {error ? <p className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p> : null}
 
         {feedback ? (
           <div className={feedback.score >= 0.75 ? "mt-5 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800" : "mt-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-800"}>
-            <p className="font-semibold">{feedback.score >= 0.75 ? "Correct" : "Not quite"}</p>
+            <p className="font-semibold">
+              {question.type === "MCQ"
+                ? feedback.score >= 0.75 ? "Correct" : "Not quite"
+                : feedback.score >= 0.75 ? "Strong answer" : "Needs more detail"}
+            </p>
             <p className="mt-1">{feedback.text}</p>
           </div>
         ) : null}
@@ -344,7 +375,7 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
           ) : (
             <button
               onClick={submit}
-              disabled={!selected || submitting}
+              disabled={(question.type === "MCQ" ? !selected : answerText.trim().length < 3) || submitting}
               className="rounded-xl bg-brand-600 px-5 py-2.5 font-medium text-white disabled:opacity-50"
             >
               {submitting ? "Evaluating…" : "Submit answer"}

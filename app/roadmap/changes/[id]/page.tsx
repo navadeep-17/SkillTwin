@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { UndoPlanChangeButton } from "@/components/roadmap/undo-plan-change-button";
+import { ProposedPlanChangeActions } from "@/components/roadmap/proposed-plan-change-actions";
 
 function parseJson(value: unknown): unknown {
   let current = value;

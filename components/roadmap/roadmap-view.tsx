@@ -27,6 +27,7 @@ type Task = {
   difficulty: string;
   flexible: boolean;
   rationale_code: string;
+  validation_available?: boolean;
   resource?: ResourceAssignment | null;
 };
 
@@ -253,6 +254,19 @@ function TaskCard({
           <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
             Completed
           </span>
+        ) : task.type === "VALIDATE" && task.validation_available === false ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-lg bg-slate-200 px-3 py-2 text-xs font-medium text-slate-600">
+              Validation bank not ready
+            </span>
+            <button
+              type="button"
+              onClick={() => onOpen("/practice")}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700"
+            >
+              Challenge another priority skill
+            </button>
+          </div>
         ) : (
           <button
             type="button"

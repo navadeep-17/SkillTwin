@@ -25,6 +25,9 @@ export async function GET(
     if (message === "ASSESSMENT_NOT_FOUND") {
       return fail(requestId, 404, "NOT_FOUND", "Assessment not found.");
     }
+    if (message === "QUESTION_BANK_SELECTION_FAILED") {
+      return fail(requestId, 409, message, "SkillTwin could not recover the next valid challenge item.");
+    }
 
     console.error("assessment.read.failed", { requestId, error: message });
     return fail(requestId, 500, "ASSESSMENT_READ_FAILED", "Could not load this assessment.");

@@ -7,8 +7,21 @@ function rows(value: unknown): Row[] {
   return value as Row[];
 }
 
+function parseJsonValue(value: unknown): unknown {
+  let current = value;
+  for (let depth = 0; depth < 2 && typeof current === "string"; depth += 1) {
+    try {
+      current = JSON.parse(current);
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
 function arrayOfStrings(value: unknown): string[] {
-  return Array.isArray(value) ? value.map(String) : [];
+  const parsed = parseJsonValue(value);
+  return Array.isArray(parsed) ? parsed.map(String) : [];
 }
 
 function normalize(value: string) {
@@ -206,11 +219,11 @@ export class JourneyChatService {
       assessmentResult
     ] = await Promise.all([
       sql.unsafe(
-        "select * from public.gap_snapshots where user_id=$1::uuid order by created_at desc limit 1",
+        "select gs.*,tr.name role_name,rv.version role_model_version from public.gap_snapshots gs join public.role_versions rv on rv.id=gs.role_version_id join public.target_roles tr on tr.id=rv.role_id where gs.user_id=$1::uuid order by gs.created_at desc limit 1",
         [userId]
       ),
       sql.unsafe(
-        "select sgr.*,s.canonical_name,s.slug from public.skill_gap_results sgr join public.skills s on s.id=sgr.skill_id where sgr.snapshot_id=(select id from public.gap_snapshots where user_id=$1::uuid order by created_at desc limit 1) order by sgr.priority_score desc limit 5",
+        "select sgr.*,s.canonical_name,s.slug,(select count(*) from public.assessment_question_bank qb where qb.skill_id=sgr.skill_id and qb.is_active=true and qb.type='MCQ')::int mcq_count from public.skill_gap_results sgr join public.skills s on s.id=sgr.skill_id where sgr.snapshot_id=(select id from public.gap_snapshots where user_id=$1::uuid order by created_at desc limit 1) order by sgr.priority_score desc limit 12",
         [userId]
       ),
       sql.unsafe(
@@ -302,10 +315,10 @@ export class JourneyChatService {
     }
 
     if (intent === "START_ASSESSMENT") {
-      const assessable = context.gaps.find(gap => String(gap.slug) === "rest-api") ?? context.gaps[0];
+      const assessable = context.gaps.find(gap => Number(gap.mcq_count ?? 0) >= 4);
       if (!assessable) {
         return {
-          content: "I do not have enough current role-gap context to propose a useful challenge yet. Analyze your profile first.",
+          content: "None of your current priority gaps has a sufficiently validated challenge bank yet. I have not started a low-quality assessment.",
           refs,
           evidenceRefs,
           action: null
@@ -383,7 +396,8 @@ export class JourneyChatService {
       if (diff.to_plan_id) refs.push({ type: "learning_plan", id: String(diff.to_plan_id), label: "Updated plan" });
       evidenceRefs.push(...arrayOfStrings(diff.evidence_refs));
 
-      const operations = Array.isArray(diff.operations) ? diff.operations as Array<Record<string, unknown>> : [];
+      const parsedOperations = parseJsonValue(diff.operations);
+      const operations = Array.isArray(parsedOperations) ? parsedOperations as Array<Record<string, unknown>> : [];
       const operationSummary = operations.map(operation => {
         const task = operation.task && typeof operation.task === "object"
           ? operation.task as Record<string, unknown>
@@ -436,9 +450,10 @@ export class JourneyChatService {
         };
       }
 
-      refs.push(ref("gap_snapshot", context.snapshot, "Current Backend Engineer gap snapshot"));
+      const roleName = String(context.snapshot.role_name ?? "target role");
+      refs.push(ref("gap_snapshot", context.snapshot, "Current " + roleName + " gap snapshot"));
       return {
-        content: "Your current Backend Engineer readiness guidance metric is " + String(context.snapshot.readiness)
+        content: "Your current " + roleName + " readiness guidance metric is " + String(context.snapshot.readiness)
           + "%, with " + String(context.snapshot.evidence_coverage)
           + "% evidence coverage. Readiness is a role-weighted learning guidance metric, not a hiring probability.",
         refs,
@@ -487,7 +502,8 @@ export class JourneyChatService {
       return {
         content: String(skill.canonical_name) + ": " + scoreText + " with " + confidence
           + "% confidence."
-          + (gap ? " Against Backend Engineer v1, the current gap severity is "
+          + (gap ? " Against " + String(context.snapshot?.role_name ?? "your target role") + " v"
+            + String(context.snapshot?.role_model_version ?? "current") + ", the current gap severity is "
             + Math.round(Number(gap.gap_severity) * 100) + "% and the recommended action is "
             + String(gap.recommended_action) + "." : ""),
         refs,
@@ -499,7 +515,7 @@ export class JourneyChatService {
     const pieces: string[] = [];
     if (context.snapshot) {
       refs.push(ref("gap_snapshot", context.snapshot, "Current gap snapshot"));
-      pieces.push("Backend Engineer readiness is " + String(context.snapshot.readiness) + "%.");
+      pieces.push(String(context.snapshot.role_name ?? "Target-role") + " readiness is " + String(context.snapshot.readiness) + "%.");
     }
     if (context.gaps[0]) {
       const gap = context.gaps[0];

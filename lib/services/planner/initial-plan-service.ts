@@ -40,13 +40,27 @@ function dueAt(weekStart: Date, dayName: string) {
   return date.toISOString();
 }
 
+function parseJsonValue(value: unknown): unknown {
+  let current = value;
+  for (let depth = 0; depth < 2 && typeof current === "string"; depth += 1) {
+    try {
+      current = JSON.parse(current);
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
 function jsonArray(value: unknown, fallback: string[]) {
-  if (Array.isArray(value)) return value.map(String);
+  const parsed = parseJsonValue(value);
+  if (Array.isArray(parsed)) return parsed.map(String);
   return fallback;
 }
 
 function catalogTags(value: unknown) {
-  return Array.isArray(value) ? value.map(String) : [];
+  const parsed = parseJsonValue(value);
+  return Array.isArray(parsed) ? parsed.map(String) : [];
 }
 
 function resourceScore(resource: Row, task: GeneratedTask, preferredSessionMinutes: number) {

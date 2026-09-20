@@ -138,7 +138,7 @@ export class AssessmentService {
   async create(input:ChallengeCreateInput) {
     const sql=getSql();
     let targetSkillId=input.targetSkillId ?? null;
-    let sourceTaskId=input.sourceTaskId ?? null;
+    const sourceTaskId=input.sourceTaskId ?? null;
     const mode=input.mode ?? "CHALLENGE_ME";
 
     if(sourceTaskId){

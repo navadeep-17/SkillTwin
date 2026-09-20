@@ -9,6 +9,20 @@ import { getSql } from "@/lib/db/postgres";
 type Row = Record<string, unknown>;
 const rows = (value: unknown) => value as Row[];
 
+function parseJsonObject(value: unknown): Record<string, unknown> {
+  let current = value;
+  for (let depth = 0; depth < 2 && typeof current === "string"; depth += 1) {
+    try {
+      current = JSON.parse(current);
+    } catch {
+      break;
+    }
+  }
+  return current && typeof current === "object" && !Array.isArray(current)
+    ? current as Record<string, unknown>
+    : {};
+}
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -40,9 +54,7 @@ export async function POST(
       return fail(requestId, 409, "ACTION_EXPIRED", "This action proposal expired. Ask Journey Chat again.");
     }
 
-    const payload = proposal.payload && typeof proposal.payload === "object" && !Array.isArray(proposal.payload)
-      ? proposal.payload as Record<string, unknown>
-      : {};
+    const payload = parseJsonObject(proposal.payload);
 
     await sql.unsafe(
       "update public.chat_action_proposals set status='CONFIRMED' where id=$1::uuid and user_id=$2::uuid and status='PROPOSED'",

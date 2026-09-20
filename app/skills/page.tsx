@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ChevronDown, Database, Network, ShieldCheck, Target } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
   SkillGraph,
@@ -158,37 +160,71 @@ export default async function SkillsPage() {
     edgeType: edge.edge_type
   }));
 
+  const evidenceRows = evidence?.length ?? 0;
+  const knownSkills = (userSkills ?? []).filter(skill => skill.level_value !== "UNKNOWN").length;
+  const highConfidence = (userSkills ?? []).filter(skill => Number(skill.confidence ?? 0) >= 0.7).length;
+
   return (
-    <main className="mx-auto max-w-7xl px-6 py-10">
-      <header>
-        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-600">SkillTwin</p>
-        <h1 className="mt-2 text-3xl font-semibold">Skill Graph + evidence matrix</h1>
-        <p className="mt-2 max-w-3xl text-slate-600">
-          See the {roleName} competency structure, then inspect the evidence that produced each capability estimate.
-          Capability, confidence, role target, and priority remain separate signals.
-        </p>
+    <main className="mx-auto max-w-7xl px-5 py-8 sm:px-6 lg:px-8 lg:py-10">
+      <header className="mb-7 flex flex-wrap items-start justify-between gap-5">
+        <div className="max-w-3xl">
+          <p className="eyebrow">Your SkillTwin</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.025em] text-slate-950">
+            Skills, evidence, and role dependencies.
+          </h1>
+          <p className="mt-3 text-[15px] leading-7 text-slate-600">
+            Explore the {roleName} competency graph, then inspect the evidence behind each learner-state estimate.
+            Capability, confidence, target level, and priority stay intentionally separate.
+          </p>
+        </div>
+        <Link href="/onboarding" className="btn-secondary">
+          Add evidence
+        </Link>
       </header>
+
+      <section className="grid gap-4 sm:grid-cols-3">
+        <SummaryMetric icon={Network} label="Skills observed" value={String(userSkills?.length ?? 0)} detail={knownSkills + " with usable capability evidence"} />
+        <SummaryMetric icon={ShieldCheck} label="High-confidence skills" value={String(highConfidence)} detail="Confidence ≥ 70%" />
+        <SummaryMetric icon={Database} label="Evidence records" value={String(evidenceRows)} detail="Accepted or non-aggregating observations"} />
+      </section>
 
       {requirements.length ? (
         <SkillGraph roleName={roleName} items={graphNodes} dependencies={graphEdges} />
       ) : (
-        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
-          Choose a target role to build the competency graph.
+        <section className="surface-card mt-8 p-6">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+            <Target className="size-5" />
+          </div>
+          <h2 className="mt-4 text-lg font-semibold text-slate-900">Choose a target role to build the competency graph</h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+            The graph is role-relative. Once a target is active, SkillTwin can place your current capability against its prerequisite structure.
+          </p>
+          <Link href="/onboarding" className="btn-primary mt-5">Set target role</Link>
         </section>
       )}
 
-      <section className="mt-10">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">Evidence Matrix</p>
-          <h2 className="mt-1 text-2xl font-semibold">Your persistent learner state</h2>
+      <section className="mt-9">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="eyebrow">Evidence matrix</p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Persistent learner state</h2>
+            <p className="mt-2 text-sm text-slate-500">Open a skill to see its current estimate, role target, and supporting evidence.</p>
+          </div>
+          {snapshot ? (
+            <div className="text-right text-xs text-slate-400">
+              <p>Readiness {Math.round(Number(snapshot.readiness ?? 0))}%</p>
+              <p className="mt-1">Coverage {Math.round(Number(snapshot.evidence_coverage ?? 0))}%</p>
+            </div>
+          ) : null}
         </div>
 
         {!userSkills?.length ? (
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
-            No skill state exists yet. Analyze your resume first.
+          <div className="surface-card mt-5 p-6">
+            <p className="text-sm text-slate-600">No canonical skill state exists yet. Analyze your profile to create evidence-backed estimates.</p>
+            <Link href="/onboarding" className="btn-primary mt-4">Analyze profile</Link>
           </div>
         ) : (
-          <div className="mt-5 space-y-4">
+          <div className="mt-5 space-y-3">
             {userSkills.map(skill => {
               const meta = relationOne(skill.skills as
                 | { canonical_name?: string; category?: string; description?: string; slug?: string }
@@ -198,57 +234,62 @@ export default async function SkillsPage() {
               const items = evidenceMap.get(skill.skill_id) ?? [];
               const confidence = Math.round(Number(skill.confidence) * 100);
               const gapPercent = gap ? Math.round(Number(gap.gap_severity) * 100) : null;
+              const tone = skillTone(gap?.status, skill.level_value);
 
               return (
                 <details
                   id={"skill-" + skill.skill_id}
                   key={skill.skill_id}
-                  className="group scroll-mt-24 rounded-2xl border border-slate-200 bg-white shadow-sm"
+                  className="group surface-card scroll-mt-24 overflow-hidden"
                 >
-                  <summary className="cursor-pointer list-none p-5">
-                    <div className="grid gap-4 md:grid-cols-[1.3fr_.7fr_.7fr_.7fr] md:items-center">
-                      <div>
-                        <p className="font-semibold">{meta?.canonical_name ?? "Skill"}</p>
-                        <p className="mt-1 text-sm text-slate-500">{meta?.category ?? ""}</p>
+                  <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
+                    <div className="grid gap-4 md:grid-cols-[1.4fr_.65fr_.65fr_.65fr_auto] md:items-center">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className={"size-2.5 shrink-0 rounded-full " + tone.dot} />
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-slate-900">{meta?.canonical_name ?? "Skill"}</p>
+                          <p className="mt-0.5 truncate text-xs text-slate-400">{meta?.category ?? ""}</p>
+                        </div>
                       </div>
-                      <Mini label="Capability" value={String(skill.level_value)} />
+                      <Mini label="Capability" value={humanize(String(skill.level_value))} />
                       <Mini label="Confidence" value={confidence + "%"} />
-                      <Mini
-                        label="Role gap"
-                        value={gapPercent == null ? "—" : gapPercent + "%"}
-                      />
+                      <Mini label="Role gap" value={gapPercent == null ? "—" : gapPercent + "%"} />
+                      <ChevronDown className="size-4 text-slate-400 transition-transform duration-200 group-open:rotate-180" />
                     </div>
                   </summary>
 
-                  <div className="border-t border-slate-200 p-5">
-                    <div className="grid gap-4 md:grid-cols-4">
+                  <div className="border-t border-slate-100 bg-slate-50/45 p-5 sm:p-6">
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                       <Metric label="Capability score" value={skill.capability_score == null ? "Unknown" : Number(skill.capability_score).toFixed(2) + " / 4"} />
                       <Metric label="Target score" value={gap ? Number(gap.target_score).toFixed(2) + " / 4" : "—"} />
-                      <Metric label="Priority" value={gap ? String(gap.priority_band) : "—"} />
-                      <Metric label="Next action" value={gap ? String(gap.recommended_action) : "—"} />
+                      <Metric label="Priority" value={gap ? humanize(String(gap.priority_band)) : "—"} />
+                      <Metric label="Next action" value={gap ? humanize(String(gap.recommended_action)) : "—"} />
                     </div>
 
-                    <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_1.5fr]">
-                      <div>
-                        <h3 className="font-semibold">Why it matters</h3>
+                    <div className="mt-5 grid gap-5 xl:grid-cols-[.75fr_1.25fr]">
+                      <div className="rounded-xl border border-slate-200 bg-white p-4">
+                        <h3 className="text-sm font-semibold text-slate-900">Why it matters</h3>
                         <p className="mt-2 text-sm leading-6 text-slate-600">
-                          {meta?.description ?? "This skill contributes to the target-role competency model."}
+                          {meta?.description ?? "This skill contributes to the active target-role competency model."}
                         </p>
-                        <div className="mt-4 space-y-1 text-sm text-slate-500">
+                        <div className="mt-4 space-y-2 text-xs text-slate-500">
                           <p>{skill.evidence_count} evidence items across {skill.source_family_count} source families</p>
-                          <p>Conflict: {skill.conflict_state}</p>
-                          <p>Last validated: {skill.last_validated_at ? new Date(skill.last_validated_at).toLocaleDateString() : "Not yet"}</p>
+                          <p>Conflict state · {humanize(String(skill.conflict_state))}</p>
+                          <p>Last validated · {skill.last_validated_at ? new Date(skill.last_validated_at).toLocaleDateString() : "Not yet"}</p>
                         </div>
                       </div>
 
-                      <div>
-                        <h3 className="font-semibold">Evidence found</h3>
+                      <div className="rounded-xl border border-slate-200 bg-white p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <h3 className="text-sm font-semibold text-slate-900">Evidence found</h3>
+                          <span className="text-xs text-slate-400">{items.length} shown</span>
+                        </div>
                         <div className="mt-3 space-y-2">
                           {items.length ? items.slice(0, 8).map(item => (
-                            <div key={item.id} className="rounded-xl bg-slate-50 p-3">
+                            <div key={item.id} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
                               <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-brand-600">{item.source_type}</span>
-                                <span className="text-xs text-slate-500">Weight {Number(item.effective_weight).toFixed(2)}</span>
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-600">{humanize(item.source_type)}</span>
+                                <span className="text-xs text-slate-400">Weight {Number(item.effective_weight).toFixed(2)}</span>
                               </div>
                               <p className="mt-2 text-sm leading-6 text-slate-700">{item.claim}</p>
                             </div>
@@ -269,20 +310,57 @@ export default async function SkillsPage() {
   );
 }
 
+function SummaryMetric({
+  icon: Icon,
+  label,
+  value,
+  detail
+}: {
+  icon: typeof Network;
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <div className="surface-card flex items-start gap-3 p-4">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+        <Icon className="size-4.5" />
+      </span>
+      <div>
+        <p className="text-xs text-slate-500">{label}</p>
+        <p className="mt-0.5 text-xl font-semibold tracking-tight text-slate-950">{value}</p>
+        <p className="mt-1 text-xs leading-5 text-slate-400">{detail}</p>
+      </div>
+    </div>
+  );
+}
+
 function Mini({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 font-medium">{value}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-slate-700">{value}</p>
     </div>
   );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-slate-50 p-4">
-      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 font-semibold">{value}</p>
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+      <p className="mt-1.5 font-semibold text-slate-800">{value}</p>
     </div>
   );
+}
+
+function skillTone(status: GapRow["status"] | undefined, level: string) {
+  if (status === "STRONG") return { dot: "bg-emerald-500" };
+  if (status === "GAP") return { dot: "bg-rose-500" };
+  if (status === "DEVELOPING") return { dot: "bg-amber-500" };
+  if (level === "UNKNOWN") return { dot: "bg-slate-300" };
+  return { dot: "bg-brand-400" };
+}
+
+function humanize(value: string) {
+  return value.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, char => char.toUpperCase());
 }

@@ -250,7 +250,7 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
                   <span className="font-semibold text-slate-700">{beforeConfidence}% → {afterConfidence}%</span>
                 </div>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-                  <div className="h-full rounded-full bg-brand-500 transition-all duration-700" style={{ width: Math.max(2, afterConfidence) + "%" }} />
+                  <div className="progress-fill h-full rounded-full bg-brand-500 transition-all duration-700" style={{ width: Math.max(2, afterConfidence) + "%" }} />
                 </div>
               </div>
             </div>
@@ -346,7 +346,7 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
           <span>{progress}% complete</span>
         </div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-          <div className="h-full rounded-full bg-brand-500 transition-all duration-500" style={{ width: progress + "%" }} />
+          <div className="progress-fill h-full rounded-full bg-brand-500 transition-all duration-500" style={{ width: progress + "%" }} />
         </div>
       </header>
 

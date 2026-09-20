@@ -206,7 +206,7 @@ export default async function ProgressPage() {
                         <span className="font-semibold text-slate-600">{coverage}%</span>
                       </div>
                       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-200">
-                        <div className="h-full rounded-full bg-brand-400" style={{ width: Math.max(2, coverage) + "%" }} />
+                        <div className="progress-fill h-full rounded-full bg-brand-400" style={{ width: Math.max(2, coverage) + "%" }} />
                       </div>
                     </div>
                   );
@@ -306,12 +306,12 @@ function TrendChart({
               </g>
             );
           })}
-          <polyline points={points("coverage")} fill="none" stroke="#98A2B3" strokeWidth="2.5" strokeDasharray="7 7" strokeLinecap="round" strokeLinejoin="round" />
-          <polyline points={points("readiness")} fill="none" stroke="#5B5CE2" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline pathLength={1} className="chart-line-draw" points={points("coverage")} fill="none" stroke="#98A2B3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline pathLength={1} className="chart-line-draw chart-line-draw-delayed" points={points("readiness")} fill="none" stroke="#5B5CE2" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
           {snapshots.map((snapshot, index) => {
             const x = snapshots.length === 1 ? width / 2 : insetX + (index / (snapshots.length - 1)) * plotWidth;
             const y = insetY + (1 - Math.max(0, Math.min(100, snapshot.readiness)) / 100) * plotHeight;
-            return <circle key={snapshot.id} cx={x} cy={y} r="4.5" fill="#5B5CE2" stroke="white" strokeWidth="2" />;
+            return <circle key={snapshot.id} className="chart-dot-in" style={{ animationDelay: 240 + index * 55 + "ms" }} cx={x} cy={y} r="4.5" fill="#5B5CE2" stroke="white" strokeWidth="2" />;
           })}
         </svg>
       </div>

@@ -218,8 +218,26 @@ export function OnboardingFlow() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
-        Loading your learner profile...
+      <div className="surface-card overflow-hidden">
+        <div className="grid gap-6 p-6 sm:p-8 md:grid-cols-[auto_1fr] md:items-center">
+          <div className="flex justify-center">
+            <div className="twin-loader">
+              <span className="absolute inset-[28px] z-10 rounded-full bg-brand-500" />
+            </div>
+          </div>
+          <div>
+            <p className="eyebrow">Preparing your workspace</p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">Loading your learner profile</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Syncing your target role, schedule preferences, and latest evidence state.
+            </p>
+            <div className="mt-5 grid gap-2 sm:grid-cols-3">
+              <div className="skeleton h-10 rounded-xl" />
+              <div className="skeleton h-10 rounded-xl" />
+              <div className="skeleton h-10 rounded-xl" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

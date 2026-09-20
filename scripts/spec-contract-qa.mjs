@@ -70,6 +70,8 @@ for (const operation of [
 
 const replannerService = read("lib/services/replanner/adaptive-replanner-service.ts");
 for (const trigger of [
+  "SKILL_DELTA_COMMITTED",
+  "GAP_DELTA_COMMITTED",
   "ASSESSMENT_COMPLETED",
   "PROJECT_EVIDENCE_COMMITTED",
   "TASK_BEHAVIOR_SIGNAL",
@@ -87,6 +89,11 @@ for (const operation of [
 ]) {
   assert(replannerService.includes(operation), "adaptive replanner apply path missing " + operation);
 }
+
+assert(
+  replannerService.includes("BETTER_VERIFIED_RESOURCE_AVAILABLE"),
+  "adaptive replanner is missing verified-resource replacement generation"
+);
 
 const assessmentService = read("lib/services/assessment/assessment-service.ts");
 for (const questionType of ["MCQ", "SHORT_TEXT", "SCENARIO"]) {

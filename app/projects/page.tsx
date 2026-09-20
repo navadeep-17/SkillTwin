@@ -2,6 +2,18 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProjectEvidenceForm } from "@/components/projects/project-evidence-form";
 
+function parseJson(value: unknown): unknown {
+  let current = value;
+  for (let depth = 0; depth < 2 && typeof current === "string"; depth += 1) {
+    try {
+      current = JSON.parse(current);
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
 export default async function ProjectsPage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -32,13 +44,17 @@ export default async function ProjectsPage() {
           <h2 className="text-xl font-semibold">Submitted projects</h2>
           <div className="mt-4 space-y-4">
             {projects?.length ? projects.map(project => {
-              const result = project.analysis_result && typeof project.analysis_result === "object"
-                ? project.analysis_result as Record<string, unknown>
+              const parsedResult = parseJson(project.analysis_result);
+              const result = parsedResult && typeof parsedResult === "object" && !Array.isArray(parsedResult)
+                ? parsedResult as Record<string, unknown>
                 : {};
-              const evidence = result.evidence && typeof result.evidence === "object"
-                ? result.evidence as Record<string, unknown>
+              const parsedEvidence = parseJson(result.evidence);
+              const evidence = parsedEvidence && typeof parsedEvidence === "object" && !Array.isArray(parsedEvidence)
+                ? parsedEvidence as Record<string, unknown>
                 : {};
               const deltas = Array.isArray(evidence.deltas) ? evidence.deltas : [];
+              const parsedTechnologies = parseJson(project.technologies);
+              const technologies = Array.isArray(parsedTechnologies) ? parsedTechnologies : [];
 
               return (
                 <article key={project.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -62,9 +78,9 @@ export default async function ProjectsPage() {
 
                   <p className="mt-3 line-clamp-4 text-sm leading-6 text-slate-600">{project.description}</p>
 
-                  {Array.isArray(project.technologies) && project.technologies.length ? (
+                  {technologies.length ? (
                     <div className="mt-3 flex flex-wrap gap-1.5">
-                      {project.technologies.map((tech: unknown) => (
+                      {technologies.map((tech: unknown) => (
                         <span key={String(tech)} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
                           {String(tech)}
                         </span>

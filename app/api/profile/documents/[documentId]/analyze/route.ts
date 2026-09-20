@@ -35,7 +35,7 @@ export async function POST(
         notifications: [{
           title: analysis.reused ? "Profile analysis already complete" : "Profile analysis complete",
           message: result.gapAnalysis?.readiness != null
-            ? "SkillTwin updated. Backend Engineer readiness is now " + result.gapAnalysis.readiness + "%."
+            ? "SkillTwin updated. Career readiness is now " + result.gapAnalysis.readiness + "%."
             : "Profile evidence processed.",
           tone: "success"
         }],

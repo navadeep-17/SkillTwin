@@ -2,6 +2,19 @@ import { getRequestId } from "@/lib/api/request-context";
 import { fail, ok } from "@/lib/api/responses";
 import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
 
+function stringArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String);
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return value ? [value] : [];
+    }
+  }
+  return [];
+}
+
 export const dynamic = "force-dynamic";
 
 export async function GET() {
@@ -78,6 +91,7 @@ export async function GET() {
     return ok(requestId, {
       plan: {
         ...plan,
+        warnings: stringArray(plan.warnings),
         weeks: weekDtos,
         counts: {
           weeks: weekDtos.length,

@@ -223,7 +223,7 @@ export class JourneyChatService {
         [userId]
       ),
       sql.unsafe(
-        "select sgr.*,s.canonical_name,s.slug,(select count(*) from public.assessment_question_bank qb where qb.skill_id=sgr.skill_id and qb.is_active=true and qb.type='MCQ')::int mcq_count from public.skill_gap_results sgr join public.skills s on s.id=sgr.skill_id where sgr.snapshot_id=(select id from public.gap_snapshots where user_id=$1::uuid order by created_at desc limit 1) order by sgr.priority_score desc limit 12",
+        "select sgr.*,s.canonical_name,s.slug,(select count(*) from public.assessment_question_bank qb where qb.skill_id=sgr.skill_id and qb.is_active=true and qb.type in ('MCQ','SHORT_TEXT','SCENARIO'))::int question_count from public.skill_gap_results sgr join public.skills s on s.id=sgr.skill_id where sgr.snapshot_id=(select id from public.gap_snapshots where user_id=$1::uuid order by created_at desc limit 1) order by sgr.priority_score desc limit 12",
         [userId]
       ),
       sql.unsafe(
@@ -315,7 +315,7 @@ export class JourneyChatService {
     }
 
     if (intent === "START_ASSESSMENT") {
-      const assessable = context.gaps.find(gap => Number(gap.mcq_count ?? 0) >= 4);
+      const assessable = context.gaps.find(gap => Number(gap.question_count ?? 0) >= 4);
       if (!assessable) {
         return {
           content: "None of your current priority gaps has a sufficiently validated challenge bank yet. I have not started a low-quality assessment.",

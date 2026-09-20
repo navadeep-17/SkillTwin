@@ -10,7 +10,7 @@ This matrix maps the frozen A-J architecture to executable checks in the reposit
 | D — Planner/Resources | core planner tests, contract QA | Plan v1 respects capacity and verified resources |
 | E — Assessment | adaptive + constructed fallback core tests | Challenge Me -> summary evidence -> SkillDelta |
 | F — Replanner | operation vocabulary tests, evidence replan policy tests, contract QA | assessment/project/task/constraint signal -> no-op or versioned PlanDiff |
-| G — Frontend | production build, route contract QA | desktop/mobile walkthrough, task detail, graph, drawers, loading/error states |
+| G — Frontend | production build, route contract QA, manual Playwright visual QA workflow | desktop/mobile walkthrough, task detail, graph, drawers, loading/error states |
 | H — DB/API | database-security QA, readiness | RLS, private storage, authenticated API boundary |
 | I — Chat/Activity | contract QA + build | grounded explanation, confirmed action, matching AgentEvent |
 | J — Release/QA | CI, `qa:contracts`, `qa:db`, `smoke:release` | exact Railway SHA + full judge rehearsal + rollback target |
@@ -37,5 +37,7 @@ Against production:
 ```bash
 EXPECTED_COMMIT_SHA=<main-sha> npm run smoke:release
 ```
+
+For screenshot-based responsive/runtime QA, run the `Production Visual QA` GitHub workflow. It captures desktop and mobile screenshots, checks horizontal overflow, page/console errors, unnamed buttons, and missing image alt text. Authenticated coverage activates when `SMOKE_EMAIL` and `SMOKE_PASSWORD` secrets are configured.
 
 For a dedicated destructive smoke learner, also configure the smoke authentication variables, `SMOKE_DESTRUCTIVE=true`, and `DEMO_RESET_SECRET`.

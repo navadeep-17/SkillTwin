@@ -17,7 +17,7 @@ export function DemoResetControl(){
     startTransition(async()=>{
       const result=await resetOwnDemoState();
       if(!result.ok){
-        setMessage(result.error);
+        setMessage(result.error ?? "Could not reset and verify the demo learner.");
         return;
       }
       setMessage("DEMO READY. The deterministic baseline passed invariant verification.");

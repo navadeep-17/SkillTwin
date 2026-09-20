@@ -2,6 +2,7 @@ import { getRequestId } from "@/lib/api/request-context";
 import { ok } from "@/lib/api/responses";
 import { getServerEnv } from "@/lib/config/env";
 import { getSql } from "@/lib/db/postgres";
+import { getDeploymentIdentity } from "@/lib/runtime/deployment";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const requestId = await getRequestId();
   const env = getServerEnv();
+  const deployment = getDeploymentIdentity();
 
   let database: "ready" | "missing_config" | "unreachable" = "missing_config";
   let databaseError: string | null = null;
@@ -34,7 +36,7 @@ export async function GET() {
   return ok(requestId, {
     status: requiredReady ? "ready" : "not_ready",
     service: "skilltwin-web",
-    version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? "local",
+    ...deployment,
     checks: {
       publicSupabase: "configured",
       database,

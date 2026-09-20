@@ -1,6 +1,8 @@
 name: Railway Release Smoke
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       expected_commit_sha:

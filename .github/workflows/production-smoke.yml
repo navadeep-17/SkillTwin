@@ -1,4 +1,5 @@
 name: Production Smoke
+# one-time deployment verification
 on:
   push:
     branches: [main]

@@ -238,7 +238,7 @@ export class AdaptiveReplannerService {
     const operation = this.addOperation(input, affected, reinforcementMinutes);
 
     const diffRows = rows(await sql.unsafe(
-      "insert into public.plan_diffs(user_id,goal_id,from_plan_id,from_version,status,trigger_type,trigger_refs,evidence_refs,summary,reason,operations,weekly_impact,timeline_impact,total_minute_delta,touch_count,complexity,can_undo,generator_version,validator_version,input_fingerprint) values ($1::uuid,$2::uuid,$3::uuid,$4,'PROPOSED','ASSESSMENT_COMPLETED',$5::jsonb,$6::jsonb,$7,$8,$9::jsonb,$10::jsonb,'NONE',$11,1,'MINOR',true,$12,$13,$14) returning *",
+      "insert into public.plan_diffs(user_id,goal_id,from_plan_id,from_version,status,trigger_type,trigger_refs,evidence_refs,summary,reason,operations,weekly_impact,timeline_impact,total_minute_delta,touch_count,complexity,can_undo,generator_version,validator_version,input_fingerprint) values ($1::uuid,$2::uuid,$3::uuid,$4,'PROPOSED','ASSESSMENT_COMPLETED',$1::text::jsonb,$1::text::jsonb,$7,$8,$1::text::jsonb,$1::text::jsonb,'NONE',$11,1,'MINOR',true,$12,$13,$14) returning *",
       [
         input.userId,
         String(active.goal_id),
@@ -327,7 +327,7 @@ export class AdaptiveReplannerService {
       if (!activeCheck || String(activeCheck.id) !== String(active.id)) throw new Error("STALE_BASELINE");
 
       const diffRows = rows(await tx.unsafe(
-        "insert into public.plan_diffs(user_id,goal_id,from_plan_id,from_version,status,trigger_type,trigger_refs,evidence_refs,summary,reason,operations,weekly_impact,timeline_impact,total_minute_delta,touch_count,complexity,can_undo,generator_version,validator_version,input_fingerprint) values ($1::uuid,$2::uuid,$3::uuid,$4,'PROPOSED','ASSESSMENT_COMPLETED',$5::jsonb,$6::jsonb,$7,$8,$9::jsonb,$10::jsonb,'NONE',$11,1,'MINOR',true,$12,$13,$14) returning *",
+        "insert into public.plan_diffs(user_id,goal_id,from_plan_id,from_version,status,trigger_type,trigger_refs,evidence_refs,summary,reason,operations,weekly_impact,timeline_impact,total_minute_delta,touch_count,complexity,can_undo,generator_version,validator_version,input_fingerprint) values ($1::uuid,$2::uuid,$3::uuid,$4,'PROPOSED','ASSESSMENT_COMPLETED',$1::text::jsonb,$1::text::jsonb,$7,$8,$1::text::jsonb,$1::text::jsonb,'NONE',$11,1,'MINOR',true,$12,$13,$14) returning *",
         [
           input.userId,
           String(active.goal_id),
@@ -371,7 +371,7 @@ export class AdaptiveReplannerService {
       );
 
       const planRows = rows(await tx.unsafe(
-        "insert into public.learning_plans(user_id,goal_id,version,status,start_date,end_date,gap_snapshot_id,constraint_fingerprint,planner_version,generation_key,planned_minutes,adaptation_buffer_minutes,rationale,warnings,parent_plan_id) values ($1::uuid,$2::uuid,$3,'ACTIVE',$4::date,$5::date,$6::uuid,$7,$8,$9,$10,$11,$12::jsonb,$13::jsonb,$14::uuid) returning *",
+        "insert into public.learning_plans(user_id,goal_id,version,status,start_date,end_date,gap_snapshot_id,constraint_fingerprint,planner_version,generation_key,planned_minutes,adaptation_buffer_minutes,rationale,warnings,parent_plan_id) values ($1::uuid,$2::uuid,$3,'ACTIVE',$4::date,$5::date,$6::uuid,$7,$8,$9,$10,$11,$1::text::jsonb,$1::text::jsonb,$14::uuid) returning *",
         [
           input.userId,
           String(active.goal_id),
@@ -400,7 +400,7 @@ export class AdaptiveReplannerService {
       for (const week of oldWeeks) {
         const isAffected = String(week.id) === String(affected.week_id);
         const inserted = rows(await tx.unsafe(
-          "insert into public.plan_weeks(plan_id,week_index,start_date,end_date,capacity_minutes,planned_minutes,focus_skill_ids,rationale) values ($1::uuid,$2,$3::date,$4::date,$5,$6,$7::jsonb,$8) returning id",
+          "insert into public.plan_weeks(plan_id,week_index,start_date,end_date,capacity_minutes,planned_minutes,focus_skill_ids,rationale) values ($1::uuid,$2,$3::date,$4::date,$5,$6,$1::text::jsonb,$8) returning id",
           [
             nextPlanId,
             Number(week.week_index),
@@ -518,13 +518,13 @@ export class AdaptiveReplannerService {
       };
 
       const updatedDiffRows = rows(await tx.unsafe(
-        "update public.plan_diffs set to_plan_id=$1::uuid,to_version=$2,status='APPLIED',operations=$3::jsonb,applied_at=now() where id=$4::uuid returning *",
+        "update public.plan_diffs set to_plan_id=$1::uuid,to_version=$2,status='APPLIED',operations=$1::text::jsonb,applied_at=now() where id=$4::uuid returning *",
         [nextPlanId, nextVersion, JSON.stringify([operationApplied]), diffId]
       ));
       appliedDiff = updatedDiffRows[0];
 
       await tx.unsafe(
-        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,evidence_refs,metadata) values ($1::uuid,'plan.adapted','ASSESSMENT_COMPLETED',$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)",
+        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,evidence_refs,metadata) values ($1::uuid,'plan.adapted','ASSESSMENT_COMPLETED',$2,$3,$1::text::jsonb,$1::text::jsonb,$1::text::jsonb)",
         [
           input.userId,
           input.assessmentId,
@@ -608,7 +608,7 @@ export class AdaptiveReplannerService {
 
       const nextVersion = Number(active.version) + 1;
       const diffRows = rows(await tx.unsafe(
-        "insert into public.plan_diffs(user_id,goal_id,from_plan_id,from_version,status,trigger_type,trigger_refs,evidence_refs,summary,reason,operations,weekly_impact,timeline_impact,total_minute_delta,touch_count,complexity,can_undo,generator_version,validator_version,input_fingerprint) values ($1::uuid,$2::uuid,$3::uuid,$4,'PROPOSED','UNDO',$5::jsonb,$6::jsonb,$7,$8,$9::jsonb,$10::jsonb,'NONE',$11,1,'MINOR',false,$12,$13,$14) returning *",
+        "insert into public.plan_diffs(user_id,goal_id,from_plan_id,from_version,status,trigger_type,trigger_refs,evidence_refs,summary,reason,operations,weekly_impact,timeline_impact,total_minute_delta,touch_count,complexity,can_undo,generator_version,validator_version,input_fingerprint) values ($1::uuid,$2::uuid,$3::uuid,$4,'PROPOSED','UNDO',$1::text::jsonb,$1::text::jsonb,$7,$8,$1::text::jsonb,$1::text::jsonb,'NONE',$11,1,'MINOR',false,$12,$13,$14) returning *",
         [
           userId,
           String(active.goal_id),
@@ -650,7 +650,7 @@ export class AdaptiveReplannerService {
       );
 
       const planRows = rows(await tx.unsafe(
-        "insert into public.learning_plans(user_id,goal_id,version,status,start_date,end_date,gap_snapshot_id,constraint_fingerprint,planner_version,generation_key,planned_minutes,adaptation_buffer_minutes,rationale,warnings,parent_plan_id) values ($1::uuid,$2::uuid,$3,'ACTIVE',$4::date,$5::date,$6::uuid,$7,$8,$9,$10,$11,$12::jsonb,$13::jsonb,$14::uuid) returning id",
+        "insert into public.learning_plans(user_id,goal_id,version,status,start_date,end_date,gap_snapshot_id,constraint_fingerprint,planner_version,generation_key,planned_minutes,adaptation_buffer_minutes,rationale,warnings,parent_plan_id) values ($1::uuid,$2::uuid,$3,'ACTIVE',$4::date,$5::date,$6::uuid,$7,$8,$9,$10,$11,$1::text::jsonb,$1::text::jsonb,$14::uuid) returning id",
         [
           userId,
           String(active.goal_id),
@@ -702,7 +702,7 @@ export class AdaptiveReplannerService {
       );
 
       await tx.unsafe(
-        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,evidence_refs,metadata) values ($1::uuid,'plan.undo.applied','UNDO',$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)",
+        "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,evidence_refs,metadata) values ($1::uuid,'plan.undo.applied','UNDO',$2,$3,$1::text::jsonb,$1::text::jsonb,$1::text::jsonb)",
         [
           userId,
           diffId,

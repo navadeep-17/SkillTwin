@@ -10,6 +10,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { WeeklyReportCard } from "@/components/progress/weekly-report-card";
 
 export default async function ProgressPage() {
   const supabase = await createClient();
@@ -221,6 +222,8 @@ export default async function ProgressPage() {
           </div>
         </div>
       </section>
+
+      <WeeklyReportCard />
 
       <section className="surface-card mt-6 overflow-hidden">
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">

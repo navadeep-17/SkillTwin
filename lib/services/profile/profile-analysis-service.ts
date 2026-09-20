@@ -3,6 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getEvidenceEngine } from "@/lib/services/skills/evidence-service";
 import { getGapAnalysisService } from "@/lib/services/gaps/gap-analysis-service";
 import { getInitialPlanService } from "@/lib/services/planner/initial-plan-service";
+import { getAdaptiveReplannerService } from "@/lib/services/replanner/adaptive-replanner-service";
+import { getSql } from "@/lib/db/postgres";
 import { PostgresProfileAnalysisRepository } from "@/lib/repositories/postgres/profile-analysis-repository";
 import { parsePdf } from "@/lib/profile/pdf-parser";
 import { segmentResume } from "@/lib/profile/segmenter";
@@ -158,11 +160,43 @@ export class ProfileAnalysisService {
       );
 
       let planResult: unknown = null;
+      let replanResult: unknown = null;
+
       if (gapResult) {
         try {
-          planResult = await getInitialPlanService().generate(input.userId);
+          const sql = getSql();
+          const activePlan = (await sql.unsafe(
+            "select id,version from public.learning_plans where user_id=$1::uuid and goal_id=$2::uuid and status='ACTIVE' order by version desc limit 1",
+            [input.userId, String(gapResult.goal.id)]
+          ) as Array<Record<string, unknown>>)[0];
+
+          if (activePlan && evidenceResult.deltas.length) {
+            replanResult = await getAdaptiveReplannerService().considerEvidenceSignal({
+              userId: input.userId,
+              triggerType: "SKILL_DELTA_COMMITTED",
+              triggerRef: runId,
+              skillIds: evidenceResult.deltas.map(delta => delta.skillId),
+              evidenceIds: evidenceResult.acceptedEvidenceIds,
+              gapSnapshotId: gapResult.snapshotId
+            });
+            planResult = {
+              planId: String(activePlan.id),
+              version: Number(activePlan.version),
+              reused: true,
+              reason: "ACTIVE_PLAN_REEVALUATED_FROM_PROFILE_EVIDENCE"
+            };
+          } else if (activePlan) {
+            planResult = {
+              planId: String(activePlan.id),
+              version: Number(activePlan.version),
+              reused: true,
+              reason: "ACTIVE_PLAN_UNCHANGED"
+            };
+          } else {
+            planResult = await getInitialPlanService().generate(input.userId);
+          }
         } catch (planError) {
-          warnings.push("INITIAL_PLAN_GENERATION_FAILED");
+          warnings.push("PLAN_UPDATE_FAILED");
           console.error("profile.analysis.plan.failed", {
             runId,
             error: planError instanceof Error ? planError.message : String(planError)
@@ -186,6 +220,7 @@ export class ProfileAnalysisService {
             }
           : null,
         plan: planResult,
+        replan: replanResult,
         warnings
       };
 

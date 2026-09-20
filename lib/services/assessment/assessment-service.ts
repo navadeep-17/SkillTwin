@@ -88,6 +88,32 @@ function blueprint(skillId: string, concepts: string[], startDifficulty: number)
   };
 }
 
+
+function adaptiveBlueprintFrom(value: unknown): AdaptiveBlueprint {
+  const parsed = jsonObject(value);
+  const rawTargets = Array.isArray(parsed.conceptTargets)
+    ? parsed.conceptTargets as Array<Record<string, unknown>>
+    : [];
+
+  const targets = rawTargets
+    .map(target => ({
+      conceptId: String(target.conceptId ?? ""),
+      minObservations: Math.max(1, Number(target.minObservations ?? 1))
+    }))
+    .filter(target => Boolean(target.conceptId));
+
+  return {
+    conceptTargets: targets,
+    difficultyMin: Math.max(1, Number(parsed.difficultyMin ?? 1)),
+    difficultyMax: Math.max(1, Number(parsed.difficultyMax ?? 4)),
+    startDifficulty: Math.max(1, Number(parsed.startDifficulty ?? 1)),
+    minItems: Math.max(1, Number(parsed.minItems ?? 4)),
+    maxItems: Math.max(1, Number(parsed.maxItems ?? 6)),
+    targetCoverage: Math.max(0, Math.min(1, Number(parsed.targetCoverage ?? 0.8))),
+    stopConfidence: Math.max(0, Math.min(1, Number(parsed.stopConfidence ?? 0.78)))
+  };
+}
+
 function evaluateMcq(question: Row, optionId: string) {
   const key = jsonObject(question.answer_key);
   const rubric = jsonObject(question.rubric);
@@ -470,14 +496,32 @@ export class AssessmentService {
 
   private async afterAttempt(userId: string, assessmentId: string, attempt: Row) {
     const sql = getSql();
-    const counts = rows(await sql.unsafe(
-      "select (select count(*) from public.skill_assessment_attempts where assessment_id=$1::uuid)::int answered,(select count(*) from public.skill_assessment_questions where assessment_id=$1::uuid)::int total",
-      [assessmentId]
-    ))[0];
-    const answered = Number(counts.answered);
-    const total = Number(counts.total);
 
-    if (answered >= total) {
+    const assessment = rows(await sql.unsafe(
+      "select a.*,s.slug,s.canonical_name from public.skill_assessments a join public.skills s on s.id=a.skill_id where a.id=$1::uuid and a.user_id=$2::uuid limit 1",
+      [assessmentId,userId]
+    ))[0];
+    if (!assessment) throw new Error("ASSESSMENT_NOT_FOUND");
+
+    const blueprintJson = adaptiveBlueprintFrom(assessment.blueprint_json);
+    const attemptRows = rows(await sql.unsafe(
+      "select a.score,a.evaluator_confidence,q.bank_question_id,q.type,q.concept_ids,q.difficulty,q.ordinal from public.skill_assessment_attempts a join public.skill_assessment_questions q on q.id=a.question_id where a.assessment_id=$1::uuid and a.user_id=$2::uuid order by q.ordinal",
+      [assessmentId,userId]
+    ));
+
+    const adaptiveAttempts: AdaptiveAttempt[] = attemptRows.map(row => ({
+      bankQuestionId: String(row.bank_question_id ?? ""),
+      conceptId: jsonArray(row.concept_ids)[0] ?? "unknown",
+      difficulty: Number(row.difficulty),
+      score: Number(row.score),
+      type: String(row.type),
+      evaluatorConfidence: Number(row.evaluator_confidence ?? 1)
+    }));
+
+    const state = adaptiveAssessmentState(blueprintJson, adaptiveAttempts);
+    const answered = adaptiveAttempts.length;
+
+    if (state.shouldStop) {
       const completion = await this.complete(userId, assessmentId);
       return {
         completed: true,
@@ -485,13 +529,86 @@ export class AssessmentService {
           score: Number(attempt.score),
           text: String(attempt.feedback)
         },
+        adaptive: state,
         ...completion
       };
     }
 
-    const nextRows = rows(await sql.unsafe(
+    const existingNext = rows(await sql.unsafe(
       "select id,ordinal,type,concept_ids,difficulty,prompt,options from public.skill_assessment_questions where assessment_id=$1::uuid and ordinal=$2 limit 1",
-      [assessmentId, answered + 1]
+      [assessmentId,answered + 1]
+    ))[0];
+
+    if (existingNext) {
+      return {
+        completed: false,
+        feedback: {
+          score: Number(attempt.score),
+          text: String(attempt.feedback)
+        },
+        adaptive: state,
+        progress: { answered, total: blueprintJson.maxItems },
+        question: publicQuestion(existingNext)
+      };
+    }
+
+    const [bankValue, generatedValue] = await Promise.all([
+      sql.unsafe(
+        "select * from public.assessment_question_bank where skill_id=$1::uuid and is_active=true and type in ('MCQ','SHORT_TEXT','SCENARIO') order by difficulty,id",
+        [String(assessment.skill_id)]
+      ),
+      sql.unsafe(
+        "select bank_question_id from public.skill_assessment_questions where assessment_id=$1::uuid",
+        [assessmentId]
+      )
+    ]);
+    const bankRows = rows(bankValue);
+    const generatedIds = new Set(rows(generatedValue).map(row => String(row.bank_question_id)));
+    const available = bankRows.filter(row => !generatedIds.has(String(row.id)));
+
+    const nextCandidate = selectAdaptiveCandidate(
+      blueprintJson,
+      adaptiveAttempts,
+      available.map(row => ({
+        id: String(row.id),
+        conceptId: String(row.concept_id),
+        difficulty: Number(row.difficulty),
+        type: String(row.type)
+      }))
+    );
+
+    if (!nextCandidate) {
+      const completion = await this.complete(userId, assessmentId);
+      return {
+        completed: true,
+        feedback: {
+          score: Number(attempt.score),
+          text: String(attempt.feedback)
+        },
+        adaptive: state,
+        ...completion
+      };
+    }
+
+    const nextBank = available.find(row => String(row.id) === nextCandidate.id);
+    if (!nextBank) throw new Error("QUESTION_BANK_SELECTION_FAILED");
+
+    const nextRows = rows(await sql.unsafe(
+      "insert into public.skill_assessment_questions(assessment_id,bank_question_id,ordinal,type,concept_ids,difficulty,prompt,options,answer_key,rubric,source,generator_version) values ($1::uuid,$2::uuid,$3,$4,$5::jsonb,$6,$7,$8::jsonb,$9::jsonb,$10::jsonb,$11,$12) returning id,ordinal,type,concept_ids,difficulty,prompt,options",
+      [
+        assessmentId,
+        String(nextBank.id),
+        answered + 1,
+        String(nextBank.type),
+        JSON.stringify([String(nextBank.concept_id)]),
+        Number(nextBank.difficulty),
+        String(nextBank.prompt),
+        JSON.stringify(nextBank.options ?? []),
+        JSON.stringify(nextBank.answer_key ?? {}),
+        JSON.stringify(nextBank.rubric ?? {}),
+        String(nextBank.source),
+        ASSESSMENT_QUESTION_VERSION
+      ]
     ));
 
     return {
@@ -500,7 +617,8 @@ export class AssessmentService {
         score: Number(attempt.score),
         text: String(attempt.feedback)
       },
-      progress: { answered, total },
+      adaptive: state,
+      progress: { answered, total: blueprintJson.maxItems },
       question: publicQuestion(nextRows[0])
     };
   }

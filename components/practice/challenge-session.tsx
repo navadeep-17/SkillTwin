@@ -74,7 +74,23 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
   const [completion, setCompletion] = useState<CompletionResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [replanPending, setReplanPending] = useState(false);
   const [error, setError] = useState("");
+
+  const retryReplan = useCallback(async () => {
+    setReplanPending(true);
+    try {
+      const response = await fetch("/api/assessments/" + assessmentId + "/replan", { method: "POST" });
+      const payload = await response.json();
+      if (response.ok && payload.ok) {
+        setCompletion(current => current ? { ...current, replan: payload.data.replan } : current);
+      }
+    } catch {
+      // The assessment result remains valid even if roadmap adaptation is temporarily unavailable.
+    } finally {
+      setReplanPending(false);
+    }
+  }, [assessmentId, retryReplan]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,6 +113,7 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
             ? { readiness: undefined, evidenceCoverage: undefined }
             : null
         });
+        void retryReplan();
       }
     } catch {
       setError("Could not load challenge.");
@@ -136,6 +153,9 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
 
       if (data.completed) {
         setCompletion(data);
+        if (data.warnings?.includes("REPLAN_FAILED")) {
+          void retryReplan();
+        }
         setQuestion(null);
         setPendingQuestion(null);
         setAssessment(current => current
@@ -215,6 +235,12 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
         {completion.gapAnalysis?.readiness != null ? (
           <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
             Career readiness was recomputed to <strong>{completion.gapAnalysis.readiness}%</strong>.
+          </div>
+        ) : null}
+
+        {replanPending ? (
+          <div className="rounded-xl border border-violet-100 bg-violet-50 p-4 text-sm text-violet-800">
+            Checking whether your roadmap should adapt to this result...
           </div>
         ) : null}
 

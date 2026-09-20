@@ -9,7 +9,7 @@ import {
   type GeneratedTask
 } from "@/lib/domain/learning-planner";
 
-const RESOURCE_CATALOG_VERSION = "resource-catalog-d1";
+const RESOURCE_CATALOG_VERSION = "resource-catalog-d2";
 
 type Row = Record<string, unknown>;
 

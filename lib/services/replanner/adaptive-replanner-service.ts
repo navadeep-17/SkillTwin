@@ -56,6 +56,8 @@ function reinforcementTitle(weaknesses: string[], skillName?: string) {
 }
 
 function triggerLabel(triggerType: string) {
+  if (triggerType === "SKILL_DELTA_COMMITTED") return "SkillTwin update";
+  if (triggerType === "GAP_DELTA_COMMITTED") return "Gap update";
   if (triggerType === "PROJECT_EVIDENCE_COMMITTED") return "Project evidence";
   if (triggerType === "TASK_BEHAVIOR_SIGNAL") return "Learning behavior";
   if (triggerType === "CONSTRAINT_CHANGED") return "Learning constraints";
@@ -104,7 +106,12 @@ export interface AssessmentReplanInput {
 
 export interface EvidenceSignalReplanInput {
   userId: string;
-  triggerType: "PROJECT_EVIDENCE_COMMITTED" | "TASK_BEHAVIOR_SIGNAL" | "CONSTRAINT_CHANGED";
+  triggerType:
+    | "SKILL_DELTA_COMMITTED"
+    | "GAP_DELTA_COMMITTED"
+    | "PROJECT_EVIDENCE_COMMITTED"
+    | "TASK_BEHAVIOR_SIGNAL"
+    | "CONSTRAINT_CHANGED";
   triggerRef: string;
   skillIds: string[];
   evidenceIds: string[];
@@ -319,7 +326,124 @@ export class AdaptiveReplannerService {
     }
 
     const selected = selectEvidencePlanOperation(candidates);
-    if (!selected) {
+
+    let operation: Record<string, unknown> | null = null;
+    let minuteDelta = 0;
+    let weeklyImpact: Array<Record<string, unknown>> = [];
+    let headline = "";
+    let reason = "";
+    let reasonCode = "";
+
+    if (selected) {
+      operation = selected.type === "REMOVE_TASK"
+        ? {
+            type: "REMOVE_TASK",
+            taskId: selected.taskId,
+            logicalTaskId: selected.logicalTaskId,
+            reasonRefs: [input.triggerRef, selected.reasonCode]
+          }
+        : {
+            type: "CHANGE_DIFFICULTY",
+            taskId: selected.taskId,
+            logicalTaskId: selected.logicalTaskId,
+            difficulty: selected.to,
+            before: { difficulty: selected.from },
+            after: { difficulty: selected.to },
+            reasonRefs: [input.triggerRef, selected.reasonCode]
+          };
+
+      minuteDelta = selected.type === "REMOVE_TASK" ? -selected.durationMinutes : 0;
+      weeklyImpact = [{
+        weekIndex: selected.weekIndex,
+        beforeMinutes: selected.weekPlannedMinutes,
+        afterMinutes: Math.max(0, selected.weekPlannedMinutes + minuteDelta)
+      }];
+
+      headline = selected.type === "REMOVE_TASK"
+        ? "Roadmap can skip redundant future work"
+        : "Roadmap can increase the next practice challenge";
+      reason = selected.type === "REMOVE_TASK"
+        ? "Committed evidence now meets the target for this skill, so one flexible unstarted learning task can be removed without rewriting history."
+        : "Committed evidence supports a stronger capability estimate, so the next unstarted practice task can move from basic to standard difficulty.";
+      reasonCode = selected.reasonCode;
+    } else {
+      for (const skillId of skillIds) {
+        const resourceCandidate = rows(await sql.unsafe(
+          `select
+             t.id task_id,
+             t.logical_task_id,
+             w.week_index,
+             w.planned_minutes week_planned_minutes,
+             s.slug skill_slug,
+             current_resource.id current_resource_id,
+             current_resource.quality current_quality,
+             replacement.id replacement_resource_id,
+             replacement.title replacement_title,
+             replacement.quality replacement_quality
+           from public.learning_tasks t
+           join public.plan_weeks w on w.id=t.week_id
+           join public.skills s on s.id=t.skill_id
+           join lateral (
+             select lr.id,lr.quality
+             from public.task_resource_assignments tra
+             join public.learning_resources lr on lr.id=tra.resource_id
+             where tra.task_id=t.id
+             order by tra.rank_score desc
+             limit 1
+           ) current_resource on true
+           join lateral (
+             select lr.id,lr.title,lr.quality
+             from public.learning_resources lr
+             where lr.is_verified=true
+               and lr.status='ACTIVE'
+               and lr.id<>current_resource.id
+               and lr.tags @> jsonb_build_array(s.slug)
+               and lr.quality >= current_resource.quality + 0.05
+             order by lr.quality desc,lr.title
+             limit 1
+           ) replacement on true
+           where t.plan_id=$1::uuid
+             and t.skill_id=$2::uuid
+             and t.status='PLANNED'
+             and t.type='LEARN'
+             and w.end_date>=current_date
+           order by w.week_index,t.created_at
+           limit 1`,
+          [String(active.id), skillId]
+        ))[0];
+
+        if (!resourceCandidate) continue;
+
+        operation = {
+          type: "CHANGE_RESOURCE",
+          taskId: String(resourceCandidate.task_id),
+          logicalTaskId: String(resourceCandidate.logical_task_id),
+          resourceId: String(resourceCandidate.replacement_resource_id),
+          before: {
+            resourceId: String(resourceCandidate.current_resource_id),
+            quality: Number(resourceCandidate.current_quality)
+          },
+          after: {
+            resourceId: String(resourceCandidate.replacement_resource_id),
+            title: String(resourceCandidate.replacement_title),
+            quality: Number(resourceCandidate.replacement_quality)
+          },
+          reasonRefs: [input.triggerRef, "BETTER_VERIFIED_RESOURCE_AVAILABLE"]
+        };
+        minuteDelta = 0;
+        weeklyImpact = [{
+          weekIndex: Number(resourceCandidate.week_index),
+          beforeMinutes: Number(resourceCandidate.week_planned_minutes),
+          afterMinutes: Number(resourceCandidate.week_planned_minutes)
+        }];
+        headline = "Roadmap can use a stronger verified resource";
+        reason = "A higher-quality verified catalog resource is available for an unstarted learning task. SkillTwin can replace the assignment without changing workload or learner history.";
+        reasonCode = "BETTER_VERIFIED_RESOURCE_AVAILABLE";
+        break;
+      }
+    }
+
+    if (!operation) {
       return this.storeSignalNoOp(
         input,
         active,
@@ -328,37 +452,6 @@ export class AdaptiveReplannerService {
         fingerprint
       );
     }
-
-    const operation = selected.type === "REMOVE_TASK"
-      ? {
-          type: "REMOVE_TASK",
-          taskId: selected.taskId,
-          logicalTaskId: selected.logicalTaskId,
-          reasonRefs: [input.triggerRef, selected.reasonCode]
-        }
-      : {
-          type: "CHANGE_DIFFICULTY",
-          taskId: selected.taskId,
-          logicalTaskId: selected.logicalTaskId,
-          difficulty: selected.to,
-          before: { difficulty: selected.from },
-          after: { difficulty: selected.to },
-          reasonRefs: [input.triggerRef, selected.reasonCode]
-        };
-
-    const minuteDelta = selected.type === "REMOVE_TASK" ? -selected.durationMinutes : 0;
-    const weeklyImpact = [{
-      weekIndex: selected.weekIndex,
-      beforeMinutes: selected.weekPlannedMinutes,
-      afterMinutes: Math.max(0, selected.weekPlannedMinutes + minuteDelta)
-    }];
-
-    const headline = selected.type === "REMOVE_TASK"
-      ? "Roadmap can skip redundant future work"
-      : "Roadmap can increase the next practice challenge";
-    const reason = selected.type === "REMOVE_TASK"
-      ? "Committed evidence now meets the target for this skill, so one flexible unstarted learning task can be removed without rewriting history."
-      : "Committed evidence supports a stronger capability estimate, so the next unstarted practice task can move from basic to standard difficulty.";
 
     const proposed = await this.createSignalProposal({
       input,
@@ -369,7 +462,7 @@ export class AdaptiveReplannerService {
       minuteDelta,
       headline,
       reason,
-      reasonCode: selected.reasonCode
+      reasonCode
     });
 
     if (String(active.adaptation_mode) === "AUTOMATIC") {

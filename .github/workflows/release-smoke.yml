@@ -21,3 +21,5 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SMOKE_SUPABASE_ANON_KEY }}
           SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
           SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          SMOKE_DESTRUCTIVE: ${{ secrets.SMOKE_DESTRUCTIVE }}
+          DEMO_RESET_SECRET: ${{ secrets.DEMO_RESET_SECRET }}

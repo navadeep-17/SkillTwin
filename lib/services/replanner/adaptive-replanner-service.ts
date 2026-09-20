@@ -63,6 +63,27 @@ function triggerLabel(triggerType: string) {
   return "Completed assessment";
 }
 
+const DAY_NAME = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"] as const;
+const DAY_INDEX: Record<string, number> = {
+  Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6
+};
+
+function dueOnAllowedDay(startDate: unknown, endDate: unknown, learningDays: string[]) {
+  const start = new Date(dateOnly(startDate) + "T12:00:00.000Z");
+  const end = new Date(dateOnly(endDate) + "T12:00:00.000Z");
+  const allowed = learningDays
+    .map(day => DAY_INDEX[day])
+    .filter((value): value is number => Number.isInteger(value));
+
+  for (let offset = 0; offset < 7; offset += 1) {
+    const candidate = new Date(start);
+    candidate.setUTCDate(candidate.getUTCDate() + offset);
+    if (candidate > end) break;
+    if (allowed.includes(candidate.getUTCDay())) return candidate.toISOString();
+  }
+  return null;
+}
+
 function dueInsideWeek(endDate: unknown) {
   const now = new Date();
   const proposed = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
@@ -517,6 +538,50 @@ export class AdaptiveReplannerService {
             "The new weekly capacity is lower than the immutable/completed workload can safely accommodate. SkillTwin kept the current roadmap unchanged.",
             fingerprint
           );
+        }
+      }
+
+      if (operations.length < 6 && input.learningDays.length) {
+        const movableTasks = rows(await sql.unsafe(
+          `select id,logical_task_id,due_at
+           from public.learning_tasks
+           where plan_id=$1::uuid
+             and week_id=$2::uuid
+             and status='PLANNED'
+             and flexible=true
+             and due_at is not null
+           order by due_at,created_at`,
+          [String(active.id), String(week.id)]
+        ));
+
+        const removedIds = new Set(
+          operations
+            .filter(operation => operation.type === "REMOVE_TASK")
+            .map(operation => String(operation.logicalTaskId ?? ""))
+        );
+
+        for (const task of movableTasks) {
+          const logicalTaskId = String(task.logical_task_id);
+          if (removedIds.has(logicalTaskId)) continue;
+
+          const currentDue = new Date(String(task.due_at));
+          const currentDay = Number.isFinite(currentDue.getTime()) ? DAY_NAME[currentDue.getUTCDay()] : null;
+          if (currentDay && input.learningDays.includes(currentDay)) continue;
+
+          const nextDueAt = dueOnAllowedDay(week.start_date, week.end_date, input.learningDays);
+          if (!nextDueAt || nextDueAt === String(task.due_at)) continue;
+
+          operations.push({
+            type: "MOVE_TASK",
+            taskId: String(task.id),
+            logicalTaskId,
+            toWeekIndex: Number(week.week_index),
+            dueAt: nextDueAt,
+            before: { weekIndex: Number(week.week_index), dueAt: String(task.due_at) },
+            after: { weekIndex: Number(week.week_index), dueAt: nextDueAt },
+            reasonRefs: [input.triggerRef, "CONSTRAINT_LEARNING_DAYS"]
+          });
+          break;
         }
       }
 

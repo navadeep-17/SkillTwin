@@ -252,3 +252,21 @@ test("evidence replanner is conservative when evidence does not justify a future
   }]);
   assert.equal(operation, null);
 });
+
+
+test("planner marks movable learning work flexible while validation remains fixed", () => {
+  const plan = generateInitialLearningPlan([{
+    requirementId:"r-api",skillId:"s-api",skillName:"REST APIs",skillSlug:"rest-api",
+    currentScore:1.2,currentConfidence:0.6,targetScore:2.5,priorityScore:0.9,
+    priorityBand:"CRITICAL",status:"GAP",recommendedAction:"LEARN",learningStage:2
+  }], {
+    hoursPerWeek:8,
+    learningDays:["Mon","Tue","Wed","Thu","Fri"],
+    preferredSessionMinutes:45,
+    minSessionMinutes:20
+  });
+  const tasks = plan.weeks.flatMap(week => week.objectives.flatMap(objective => objective.tasks));
+  assert.ok(tasks.some(task => task.type === "PRACTICE" && task.flexible));
+  assert.ok(tasks.some(task => task.type === "BUILD" && task.flexible));
+  assert.ok(tasks.some(task => task.type === "VALIDATE" && task.flexible === false));
+});

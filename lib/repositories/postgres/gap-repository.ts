@@ -4,8 +4,6 @@ import type { GapAnalysis } from "@/lib/domain/gap-engine";
 import type { RoleVersion } from "@/lib/domain/role-model";
 import type { ConfidenceBand, SkillLevel, UserSkillState } from "@/lib/domain/skills";
 
-const BACKEND_ROLE_VERSION_ID = "21000000-0000-0000-0000-000000000001";
-
 const confidenceBand = (value: number): ConfidenceBand => value < 0.45 ? "LOW" : value < 0.75 ? "MEDIUM" : "HIGH";
 
 export interface CareerGoal {

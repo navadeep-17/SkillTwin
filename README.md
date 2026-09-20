@@ -1,173 +1,517 @@
+<div align="center">
+
+<img src="./app/icon.svg" alt="SkillTwin logo" width="88" />
+
 # SkillTwin
 
-SkillTwin is an evidence-backed adaptive learning agent for the Product Space AI Agent Hackathon 2026.
+### An evidence-backed adaptive learning agent that evolves as you do.
 
-## Product loop
+Build a living model of your skills, compare it with a target career, follow an adaptive roadmap, validate what you know, and see exactly why your plan changes.
 
-\`profile evidence -> SkillTwin -> target-role gaps -> adaptive roadmap -> Challenge Me -> assessment evidence -> SkillDelta -> gap refresh -> minimal PlanDiff -> updated roadmap -> grounded explanation\`
+[**Live App**](https://skilltwin-production.up.railway.app) · [**Demo**](https://skilltwin-production.up.railway.app/demo) · [**Architecture**](#architecture) · [**Local Setup**](#local-setup)
 
-## Current implemented vertical slice
+</div>
 
-The repository now contains the working P0 agent loop:
+---
 
-1. Supabase Auth + private resume upload
-2. PDF text parsing, normalization, and source-block provenance
-3. Deterministic canonical skill mapping
-4. Optional Gemini structured semantic evidence proposals with strict server validation
-5. Evidence Engine updates canonical \`user_skills\`
-6. Backend Engineer v1 gap/readiness recomputation
-7. Persisted LearningPlan v1 with verified resource URLs
-8. Interactive Learn/Practice/Build tasks
-9. Challenge Me assessment with deterministic REST/HTTP question bank
-10. Assessment summary evidence -> SkillDelta
-11. Minimal adaptive replanning -> immutable Plan v2 + explicit PlanDiff
-12. See What Changed + safe versioned undo
-13. Grounded Journey Chat with confirm-before-mutation action proposals
-14. Agent Activity audit feed
+## What SkillTwin does
 
-## Architecture rules
+Most learning platforms give everyone a static course sequence. SkillTwin instead maintains an **evidence-backed learner model** and continuously adapts the plan around what the learner can actually prove.
 
-- AI proposes interpretations; application logic owns canonical state.
-- Capability and confidence are separate.
-- Missing evidence is UNKNOWN, not zero ability.
-- Evidence/history and plan versions are auditable.
-- Resource URLs come only from a verified catalog.
-- Completed learning work is immutable history.
-- Replanning makes the smallest safe future-plan patch.
-- Journey Chat is grounded and read-only by default.
-- Mutation requests from chat require explicit confirmation.
-- The deterministic P0 path remains usable if the AI provider is unavailable.
+The core loop is:
+
+```text
+Profile evidence
+      ↓
+SkillTwin learner model
+      ↓
+Target-role gap analysis
+      ↓
+Adaptive roadmap
+      ↓
+Challenge Me assessment
+      ↓
+SkillDelta
+      ↓
+Gap refresh
+      ↓
+Minimal PlanDiff
+      ↓
+Updated roadmap + explanation
+```
+
+The product is designed around a simple principle:
+
+> **AI may propose interpretations. Deterministic application logic owns canonical learner state.**
+
+---
+
+## Product highlights
+
+### 🧠 Evidence-backed SkillTwin
+
+SkillTwin builds a canonical learner model from:
+
+- resume evidence
+- projects
+- manually entered profile evidence
+- completed learning tasks
+- adaptive assessments
+
+Capability and confidence are tracked separately. Missing evidence is treated as **UNKNOWN**, not as proof of low ability.
+
+### 🎯 Role-relative gap analysis
+
+The learner model is compared against a versioned target-role model to compute:
+
+- skill gaps
+- gap severity
+- prerequisite dependencies
+- readiness
+- evidence coverage
+- highest-impact next focus
+
+### 🗺️ Adaptive roadmap
+
+SkillTwin creates a constrained learning plan using four task types:
+
+- **LEARN**
+- **PRACTICE**
+- **BUILD**
+- **VALIDATE**
+
+Plans respect learner availability, prerequisite order, verified resources, and completed-work history.
+
+### ✨ Challenge Me
+
+Assessments support:
+
+- multiple choice
+- short text
+- scenario questions
+- adaptive difficulty
+- concept coverage
+- deterministic scoring/fallbacks
+- structured semantic evaluation when Gemini is available
+
+Assessment results are committed as evidence and can update the SkillTwin automatically.
+
+### 🔁 Explainable replanning
+
+When new evidence justifies a change, SkillTwin creates a minimal, versioned **PlanDiff** instead of rebuilding the whole roadmap.
+
+Supported operations include:
+
+- add task
+- move task
+- remove task
+- change difficulty
+- change duration
+- change resource
+
+Every plan change is auditable and can be surfaced through **See What Changed**.
+
+### 💬 Grounded Journey Chat
+
+Ask SkillTwin can explain:
+
+- readiness
+- skill gaps
+- roadmap changes
+- evidence
+- next actions
+
+Chat is grounded in persisted product state and is read-only by default. Mutation requests require explicit confirmation.
+
+### 📈 Progress and auditability
+
+The product exposes:
+
+- readiness trend
+- evidence coverage
+- SkillDelta history
+- assessment validation history
+- roadmap evolution
+- PlanDiff history
+- Agent Activity audit events
+
+---
+
+## Current product surfaces
+
+| Area | Purpose |
+|---|---|
+| **Home** | Readiness, evidence coverage, focus area, recent changes |
+| **Skills** | Interactive Skill Graph + evidence detail |
+| **Plan** | Adaptive roadmap and task progression |
+| **Practice** | Challenge Me assessments |
+| **Projects** | Project evidence + recommendations |
+| **Progress** | Readiness/evidence trends and SkillDelta history |
+| **Ask SkillTwin** | Grounded learner-state assistant |
+| **Activity** | Auditable agent events |
+| **Settings** | Learning constraints and preferences |
+| **Onboarding** | Target role + resume/manual evidence setup |
+
+---
+
+## Architecture
+
+SkillTwin follows a **server-authoritative agent architecture**.
+
+```text
+                    ┌──────────────────────┐
+                    │       Next.js UI      │
+                    │  App Router + React   │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │      API Routes       │
+                    │  Auth + Validation    │
+                    └──────────┬───────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+              ▼                ▼                ▼
+    ┌────────────────┐ ┌────────────────┐ ┌────────────────┐
+    │ Evidence Engine │ │ Gap / Planner  │ │ Assess / Replan│
+    └────────┬───────┘ └────────┬───────┘ └────────┬───────┘
+             │                  │                  │
+             └──────────────────┼──────────────────┘
+                                ▼
+                    ┌──────────────────────┐
+                    │      Supabase         │
+                    │ Postgres · Auth · RLS │
+                    │ Storage · Realtime    │
+                    └──────────────────────┘
+
+                     Optional semantic layer
+                                │
+                                ▼
+                    ┌──────────────────────┐
+                    │       Gemini AI       │
+                    │ structured proposals  │
+                    └──────────────────────┘
+```
+
+### Core architectural rules
+
+- canonical state is persisted server-side
+- capability and confidence are separate
+- evidence is appendable and auditable
+- completed learning work is immutable history
+- plans are versioned
+- resources must come from the verified catalog
+- replanning applies the smallest safe future-plan patch
+- AI output is schema validated
+- invalid structured AI output gets one bounded repair retry, then fails closed
+- deterministic fallbacks keep the P0 path usable if the AI provider is unavailable
+
+---
+
+## Tech stack
+
+### Frontend
+
+- Next.js 15
+- React 19
+- TypeScript
+- Tailwind CSS
+- React Flow
+- Lucide Icons
+- TanStack Query
+
+### Backend
+
+- Next.js API Routes
+- PostgreSQL
+- Supabase Auth
+- Supabase Storage
+- Supabase Realtime
+- Row Level Security
+- Zod validation
+
+### AI
+
+- Gemini structured interactions
+- deterministic fallback paths
+- schema-validated outputs
+- prompt-injection boundaries around untrusted profile content
+
+### Deployment
+
+- **Railway** — application runtime
+- **Supabase** — database, Auth, Storage, RLS and Realtime
+- **GitHub Actions** — CI and release QA
+
+---
+
+## Repository structure
+
+```text
+app/
+  api/                  API routes
+  onboarding/           Target + evidence setup
+  overview/             Learner home
+  skills/               Skill Graph
+  roadmap/              Adaptive plan + PlanDiff views
+  practice/             Challenge Me
+  projects/             Project evidence
+  progress/             Readiness and SkillDelta history
+  journey/              Journey Chat
+  activity/             Agent Activity
+
+components/
+  brand/                SkillTwin logo/branding
+  shell/                Navigation and global assistant
+  skills/               Skill Graph UI
+  roadmap/              Roadmap/task UI
+  practice/             Assessment experience
+  onboarding/           Resume/manual profile flows
+  projects/             Project evidence/recommendations
+
+lib/
+  domain/               Deterministic domain logic
+  services/             Product services
+  repositories/         Persistence layer
+  ai/                   Structured Gemini integration
+
+supabase/
+  migrations/           Versioned production schema
+  seed.sql              Canonical seed/reference data
+
+scripts/
+  release-smoke.mjs
+  database-security-qa.mjs
+  spec-contract-qa.mjs
+  visual-qa.mjs
+```
+
+---
 
 ## Local setup
 
-Requirements:
+### Requirements
 
-- Node.js 20+
-- A Supabase project with migrations \`0001\` through \`0009\` applied
-- A Postgres connection string for server-side transactional writes
-- Optional Gemini API key for semantic resume extraction
+- Node.js **22.x**
+- npm
+- Supabase project
+- PostgreSQL connection string
+- optional Gemini API key
 
-Copy the environment template:
+### 1. Clone and install
 
-\`\`\`bash
-cp .env.example .env.local
-\`\`\`
-
-Set at minimum:
-
-\`\`\`bash
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_SUPABASE_URL=https://eozvilqmrhtujqtdmrri.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_vAoB9dpwSkPb-zTrhXNnAA_MalFJ8bK
-SUPABASE_DB_URL=postgresql://...
-AI_PROVIDER=gemini
-GEMINI_MODEL=gemini-3.8-flash
-\`\`\`
-
-Optional AI enhancement:
-
-\`\`\`bash
-GEMINI_API_KEY=...
-\`\`\`
-
-Never commit \`.env.local\`, database passwords, secret/service-role keys, or Gemini keys.
-
-Install and verify:
-
-\`\`\`bash
+```bash
+git clone https://github.com/navadeep-17/SkillTwin.git
+cd SkillTwin
 npm install
-npm run typecheck:core
-npm run test:core
-npm run typecheck
-npm run dev
-\`\`\`
+```
 
-Then open:
+### 2. Configure environment
 
-- \`/login\` — sign in / sign up
-- \`/onboarding\` — upload and analyze a resume
-- \`/overview\` — live SkillTwin + readiness/gaps
-- \`/roadmap\` — persisted learning plan
-- \`/practice\` — Challenge Me
-- \`/journey\` — grounded Journey Chat
-- \`/activity\` — audit trail
+Copy the template:
 
-## Health checks
+```bash
+cp .env.example .env.local
+```
 
-\`GET /api/health\` is a cheap liveness endpoint.
+Set the required values:
 
-\`GET /api/readiness\` verifies the server database connection and reports optional AI-provider configuration without exposing secret values.
+```bash
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-A production deployment is considered ready when:
+NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<publishable-anon-key>
+SUPABASE_DB_URL=postgresql://...
 
-- database = \`ready\`
-- public Supabase configuration is available
-- migrations and seed data exist
-- the deterministic fallback remains enabled for hackathon reliability
-
-## Railway production deployment
-
-SkillTwin production runs on Railway. Configure the existing production service with these variables:
-
-\`\`\`
-NEXT_PUBLIC_APP_URL=https://skilltwin-production.up.railway.app
-NEXT_PUBLIC_SUPABASE_URL=https://eozvilqmrhtujqtdmrri.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_vAoB9dpwSkPb-zTrhXNnAA_MalFJ8bK
-SUPABASE_DB_URL=<server-only Supabase Postgres URL>
 AI_PROVIDER=gemini
-GEMINI_MODEL=gemini-3.8-flash
-GEMINI_API_KEY=<optional but recommended for demo>
+GEMINI_MODEL=<configured-model>
 DEMO_FALLBACK_ENABLED=true
-\`\`\`
+```
 
-Do not expose \`SUPABASE_DB_URL\` or \`GEMINI_API_KEY\` to the browser.
+Optional:
 
-After deployment:
+```bash
+GEMINI_API_KEY=...
+DEMO_RESET_SECRET=...
+```
 
-1. Visit \`/api/health\`.
-2. Visit \`/api/readiness\` and confirm \`status=ready\`.
-3. Create a test user.
-4. Upload a text-based PDF resume.
-5. Confirm the overview contains persisted skills/readiness.
-6. Confirm Plan v1 exists.
-7. Run Challenge Me.
-8. Intentionally miss REST/idempotency concepts.
-9. Confirm SkillDelta + PlanDiff + Plan v2.
-10. Open See What Changed.
-11. Ask Journey Chat: “Why did my roadmap change?”
-12. Verify Agent Activity contains the corresponding committed events.\n\nFor repeated demo rehearsals, `POST /api/demo/reset` can clear only the signed-in learner's SkillTwin state. It requires the `x-skilltwin-demo-secret` header matching `DEMO_RESET_SECRET`. It preserves the Auth user and all global taxonomy/role/resource/question-bank seed data.
+> Never commit database passwords, service-role keys, Gemini keys, reset secrets, or local environment files.
 
-## Database
+### 3. Database
 
-Local Supabase commands remain available:
+Versioned migrations live in:
 
-\`\`\`bash
+```text
+supabase/migrations/
+```
+
+Useful local commands:
+
+```bash
 npm run db:start
 npm run db:reset
 npm run db:push
-\`\`\`
+```
 
-Remote production migrations are already versioned under \`supabase/migrations/\`; keep the repository and live project in sync.
+### 4. Verify the project
 
+```bash
+npm run typecheck:core
+npm run test:core
+npm run qa:contracts
+npm run typecheck
+npm run build
+```
+
+### 5. Run locally
+
+```bash
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+---
+
+## Production
+
+Live application:
+
+**https://skilltwin-production.up.railway.app**
+
+Important production endpoints:
+
+```text
+GET /api/health
+GET /api/readiness
+```
+
+`/api/health` is a cheap liveness + deployment identity endpoint.
+
+`/api/readiness` verifies database/configuration readiness without exposing secret values.
+
+---
 
 ## Release QA
 
-The frozen architecture is enforced by a repository-level contract check:
+The repository includes multiple release-quality checks.
+
+### Architecture contract QA
 
 ```bash
 npm run qa:contracts
 ```
 
-Production/database smoke tooling:
+Verifies critical architecture guarantees remain present in the implementation.
+
+### Core tests
+
+```bash
+npm run test:core
+```
+
+Covers deterministic domain logic for the core SkillTwin loop.
+
+### Database security QA
 
 ```bash
 npm run qa:db
-npm run smoke:release
 ```
 
-Operational procedures and the judge-demo checklist live in:
+Checks RLS, server-owned write boundaries, private Storage and realtime configuration.
 
-- `docs/RELEASE_AND_DEMO_RUNBOOK.md`
-- `docs/QA_MATRIX.md`
+### Production smoke
 
-Railway is the production compute target. Supabase remains the canonical database, Auth, Storage, RLS, and realtime platform.
+```bash
+EXPECTED_COMMIT_SHA=<git-sha> npm run smoke:release
+```
+
+The authenticated destructive path can verify:
+
+```text
+goal
+→ evidence
+→ SkillTwin
+→ gap snapshot
+→ Plan
+→ task completion
+→ Challenge Me
+→ assessment evidence
+→ SkillDelta
+→ PlanDiff
+→ updated roadmap
+→ grounded Journey Chat
+→ Agent Activity
+```
+
+### Visual QA
+
+A Playwright workflow captures desktop/mobile production screenshots and checks:
+
+- horizontal overflow
+- runtime page errors
+- console errors
+- unnamed buttons
+- missing image alt text
+
+---
+
+## Demo flow
+
+For a judge/demo walkthrough:
+
+1. Sign in or create a learner account.
+2. Pick a target role.
+3. Add a resume, project, or manual evidence.
+4. Show the generated SkillTwin and gap analysis.
+5. Open the adaptive roadmap.
+6. Complete or inspect a learning task.
+7. Start **Challenge Me**.
+8. Complete the assessment.
+9. Show the resulting **SkillDelta**.
+10. Open **See What Changed** and inspect the PlanDiff.
+11. Open **Progress** to show readiness/evidence movement.
+12. Ask SkillTwin: **“Why did my roadmap change?”**
+13. Open **Agent Activity** to show the audit trail.
+
+For repeat demo rehearsals, the dedicated reset endpoint can clear only the signed-in learner state while preserving canonical seed data.
+
+---
+
+## Known release limitations
+
+- Text-based PDF resumes are supported for the demo path.
+- Scanned-image resume OCR is detected but full OCR is not part of the current release.
+- Semantic AI features degrade to deterministic fallback behavior when Gemini is unavailable.
+- The product is a hackathon-grade release and should undergo another production-security/performance review before a long-lived public launch.
+
+---
+
+## Why SkillTwin
+
+SkillTwin is not a chatbot wrapped around course recommendations.
+
+It is an **agentic learning system with memory, evidence, state transitions, deterministic rules, validation, adaptive planning, and an auditable change history**.
+
+The learner can always answer:
+
+- **What does SkillTwin currently believe I know?**
+- **What evidence supports that?**
+- **What should I do next?**
+- **Why did my plan change?**
+- **Can I inspect or undo that change?**
+
+---
+
+<div align="center">
+
+Built for the **Product Space AI Agent Hackathon 2026**.
+
+**SkillTwin — learn, prove, adapt.**
+
+</div>

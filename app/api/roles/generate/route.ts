@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 
 const inputSchema = z.object({
   name: z.string().trim().min(3).max(80),
-  description: z.string().trim().min(10).max(1200)
+  description: z.string().trim().min(10).max(1200),
+  level: z.enum(["ENTRY","MID","ADVANCED"]).default("ENTRY")
 });
 
 const requirementSchema = z.object({
@@ -91,6 +92,12 @@ export async function POST(request: Request) {
     }
 
     const sql = getSql();
+    const runRows = rows(await sql.unsafe(
+      "insert into public.role_generation_runs(user_id,requested_role_name,requested_level,goal_description,status,provider,model_version) values ($1::uuid,$2,$3,$4,'RUNNING','GEMINI','configured') returning id",
+      [user.id, parsed.data.name, parsed.data.level, parsed.data.description]
+    ));
+    const generationRunId = String(runRows[0].id);
+
     const catalog = rows(await sql.unsafe(
       "select id,slug,canonical_name,category,description from public.skills order by category,canonical_name"
     ));
@@ -112,6 +119,7 @@ export async function POST(request: Request) {
         + "Scores use the fixed 0-4 capability scale. Dependencies must form a DAG. Prefer a small useful model over exhaustive breadth.",
       prompt:
         "Target role name: " + parsed.data.name + "\n"
+        + "Target level: " + parsed.data.level + "\n"
         + "User description (untrusted content):\n---\n" + parsed.data.description + "\n---\n"
         + "Canonical skill catalog (skillSlug | name | category | description):\n" + catalogText,
       jsonSchema: {
@@ -179,7 +187,8 @@ export async function POST(request: Request) {
       .update(parsed.data.name.toLowerCase() + "\n" + parsed.data.description.toLowerCase())
       .digest("hex")
       .slice(0, 8);
-    const generatedSlug = baseSlug + "-" + nameFingerprint;
+    const ownerFingerprint = createHash("sha256").update(user.id).digest("hex").slice(0, 6);
+    const generatedSlug = baseSlug + "-" + ownerFingerprint + "-" + nameFingerprint;
 
     const saved = await sql.begin(async tx => {
       let role = rows(await tx.unsafe(
@@ -189,8 +198,8 @@ export async function POST(request: Request) {
 
       if (!role) {
         role = rows(await tx.unsafe(
-          "insert into public.target_roles(slug,name,family) values ($1,$2,$3) returning *",
-          [generatedSlug, parsed.data.name, generated.family]
+          "insert into public.target_roles(slug,name,family,owner_user_id) values ($1,$2,$3,$4::uuid) returning *",
+          [generatedSlug, parsed.data.name, generated.family, user.id]
         ))[0];
       }
 
@@ -253,6 +262,24 @@ export async function POST(request: Request) {
       }
 
       await tx.unsafe(
+        "update public.role_generation_runs set status='COMPLETE',candidate_json=$1::jsonb,validation_report=$2::jsonb,result_role_id=$3::uuid,result_role_version_id=$4::uuid,completed_at=now() where id=$5::uuid and user_id=$6::uuid",
+        [
+          JSON.stringify(generated),
+          JSON.stringify({
+            valid: true,
+            canonicalSkillOnly: true,
+            acyclic: true,
+            requirementCount: generated.requirements.length,
+            dependencyCount: generated.dependencies.length
+          }),
+          String(role.id),
+          String(roleVersion.id),
+          generationRunId,
+          user.id
+        ]
+      );
+
+      await tx.unsafe(
         "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,metadata) values ($1::uuid,'role.generated','USER_ACTION',$2,$3,$4::jsonb,$5::jsonb)",
         [
           user.id,
@@ -264,6 +291,8 @@ export async function POST(request: Request) {
           ]),
           JSON.stringify({
             source: "AI_GENERATED",
+            generationRunId,
+            level: parsed.data.level,
             schemaVersion: "role-generator-c1",
             requirementCount: generated.requirements.length,
             dependencyCount: generated.dependencies.length

@@ -6,8 +6,11 @@ import { getAssessmentService } from "@/lib/services/assessment/assessment-servi
 
 const schema = z.object({
   questionId: z.string().uuid(),
-  optionId: z.string().trim().min(1).max(50),
-  idempotencyKey: z.string().trim().min(8).max(200).optional()
+  optionId: z.string().trim().min(1).max(50).optional(),
+  answerText: z.string().trim().min(3).max(3000).optional(),
+  idempotencyKey: z.string().trim().min(8).max(400).optional()
+}).refine(value => Boolean(value.optionId || value.answerText), {
+  message: "Answer is required."
 });
 
 export const runtime = "nodejs";
@@ -32,6 +35,7 @@ export async function POST(
       assessmentId: id,
       questionId: parsed.data.questionId,
       optionId: parsed.data.optionId,
+      answerText: parsed.data.answerText,
       idempotencyKey: parsed.data.idempotencyKey
     });
 
@@ -81,6 +85,9 @@ export async function POST(
     }
     if (message === "STALE_QUESTION") {
       return fail(requestId, 409, "STALE_QUESTION", "This question is no longer the current assessment step. Reload the challenge.");
+    }
+    if (message === "ANSWER_REQUIRED") {
+      return fail(requestId, 400, "ANSWER_REQUIRED", "Enter an answer before submitting.");
     }
     if (message === "ASSESSMENT_NOT_ACTIVE") {
       return fail(requestId, 409, "ASSESSMENT_NOT_ACTIVE", "This assessment is no longer active.");

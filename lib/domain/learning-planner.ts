@@ -82,7 +82,7 @@ function taskPattern(gap: PlannerGap): Array<Omit<GeneratedTask, "skillId" | "sk
         type: "LEARN",
         title: "Targeted " + gap.skillName + " fundamentals",
         durationMinutes: 45,
-        flexible: false,
+        flexible: true,
         rationaleCode: "POST_VALIDATION_FOUNDATION",
         resourceTag: gap.skillSlug
       },
@@ -90,7 +90,7 @@ function taskPattern(gap: PlannerGap): Array<Omit<GeneratedTask, "skillId" | "sk
         type: "PRACTICE",
         title: "Practice " + gap.skillName,
         durationMinutes: 45,
-        flexible: false,
+        flexible: true,
         rationaleCode: "APPLY_FOUNDATION",
         resourceTag: null
       }
@@ -102,7 +102,7 @@ function taskPattern(gap: PlannerGap): Array<Omit<GeneratedTask, "skillId" | "sk
       type: "LEARN",
       title: "Learn " + gap.skillName + " fundamentals",
       durationMinutes: 45,
-      flexible: false,
+      flexible: true,
       rationaleCode: "GAP_FOUNDATION",
       resourceTag: gap.skillSlug
     },
@@ -110,7 +110,7 @@ function taskPattern(gap: PlannerGap): Array<Omit<GeneratedTask, "skillId" | "sk
       type: "PRACTICE",
       title: "Practice " + gap.skillName,
       durationMinutes: 45,
-      flexible: false,
+      flexible: true,
       rationaleCode: "PRACTICE_FOR_EVIDENCE",
       resourceTag: null
     },
@@ -118,7 +118,7 @@ function taskPattern(gap: PlannerGap): Array<Omit<GeneratedTask, "skillId" | "sk
       type: "BUILD",
       title: "Build with " + gap.skillName,
       durationMinutes: 60,
-      flexible: false,
+      flexible: true,
       rationaleCode: "APPLY_IN_PROJECT",
       resourceTag: null
     },

@@ -404,7 +404,14 @@ function TaskCard({
         </a>
       ) : null}
 
-      <div className="mt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onOpen("/roadmap/task/" + task.id)}
+          className="quiet-link inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs"
+        >
+          Details <ArrowRight className="size-3.5" />
+        </button>
         {completed ? (
           <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
             {pending ? <LoaderCircle className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5" />}

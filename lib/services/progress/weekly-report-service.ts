@@ -67,13 +67,15 @@ export class WeeklyReportService {
       [userId]
     ))[0];
 
-    const snapshots = rows(await sql.unsafe(
-      "select id,readiness,evidence_coverage,created_at from public.gap_snapshots where user_id=$1::uuid and created_at < $2::timestamptz order by created_at asc",
-      [userId,endExclusive]
+    const beforeWeek = rows(await sql.unsafe(
+      "select id,readiness,evidence_coverage,created_at from public.gap_snapshots where user_id=$1::uuid and created_at < $2::timestamptz order by created_at desc limit 1",
+      [userId,startTs]
+    ))[0] ?? null;
+    const duringWeek = rows(await sql.unsafe(
+      "select id,readiness,evidence_coverage,created_at from public.gap_snapshots where user_id=$1::uuid and created_at >= $2::timestamptz and created_at < $3::timestamptz order by created_at asc",
+      [userId,startTs,endExclusive]
     ));
-    const duringWeek = snapshots.filter(row => String(row.created_at) >= startTs);
-    const beforeWeek = snapshots.filter(row => String(row.created_at) < startTs);
-    const readinessStartRow = beforeWeek.at(-1) ?? duringWeek[0] ?? null;
+    const readinessStartRow = beforeWeek ?? duringWeek[0] ?? null;
     const readinessEndRow = duringWeek.at(-1) ?? readinessStartRow;
     const readinessStart = readinessStartRow ? Number(readinessStartRow.readiness) : null;
     const readinessEnd = readinessEndRow ? Number(readinessEndRow.readiness) : null;

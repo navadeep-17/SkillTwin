@@ -60,7 +60,7 @@ export class ProjectEvidenceService {
   }) {
     const sql = getSql();
     const projectRows = rows(await sql.unsafe(
-      "insert into public.profile_projects(user_id,title,description,technologies,artifact_url,analysis_status) values ($1::uuid,$2,$3,$4::jsonb,$5,'RUNNING') returning *",
+      "insert into public.profile_projects(user_id,title,description,technologies,artifact_url,analysis_status) values ($1::uuid,$2,$3,$1::text::jsonb,$5,'RUNNING') returning *",
       [
         input.userId,
         input.title,
@@ -155,12 +155,12 @@ export class ProjectEvidenceService {
 
       await sql.begin(async tx => {
         await tx.unsafe(
-          "update public.profile_projects set analysis_status='COMPLETE',analysis_result=$1::jsonb where id=$2::uuid and user_id=$3::uuid",
+          "update public.profile_projects set analysis_status='COMPLETE',analysis_result=$1::text::jsonb where id=$2::uuid and user_id=$3::uuid",
           [JSON.stringify(result), projectId, input.userId]
         );
 
         await tx.unsafe(
-          "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,evidence_refs,metadata) values ($1::uuid,'project.evidence.processed','PROJECT_ANALYSIS',$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)",
+          "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,entity_refs,evidence_refs,metadata) values ($1::uuid,'project.evidence.processed','PROJECT_ANALYSIS',$2,$3,$1::text::jsonb,$1::text::jsonb,$1::text::jsonb)",
           [
             input.userId,
             projectId,
@@ -179,7 +179,7 @@ export class ProjectEvidenceService {
       return result;
     } catch (error) {
       await sql.unsafe(
-        "update public.profile_projects set analysis_status='FAILED',analysis_result=$1::jsonb where id=$2::uuid and user_id=$3::uuid",
+        "update public.profile_projects set analysis_status='FAILED',analysis_result=$1::text::jsonb where id=$2::uuid and user_id=$3::uuid",
         [
           JSON.stringify({
             error: error instanceof Error ? error.message.slice(0, 600) : String(error).slice(0, 600)

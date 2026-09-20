@@ -20,9 +20,16 @@ export interface CandidateSkillClaim {
   mappingConfidence: number;
 }
 
+export interface UnresolvedSkillTermProposal {
+  sourceBlockId: string;
+  rawTerm: string;
+  context: string;
+}
+
 export interface ProfileSkillExtraction {
   claims: CandidateSkillClaim[];
   evidence: EvidenceCandidate[];
+  unresolvedTerms?: UnresolvedSkillTermProposal[];
 }
 
 const USAGE_VERBS = [
@@ -154,5 +161,5 @@ export function extractMappedSkills(input: {
     }
   }
 
-  return { claims, evidence };
+  return { claims, evidence, unresolvedTerms: [] };
 }

@@ -23,7 +23,7 @@ type Proposal = {
 const starters = [
   "Why did my roadmap change?",
   "What should I do next?",
-  "How ready am I for Backend Engineer?",
+  "How ready am I for my target role?",
   "Challenge me",
   "Undo that roadmap change"
 ];

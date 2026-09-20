@@ -40,7 +40,7 @@ export function ChallengeLauncher() {
           <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">Active validation</p>
           <h2 className="mt-2 text-2xl font-semibold">Test what matters next</h2>
           <p className="mt-3 text-slate-600">
-            SkillTwin selects an assessable target using your latest role gaps and uncertainty. The current P0 bank validates REST/HTTP reasoning with six deterministic items.
+            SkillTwin selects an assessable target using your latest role gaps, evidence confidence, and the available validated question bank.
           </p>
           {error ? <p className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p> : null}
           <button

@@ -41,7 +41,8 @@ const requiredFiles = [
   "scripts/release-smoke.mjs",
   "scripts/database-security-qa.mjs",
   "scripts/visual-qa.mjs",
-  ".github/workflows/visual-qa.yml"
+  ".github/workflows/visual-qa.yml",
+  "lib/qa/database-security.ts"
 ];
 
 for (const file of requiredFiles) {
@@ -167,6 +168,13 @@ assert(
   "structured AI output is missing a bounded repair-and-fail path"
 );
 
+const readinessRoute = read("app/api/readiness/route.ts");
+assert(
+  readinessRoute.includes("checkDatabaseSecurity")
+    && readinessRoute.includes("databaseSecurity"),
+  "production readiness is not gated on database security invariants"
+);
+
 const releaseSmoke = read("scripts/release-smoke.mjs");
 for (const marker of [
   "PUBLIC_SMOKE=PASS",
@@ -176,6 +184,7 @@ for (const marker of [
 ]) {
   assert(releaseSmoke.includes(marker), "release smoke is missing marker " + marker);
 }
+assert(releaseSmoke.includes("databaseSecurity"), "release smoke does not assert database security readiness");
 
 console.log("SPEC_CONTRACT_QA=PASS");
 console.log("MIGRATIONS=" + migrations.length);

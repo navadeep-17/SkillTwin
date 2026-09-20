@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProjectEvidenceForm } from "@/components/projects/project-evidence-form";
+import { ProjectRecommendations } from "@/components/projects/project-recommendations";
 
 function parseJson(value: unknown): unknown {
   let current = value;
@@ -37,7 +38,9 @@ export default async function ProjectsPage() {
         </p>
       </header>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[.9fr_1.1fr]">
+      <ProjectRecommendations />
+
+      <div className="mt-10 grid gap-8 lg:grid-cols-[.9fr_1.1fr]">
         <ProjectEvidenceForm />
 
         <section>

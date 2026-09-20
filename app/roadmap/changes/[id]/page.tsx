@@ -3,6 +3,18 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { UndoPlanChangeButton } from "@/components/roadmap/undo-plan-change-button";
 
+function parseJson(value: unknown): unknown {
+  let current = value;
+  for (let depth = 0; depth < 2 && typeof current === "string"; depth += 1) {
+    try {
+      current = JSON.parse(current);
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
 type Operation = {
   type?: string;
   task?: {
@@ -35,8 +47,10 @@ export default async function RoadmapChangePage({
   if (error) throw error;
   if (!diff) notFound();
 
-  const operations = Array.isArray(diff.operations) ? diff.operations as Operation[] : [];
-  const weeklyImpact = Array.isArray(diff.weekly_impact) ? diff.weekly_impact as Array<Record<string, unknown>> : [];
+  const parsedOperations = parseJson(diff.operations);
+  const parsedWeeklyImpact = parseJson(diff.weekly_impact);
+  const operations = Array.isArray(parsedOperations) ? parsedOperations as Operation[] : [];
+  const weeklyImpact = Array.isArray(parsedWeeklyImpact) ? parsedWeeklyImpact as Array<Record<string, unknown>> : [];
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">

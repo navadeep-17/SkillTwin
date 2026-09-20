@@ -98,7 +98,7 @@ export class PostgresEvidenceRepository implements EvidenceRepository {
                 ${row.sourceGroupId}, ${row.claim}, ${row.levelSignal}, ${row.polarity},
                 ${row.directness}, ${row.quality}, ${row.coverage}, ${row.effectiveWeight},
                 ${row.idempotencyKey}, ${row.producerVersion}, ${row.estimatorVersion},
-                ${JSON.stringify(row.metadata)}::jsonb
+                ${JSON.stringify(row.metadata)}::text::jsonb
               )
               on conflict (user_id, idempotency_key) do nothing
               returning *
@@ -146,9 +146,9 @@ export class PostgresEvidenceRepository implements EvidenceRepository {
               before_state, after_state, evidence_ids, estimator_version, explanation
             ) values (
               ${userId}::uuid, ${history.skillId}::uuid, ${history.triggerType}, ${history.triggerRef},
-              ${history.before ? JSON.stringify(history.before) : null}::jsonb,
-              ${JSON.stringify(history.after)}::jsonb,
-              ${JSON.stringify(history.evidenceIds)}::jsonb,
+              ${history.before ? JSON.stringify(history.before) : null}::text::jsonb,
+              ${JSON.stringify(history.after)}::text::jsonb,
+              ${JSON.stringify(history.evidenceIds)}::text::jsonb,
               ${ESTIMATOR_VERSION}, ${history.explanation}
             )
           `;
@@ -161,9 +161,9 @@ export class PostgresEvidenceRepository implements EvidenceRepository {
               summary, entity_refs, evidence_refs, metadata
             ) values (
               ${userId}::uuid, ${event.eventType}, ${event.triggerType}, ${event.triggerRef},
-              ${event.summary}, ${JSON.stringify(event.entityRefs)}::jsonb,
-              ${JSON.stringify(event.evidenceRefs)}::jsonb,
-              ${JSON.stringify(event.metadata ?? {})}::jsonb
+              ${event.summary}, ${JSON.stringify(event.entityRefs)}::text::jsonb,
+              ${JSON.stringify(event.evidenceRefs)}::text::jsonb,
+              ${JSON.stringify(event.metadata ?? {})}::text::jsonb
             )
           `;
         }

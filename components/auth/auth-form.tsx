@@ -32,7 +32,7 @@ export function AuthForm({
           email: normalizedEmail,
           password,
           options: {
-            emailRedirectTo: window.location.origin + "/auth/callback?next=/onboarding"
+            emailRedirectTo: window.location.origin + "/auth/callback"
           }
         });
 

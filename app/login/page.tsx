@@ -5,13 +5,16 @@ import { AuthForm } from "@/components/auth/auth-form";
 export default async function LoginPage({
   searchParams
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   if (data.user) redirect("/onboarding");
 
   const params = await searchParams;
+  const nextPath = params.next?.startsWith("/") && !params.next.startsWith("//")
+    ? params.next
+    : "/onboarding";
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md items-center px-6 py-12">
@@ -22,7 +25,7 @@ export default async function LoginPage({
           Create an account, verify your email, then continue into your persistent learner profile.
         </p>
         <div className="mt-6">
-          <AuthForm initialMessage={params.error ?? ""} />
+          <AuthForm initialMessage={params.error ?? ""} nextPath={nextPath} />
         </div>
       </div>
     </main>

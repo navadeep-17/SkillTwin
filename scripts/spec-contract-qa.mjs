@@ -39,7 +39,9 @@ const requiredFiles = [
   "components/shell/global-assistant-dock.tsx",
   "components/realtime/product-sync.tsx",
   "scripts/release-smoke.mjs",
-  "scripts/database-security-qa.mjs"
+  "scripts/database-security-qa.mjs",
+  "scripts/visual-qa.mjs",
+  ".github/workflows/visual-qa.yml"
 ];
 
 for (const file of requiredFiles) {

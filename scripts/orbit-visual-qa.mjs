@@ -79,7 +79,30 @@ try {
     const journeyOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(journeyOverflow <= 1, v.name + " Journey overflows horizontally: " + journeyOverflow);
     
-    for (const route of ["/orbit-beta", "/orbit-onboarding", "/orbit-skills", "/orbit-journey"]) {
+    const proofCalls = [];
+    page.on("request", request => {
+      if (request.method()==="POST" && new URL(request.url()).pathname==="/api/assessments") proofCalls.push("ATTEMPTED_ASSESSMENT_WRITE");
+    });
+    const proofResponse = await page.goto(base + "/orbit-lab/proof-demo", { waitUntil: "networkidle", timeout: 45000 });
+    assert.equal(proofResponse?.status(), 200, "Public fictional proof demo must render");
+    await page.getByRole("heading", { name: /Your skills deserve real proof/i }).waitFor();
+    await page.getByText(/Fictional data preview/).waitFor();
+    await page.getByRole("heading", { name: "Python", exact: true }).waitFor();
+    await page.getByRole("heading", { name: /Roadmap deliberately unchanged/i }).waitFor();
+    await page.screenshot({ path: out + "/" + v.name + "-proof-outcome.png", fullPage: true, animations: "disabled" });
+    const demoButton = page.getByRole("button", { name: /Preview only — sign in to assess/ });
+    assert.equal(await demoButton.isDisabled(), true, "Public fictional demo must not launch assessments");
+    await page.locator(".op-skill-option").filter({ hasText: "Statistics" }).click();
+    await page.getByText(/No completed proof is recorded for this skill yet/).waitFor();
+    await page.screenshot({ path: out + "/" + v.name + "-proof-empty.png", fullPage: true, animations: "disabled" });
+    await page.getByRole("button", { name: "All", exact: true }).click();
+    await page.locator(".op-skill-option").filter({ hasText: "Model Deployment" }).click();
+    await page.getByText(/At least four validated questions are required/).waitFor();
+    assert.deepEqual(proofCalls, [], "Public demo must never POST assessments");
+    const proofOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(proofOverflow <= 1, v.name + " Prove page overflows horizontally: " + proofOverflow);
+
+    for (const route of ["/orbit-beta", "/orbit-onboarding", "/orbit-skills", "/orbit-journey", "/orbit-prove", "/orbit-prove/session/00000000-0000-0000-0000-000000000000"]) {
       const noSession = await page.request.get(base + route, { maxRedirects: 0 });
       assert.ok([302, 303, 307, 308].includes(noSession.status()), route + " must redirect anonymous visitors");
     }

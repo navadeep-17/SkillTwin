@@ -89,7 +89,8 @@ test("new SQL table is user-only RLS with versioned optimistic writes",()=>{
     "enable row level security","force row level security",
     "certification_goal_owner_select","certification_goal_owner_insert",
     "certification_goal_owner_update","certification_goal_owner_delete",
-    "unique(user_id, certification_id)","CERTIFICATION_GOAL_VERSION_MUST_INCREMENT"
+    "unique(user_id, certification_id)","CERTIFICATION_GOAL_VERSION_MUST_INCREMENT",
+    "certification_goal_credential_url_https"
   ])assert.ok(ddl.includes(term),term);
   assert.match(ddl,/user_id = \(select auth\.uid\(\)\)/);
   assert.doesNotMatch(ddl,/\bTRUNCATE\b|\bDROP TABLE\b/i);

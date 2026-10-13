@@ -10,8 +10,8 @@ import {
 } from "../dist/lib/domain/occupation-mapping.js";
 
 const source = JSON.parse(readFileSync(new URL("../data/occupations/onet-online-curated-2026-10-13-v1.json", import.meta.url)));
-const catalog = JSON.parse(readFileSync(new URL("../data/occupation-mappings/canonical-skill-snapshot-v1.json", import.meta.url)));
-const manifest = JSON.parse(readFileSync(new URL("../data/occupation-mappings/review-decisions-v1.json", import.meta.url)));
+const catalog = JSON.parse(readFileSync(new URL("../data/occupation-mappings/canonical-skill-snapshot-v2.json", import.meta.url)));
+const manifest = JSON.parse(readFileSync(new URL("../data/occupation-mappings/review-decisions-v2.json", import.meta.url)));
 const decision = (overrides = {}) => ({
   sourceSkillKey: reviewKey("Active Listening", "ESSENTIAL"),
   decision: "APPROVED", canonicalSkillSlug: "user-research",

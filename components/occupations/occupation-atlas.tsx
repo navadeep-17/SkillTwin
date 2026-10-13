@@ -8,7 +8,7 @@ type SourceSkill = {
   name: string;
   importance: number;
   sourceOrder: number;
-  mappingStatus: "UNMAPPED";
+  mappingStatus: string;
 };
 type ExploratoryOccupation = {
   occupationId: string;
@@ -19,7 +19,7 @@ type ExploratoryOccupation = {
   sourceUrl: string;
   sourceUpdatedYear: number;
   countryContext: string;
-  status: "EXPLORATORY";
+  status: string;
   essentialSkills: SourceSkill[];
   transferableSkills: SourceSkill[];
 };

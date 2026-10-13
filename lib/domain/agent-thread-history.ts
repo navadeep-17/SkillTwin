@@ -22,7 +22,7 @@ function object(raw:unknown):Record<string,unknown> {
     ?parsed as Record<string,unknown>:{};
 }
 function uuid(raw:unknown):raw is string {
-  return typeof raw==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw);
+  return typeof raw==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw);
 }
 const proposalLabels:Record<PendingChatAction["actionType"],string>={
   START_ASSESSMENT:"Start the proposed skill challenge",

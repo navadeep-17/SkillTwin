@@ -18,6 +18,7 @@ jobs:
       - run: npm run typecheck:core
       - run: npm run test:core
       - run: npm run qa:contracts
+      - run: node --test tests/occupation-snapshot.test.mjs
       - run: npm run typecheck
       - run: npm run build
       - run: node scripts/career-auth-guard-smoke.mjs

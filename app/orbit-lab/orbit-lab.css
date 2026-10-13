@@ -11,3 +11,15 @@
 @media (max-width:900px){.orbit-header{padding:0 23px}.orbit-content{padding:36px 23px 58px}.orbit-landing-hero{display:flex;flex-direction:column;align-items:stretch;min-height:0}.orbit-landing-copy{max-width:680px}.orbit-landing-visual{height:auto;max-height:480px}.orbit-universe{max-width:465px}.orbit-landing-copy h1{font-size:clamp(42px,7vw,67px)}.orbit-bottom-features{margin-top:12px}.orbit-today-grid{grid-template-columns:1fr}.orbit-hero-panel{min-height:520px}.orbit-today-right{grid-template-columns:1fr 1fr;grid-template-rows:auto}.orbit-readiness-panel,.orbit-task-panel{min-height:370px}.orbit-proof-layout{grid-template-columns:1fr}.orbit-proof-side{display:grid;grid-template-columns:1fr 1fr}.orbit-preview-pill{display:none}}
 @media (max-width:700px){.orbit-header{height:auto;min-height:72px;padding:15px 19px;flex-wrap:wrap}.orbit-logo{font-size:19px}.orbit-nav{width:100%;order:2;justify-content:space-between}.orbit-nav button{flex:1}.orbit-content{padding:33px 19px 47px}.orbit-landing-copy h1,.orbit-section-head h1{font-size:clamp(37px,10vw,51px);letter-spacing:-.055em}.orbit-landing-copy p{font-size:14px}.orbit-landing-visual{height:420px}.orbit-cta-row .orbit-btn{flex:1;white-space:nowrap;padding:14px 12px}.orbit-bottom-features{grid-template-columns:1fr}.orbit-section-head{flex-direction:column;align-items:flex-start}.orbit-date-pill{margin:0}.orbit-hero-panel{min-height:475px}.orbit-mini-universe{min-height:330px}.orbit-today-right,.orbit-proof-side,.orbit-under-row{grid-template-columns:1fr}.orbit-readiness-panel{min-height:280px}.orbit-task-panel{min-height:0}.orbit-proof-main{padding:24px 19px;min-height:0}.orbit-proof-header{gap:13px}.orbit-proof-header h2{font-size:22px}.orbit-question-block h3{font-size:19px}.orbit-footer{padding:22px 19px;flex-direction:column;align-items:flex-start}.orbit-universe{width:100%}.orbit-floating-stat{display:none}.orbit-proof-layout{display:flex;flex-direction:column}.orbit-result-compare{gap:8px}.orbit-result-compare>div{padding:12px}.orbit-result-compare strong{font-size:27px}}
 @media (prefers-reduced-motion:reduce){.orbit-lab *,.orbit-lab *:before,.orbit-lab *:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+
+/* Isolate the design exploration from the current production shell while previewing.
+   Scoped to pages that actually render Orbit; ordinary app routes stay unchanged. */
+body:has(.orbit-lab) > aside,
+body:has(.orbit-lab) > header.sticky,
+body:has(.orbit-lab) > div.fixed.inset-x-0.bottom-0,
+body:has(.orbit-lab) > div.fixed.bottom-5.right-5 { display: none !important; }
+body:has(.orbit-lab) > div[class*="lg:pl-64"] {
+  padding-left: 0 !important;
+  padding-bottom: 0 !important;
+}

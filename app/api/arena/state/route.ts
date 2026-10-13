@@ -1,7 +1,8 @@
 import {getRequestId} from "@/lib/api/request-context";
 import {ok,fail} from "@/lib/api/responses";
 import {requireUser,UnauthenticatedError} from "@/lib/auth/require-user";
-import {arenaApiError,parseArenaState} from "@/lib/domain/arena";
+import {arenaApiError} from "@/lib/domain/arena";
+import {getArenaState} from "@/lib/services/arena/arena-ai-service";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -9,10 +10,9 @@ export const dynamic="force-dynamic";
 export async function GET(){
   const requestId=await getRequestId();
   try{
-    const {supabase}=await requireUser();
-    const {data,error}=await supabase.rpc("arena_get_state");
-    if(error)throw error;
-    const response=ok(requestId,{arena:parseArenaState(data)});
+    const {user}=await requireUser();
+    const arena=await getArenaState(user.id);
+    const response=ok(requestId,{arena});
     response.headers.set("Cache-Control","private, no-store");
     return response;
   }catch(error){

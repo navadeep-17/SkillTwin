@@ -23,6 +23,7 @@ The learner can ask an open question, the system selects narrow read-only tools,
 - [x] Validate allowlisted action payload types and UUID identifiers before execution.
 - [x] Re-evaluate user-owned active-goal snapshot, active plan and version, approved PlanDiff status, and validation-question availability before dispatch.
 - [x] Reject stale/expired/invalid proposals and only claim PROPOSED rows once using a conditional SQL update.
+- [x] Record executed proposal status and an agent_events audit item in one transaction after a domain action succeeds; leave CONFIRMED for manual reconciliation if that result cannot be persisted.
 - [x] Add focused agent action safety regression tests; UI invalidates rejected confirmation cards.
 - [ ] Run authenticated concurrent action-confirmation smoke; verify no duplicate downstream mutation.
 - [ ] Fully crash-safe execution recovery needs a durable result reference and a separate DB migration/transaction design. The current status is at-most-once dispatch, NOT guaranteed exactly-once, and a CONFIRMED state may require manual reconciliation after a process crash.

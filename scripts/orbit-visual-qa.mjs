@@ -25,14 +25,14 @@ try {
     const response = await page.goto(base + "/orbit-lab", { waitUntil: "networkidle", timeout: 45000 });
     assert.equal(response?.status(), 200, v.name + " prototype route must load");
     await page.getByRole("heading", { name: /Meet the AI that/i }).waitFor();
-    await page.screenshot({ path: out + "/" + v.name + "-landing.png", fullPage: true });
+    await page.screenshot({ path: out + "/" + v.name + "-landing.png", fullPage: true, animations: "disabled" });
 
     await page.getByRole("button", { name: "Today", exact: true }).click();
     await page.getByRole("heading", { name: /Every skill has a story/i }).waitFor();
     const task = page.getByRole("button", { name: /Review model evaluation fundamentals/ });
     await task.click();
     assert.equal(await task.getAttribute("aria-pressed"), "true", "Demo checklist must react");
-    await page.screenshot({ path: out + "/" + v.name + "-today.png", fullPage: true });
+    await page.screenshot({ path: out + "/" + v.name + "-today.png", fullPage: true, animations: "disabled" });
 
     await page.getByRole("button", { name: "Challenge", exact: true }).click();
     await page.getByRole("heading", { name: /Don't just trust your Twin/i }).waitFor();
@@ -42,7 +42,10 @@ try {
     await submit.click();
     await page.getByRole("heading", { name: /New evidence can strengthen/i }).waitFor();
     await page.getByText(/No assessment, score or roadmap is saved/).waitFor();
-    await page.screenshot({ path: out + "/" + v.name + "-challenge-result.png", fullPage: true });
+    await page.screenshot({ path: out + "/" + v.name + "-challenge-result.png", fullPage: true, animations: "disabled" });
+
+    const noSession = await page.request.get(base + "/orbit-beta", { maxRedirects: 0 });
+    assert.ok([302, 303, 307, 308].includes(noSession.status()), "Orbit beta must redirect anonymous visitors");
 
     const overflow = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,

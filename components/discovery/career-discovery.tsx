@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { CareerComparisonPanel } from "@/components/discovery/career-comparison";
 import {
   ArrowRight, BookOpen, Compass, Database, Info, Search, ShieldAlert, Target
 } from "lucide-react";
@@ -20,6 +21,7 @@ export type DiscoverableRole = {
     groupName: string;
     groupType: "SINGLE" | "ALL_OF" | "ANY_OF";
     skillId: string;
+    documented: boolean;
     name: string;
     category: string;
     importance: string;
@@ -195,6 +197,8 @@ export function CareerDiscovery({ roles }: Props) {
                   A documented skill can be a self-report or resume mention. This count is not a career-fit score,
                   and a listed skill may still be below the role's target proficiency.
                 </div>
+
+                <CareerComparisonPanel selected={selected} roles={roles} />
 
                 <h3 className="mt-8 text-lg font-semibold text-slate-900">Competencies in the role model</h3>
                 <p className="mt-2 text-sm text-slate-500">Ordered by modeled importance. Some requirements are alternative pathways, not mandatory combinations.</p>

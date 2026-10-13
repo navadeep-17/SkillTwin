@@ -6,7 +6,7 @@ import { BrainCircuit, Compass, Fingerprint, House, Route, Sparkles } from "luci
 
 const items = [
   { href: "/orbit-beta", label: "Today", icon: House, orbit: true },
-  { href: "/skills", label: "My Twin", icon: BrainCircuit, orbit: false },
+  { href: "/orbit-skills", label: "My Twin", icon: BrainCircuit, orbit: true },
   { href: "/roadmap", label: "Journey", icon: Route, orbit: false },
   { href: "/challenge-my-twin", label: "Prove", icon: Fingerprint, orbit: false },
   { href: "/discover", label: "Explore", icon: Compass, orbit: false }

@@ -23,3 +23,18 @@ body:has(.orbit-lab) > div[class*="lg:pl-64"] {
   padding-left: 0 !important;
   padding-bottom: 0 !important;
 }
+
+
+/* Signature proof-state motion is confined to results; it never animates stored state. */
+.orbit-result-block{animation:orbit-proof-reveal .65s cubic-bezier(.18,.8,.2,1) both}
+.orbit-result-symbol{position:relative;isolation:isolate;animation:orbit-proof-symbol .7s cubic-bezier(.2,.9,.2,1) both}
+.orbit-result-symbol:after{content:"";pointer-events:none;position:absolute;inset:-5px;border:1px solid rgba(82,231,199,.6);border-radius:24px;animation:orbit-proof-ring 1.15s ease-out .12s both;z-index:-1}
+.orbit-result-compare>div:nth-child(3){animation:orbit-proof-after .7s cubic-bezier(.2,.9,.2,1) .15s both}
+.orbit-result-compare>svg{animation:orbit-proof-arrow .7s ease-out .18s both}
+.orbit-replan-sample{animation:orbit-proof-reveal .6s cubic-bezier(.2,.9,.2,1) .3s both}
+@keyframes orbit-proof-reveal{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes orbit-proof-symbol{from{opacity:0;transform:scale(.75) rotate(-10deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes orbit-proof-ring{0%{transform:scale(.7);opacity:0}28%{opacity:1}100%{transform:scale(1.45);opacity:0}}
+@keyframes orbit-proof-after{from{opacity:0;transform:translateX(13px)}to{opacity:1;transform:translateX(0)}}
+@keyframes orbit-proof-arrow{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+@media(prefers-reduced-motion:reduce){.orbit-result-block,.orbit-result-symbol,.orbit-result-symbol:after,.orbit-result-compare>div:nth-child(3),.orbit-result-compare>svg,.orbit-replan-sample{animation:none!important}}

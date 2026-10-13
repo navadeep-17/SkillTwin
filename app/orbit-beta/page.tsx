@@ -37,27 +37,35 @@ export default async function OrbitBetaPage() {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login?next=%2Forbit-beta");
 
-  const [
-    { data: goal, error: goalError },
-    { data: snapshot, error: snapshotError },
-    { data: skills, error: skillsError }
-  ] = await Promise.all([
+  const [goalResult, skillsResult] = await Promise.all([
     supabase.from("career_goals")
       .select("id,role_version_id,role_versions!inner(target_roles!inner(name))")
       .eq("user_id", auth.user.id).eq("status", "ACTIVE")
-      .limit(1).maybeSingle(),
-    supabase.from("gap_snapshots")
-      .select("id,goal_id,role_version_id,readiness,evidence_coverage,created_at")
-      .eq("user_id", auth.user.id).order("created_at", { ascending: false })
       .limit(1).maybeSingle(),
     supabase.from("user_skills")
       .select("skill_id,level_value,capability_score,confidence,evidence_count")
       .eq("user_id", auth.user.id)
   ]);
-  for (const e of [goalError, snapshotError, skillsError]) if (e) throw e;
+  if (goalResult.error) throw goalResult.error;
+  if (skillsResult.error) throw skillsResult.error;
+  const goal = goalResult.data;
+  const skills = skillsResult.data;
 
-  // An old role snapshot must never appear as readiness for a newly selected goal.
-  const currentSnapshot = goal?.id && snapshot?.goal_id === goal.id && snapshot?.role_version_id === goal.role_version_id ? snapshot : null;
+  // Query by active goal AND role version so an older unrelated snapshot never
+  // masks an earlier valid snapshot for the current goal.
+  const currentSnapshot = goal?.id && goal.role_version_id
+    ? await (async () => {
+        const snapshotResult = await supabase.from("gap_snapshots")
+          .select("id,goal_id,role_version_id,readiness,evidence_coverage,created_at")
+          .eq("user_id", auth.user.id)
+          .eq("goal_id", goal.id)
+          .eq("role_version_id", goal.role_version_id)
+          .order("created_at", { ascending: false })
+          .limit(1).maybeSingle();
+        if (snapshotResult.error) throw snapshotResult.error;
+        return snapshotResult.data;
+      })()
+    : null;
   const roleVersion = one(goal?.role_versions as RoleVersionLink | RoleVersionLink[] | null);
   const roleName = one(roleVersion?.target_roles)?.name ?? null;
   const roleVersionId = goal?.role_version_id ? String(goal.role_version_id) : null;

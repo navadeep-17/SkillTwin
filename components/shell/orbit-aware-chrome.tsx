@@ -20,8 +20,8 @@ export function OrbitAwareChrome({
   const orbit = pathname.startsWith("/orbit-") || pathname === "/orbit-lab" || pathname.startsWith("/orbit-lab/") || (orbitDefault && pathname === "/") || secondary;
   return (
     <>
-      {signedIn && !orbit ? <div className="st-classic-nav">{legacyNavigation}</div> : null}
-      <div className={signedIn && !orbit ? "st-classic-shell min-h-screen pb-20 lg:pb-0 lg:pl-64" : "min-h-screen"}>
+      {signedIn && !orbit ? legacyNavigation : null}
+      <div className={signedIn && !orbit ? "min-h-screen pb-20 lg:pb-0 lg:pl-64" : "min-h-screen"}>
         {secondary ? <OrbitSecondaryWorkspace pathname={pathname}>{children}</OrbitSecondaryWorkspace> : children}
       </div>
     </>

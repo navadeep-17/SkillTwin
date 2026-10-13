@@ -3,7 +3,7 @@
 Status: prepared, **not executed against a signed-in account**. Never treat passing anonymous browser tests as proof that private SkillTwin screens work.
 
 ## Purpose
-Confirm that the isolated `/orbit-beta`, `/orbit-skills`, `/orbit-journey`, `/orbit-prove`, and `/orbit-onboarding` routes work for a real test learner, without modifying existing production pages, creating records, or revealing screenshots of private evidence.
+Confirm that the isolated `/orbit-beta`, `/orbit-skills`, `/orbit-journey`, `/orbit-prove`, `/orbit-explore`, and `/orbit-onboarding` routes work for a real test learner, without modifying existing production pages, creating records, or revealing screenshots of private evidence.
 
 ## Safe setup
 1. Use a dedicated, nonpersonal SkillTwin test account with its own seeded profile and career goal. Do **not** reuse a personal account.
@@ -15,11 +15,19 @@ Confirm that the isolated `/orbit-beta`, `/orbit-skills`, `/orbit-journey`, `/or
 
 ### What the automated browser script actually tests
 - Form sign-in redirects to the signed-in app.
-- Each of the five Orbit preview routes renders without redirects/errors.
+- Each of the six Orbit preview routes renders without redirects/errors.
 - Horizontal overflow is absent at both checked widths.
 - My Twin can switch to List, select a requirement and display the inspector if a role graph exists; otherwise the empty role state is visible.
 - Journey shows only the active goal's saved roadmap, milestone status, source-backed PlanDiffs and NO_OP explanations. It never mutates a task or approval.
 - No profile mutation, assessment submission or task-completion action is intentionally triggered.
+
+### Explore-specific review
+
+- Check `/orbit-explore` with an authenticated isolated test learner. Compare role and requirement counts, source status, personal-role visibility and grouping semantics with the working `/discover` view.
+- Use the family filter and a second-role comparison. A shared canonical skill ID does not establish a comparable capability or an employment fit score; `ANY_OF` groups must retain their alternative-pathway meaning.
+- The page is read-only. Following "Explore this career goal" opens functional `/orbit-onboarding`, where explicit saving or analyzing can change a test user's goal.
+- The public `/orbit-lab/explore-demo` reuses the UI with fictional catalog data and intentionally disables real goal actions. The four-viewport browser suite checks role selection and structural comparison.
+- Loading skeletons are indeterminate. No client timer should claim a real operation percentage.
 
 ### Prove-specific review
 

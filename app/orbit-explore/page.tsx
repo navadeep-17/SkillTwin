@@ -58,7 +58,7 @@ export default async function OrbitExplorePage(){
     return {
       id:String(v.id),roleId:String(v.role_id),name:String(meta?.name??"Career role"),
       family:String(meta?.family??"Other careers"),version:Number(v.version),
-      source:v.source==="AI_GENERATED"?"AI_GENERATED":"SEEDED",
+      source:(v.source==="AI_GENERATED"?"AI_GENERATED":"SEEDED") as DiscoverableRole["source"],
       personal:Boolean(meta?.owner_user_id),requirementCount:uniqueIds.size,
       documentedCount:[...uniqueIds].filter(id=>documented.has(id)).length,
       requirements:reqs.map(r=>{

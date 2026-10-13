@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { readSavedProjectCode } from "@/lib/services/chat/project-code-rag";
 import { getSql } from "@/lib/db/postgres";
 import { getGeminiStructuredClient } from "@/lib/ai/gemini-interactions";
 import { CERTIFICATION_CATALOG } from "@/lib/domain/certification-catalog";
@@ -11,7 +12,7 @@ import {
 } from "@/lib/domain/agent-read-plan";
 
 type Row=Record<string,unknown>;
-export type AgentRef={type:"skill"|"gap_snapshot"|"learning_plan"|"learning_task"|"plan_diff"|"assessment"|"agent_event"|"certification_goal";id:string;label:string};
+export type AgentRef={type:"skill"|"gap_snapshot"|"learning_plan"|"learning_task"|"plan_diff"|"assessment"|"agent_event"|"certification_goal"|"profile_project";id:string;label:string};
 export type AgentReadContext={
   snapshot:Row|null;gaps:Row[];plan:Row|null;tasks:Row[];
   latestDiff:Row|null;skills:Row[];mentionedSkill:Row|null;latestAssessment:Row|null;
@@ -100,6 +101,19 @@ export class AgentReadOrchestrator {
     userId:string;message:string;intent:AgentReadIntent;
     context:AgentReadContext;readAssessmentProof:ProofReader;
   }) {
+    // Overnight V3 pilot: only explicit project/repository code questions use
+    // bounded, cited retrieval. Existing write intents never reach this method.
+    // Ordinary skill, assessment and roadmap questions keep V2 behavior.
+    if (/\\b(project|repo|repository|github|source code|codebase)\\b/i.test(input.message)
+        && /\\b(how|why|where|find|show|explain|implement|implemented|authentication|security|function|design|architecture|code|source)\\b/i.test(input.message)) {
+      const rag=await readSavedProjectCode({userId:input.userId,question:input.message});
+      return {
+        content:rag.content,
+        refs:rag.refs.map(r=>({type:"profile_project" as const,id:r.id,label:r.label})),
+        evidenceRefs:[] as string[],action:null,
+        meta:{generator:"source-rag-fallback-v1" as const,readTools:[] as AgentReadTool[]}
+      };
+    }
     const plan=await chooseReadTools(input.message,input.intent);
     const observations=await Promise.all(plan.tools.map(tool=>this.readTool(tool,input)));
     const refs:AgentRef[]=[];

@@ -48,22 +48,23 @@ test("Orbit UI has keyboard graph controls and reduced-motion styling", () => {
 });
 
 
+
 test("Orbit onboarding is authenticated and preserves the working product workflow", () => {
   const page = read("app/orbit-onboarding/page.tsx");
   const middleware = read("middleware.ts");
   const css = read("app/orbit-onboarding/orbit-onboarding.css");
-  assert.match(middleware, /"\\/orbit-onboarding"/);
-  assert.match(page, /supabase\\.auth\\.getUser\\(\\)/);
-  assert.match(page, /redirect\\("\\/login/);
-  assert.match(page, /<OnboardingFlow initialRoleVersionId=\\{initialRoleVersionId\\}/);
-  assert.match(page, /Saving or analyzing here updates your actual signed-in profile/);
-  assert.match(css, /SkillTwin setup progress/);
-  assert.match(css, /prefers-reduced-motion/);
-  assert.doesNotMatch(page, /\\.insert\\s*\\(|\\.update\\s*\\(|\\.delete\\s*\\(/);
+  assert.ok(middleware.includes('"/orbit-onboarding"'));
+  assert.ok(page.includes("supabase.auth.getUser()"));
+  assert.ok(page.includes('redirect("/login'));
+  assert.ok(page.includes("<OnboardingFlow initialRoleVersionId={initialRoleVersionId}"));
+  assert.ok(page.includes("Saving or analyzing here updates your actual signed-in profile"));
+  assert.ok(css.includes("SkillTwin setup progress"));
+  assert.ok(css.includes("prefers-reduced-motion"));
+  assert.ok(!page.includes(".insert(") && !page.includes(".update(") && !page.includes(".delete("));
 });
 
 test("Orbit readiness snapshot belongs to the selected goal and role", () => {
   const page = read("app/orbit-beta/page.tsx");
-  assert.match(page, /\\.eq\\("goal_id", goal\\.id\\)/);
-  assert.match(page, /\\.eq\\("role_version_id", goal\\.role_version_id\\)/);
+  assert.ok(page.includes('.eq("goal_id", goal.id)'));
+  assert.ok(page.includes('.eq("role_version_id", goal.role_version_id)'));
 });

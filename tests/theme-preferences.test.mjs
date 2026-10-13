@@ -66,6 +66,7 @@ test("theme controls apply immediately without account writes",()=>{
   const classic=read("components/shell/app-nav.tsx");
   const orbitSettings=read("app/orbit-settings/page.tsx");
   const settings=read("app/settings/page.tsx");
+  const authShell=read("components/auth/auth-shell.tsx");
   assert.match(layout,/suppressHydrationWarning/);
   assert.match(layout,/themeInitScript/);
   assert.match(control,/skilltwin-theme/);
@@ -77,6 +78,7 @@ test("theme controls apply immediately without account writes",()=>{
   assert.match(classic,/<ThemeSwitcher compact\/>/);
   assert.match(orbitSettings,/<ThemeSwitcher\/>/);
   assert.match(settings,/<ThemeSwitcher\s*\/>/);
+  assert.match(authShell,/<ThemeSwitcher compact\/>/);
   assert.match(themeCSS,/html\[data-theme="light"\]/);
   assert.match(themeCSS,/html\[data-theme="dark"\]/);
   assert.match(themeCSS,/\.osw-native-content/);

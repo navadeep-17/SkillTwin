@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppNav } from "@/components/shell/app-nav";
+import { OrbitAwareChrome } from "@/components/shell/orbit-aware-chrome";
 import { GlobalAssistantDock } from "@/components/shell/global-assistant-dock";
 import { PageTransition } from "@/components/shell/page-transition";
 import { RouteProgress } from "@/components/shell/route-progress";
@@ -28,11 +29,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang="en">
       <body className="min-h-screen text-slate-950 antialiased">
         <RouteProgress />
-        {user ? <AppNav userId={user.id} email={user.email} /> : null}
         {user ? <ProductRealtimeSync userId={user.id} /> : null}
-        <div className={user ? "min-h-screen pb-20 lg:pb-0 lg:pl-64" : "min-h-screen"}>
+        <OrbitAwareChrome signedIn={Boolean(user)} legacyNavigation={user ? <AppNav userId={user.id} email={user.email} /> : null}>
           <PageTransition>{children}</PageTransition>
-        </div>
+        </OrbitAwareChrome>
         {user ? <GlobalAssistantDock /> : null}
       </body>
     </html>

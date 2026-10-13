@@ -1,0 +1,13 @@
+/* Secondary routes preserve newly merged certifications and legacy tools. */
+.orbit-preview-actions{position:relative}
+.orbit-preview-more{position:relative}
+.orbit-preview-more summary{list-style:none;cursor:pointer;display:flex;gap:5px;align-items:center;white-space:nowrap;font-size:11px;font-weight:730;padding:11px 12px;border:1px solid rgba(180,175,250,.24);border-radius:10px;color:#d4c9ff;background:#222441}
+.orbit-preview-more summary::-webkit-details-marker{display:none}
+.orbit-preview-more[open] summary,.orbit-preview-more summary:hover{border-color:#9688ea;background:#343257}
+.orbit-preview-menu{position:absolute;z-index:200;top:calc(100% + 9px);right:0;min-width:235px;padding:8px;display:flex;flex-direction:column;gap:2px;border-radius:13px;background:#1a223c;border:1px solid rgba(175,170,245,.35);box-shadow:0 15px 45px #0008;color:#dfe4fd}
+.orbit-preview-menu a{display:flex;align-items:center;gap:11px;padding:11px;text-decoration:none;font-size:11px;font-weight:700;border-radius:8px;color:#dfe4fd}
+.orbit-preview-menu a:hover{background:#323653}
+.orbit-preview-menu>button{width:100%;display:flex;justify-content:center;margin-top:4px;background:#302d4d;border:1px solid #615888;color:#e9dcff}
+.orbit-preview-menu>button:hover{background:#45365c;color:#fff}
+.orbit-preview-menu a:focus-visible,.orbit-preview-more summary:focus-visible{outline:2px solid #52E7C7;outline-offset:2px}
+@media(max-width:750px){.orbit-preview-actions{order:2;margin-left:auto}.orbit-preview-menu{right:0}.orbit-preview-nav-wrap>.orbit-preview-build{order:2;margin-left:0}}

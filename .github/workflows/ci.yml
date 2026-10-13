@@ -28,6 +28,7 @@ jobs:
       - run: node --test tests/certification-recommendations.test.mjs
       - run: node --test tests/certification-journey.test.mjs
       - run: node --test tests/certification-preparation.test.mjs
+      - run: node --test tests/orbit-preview.test.mjs
       - run: node --test tests/project-defense.test.mjs
       - run: node --test tests/judge-demo-integrity.test.mjs
       - run: node --test tests/assessment-bank-boundary.test.mjs

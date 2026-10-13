@@ -41,7 +41,8 @@ test("20-second queue age is immutable under heartbeats; simultaneous real match
   assert.match(service,/pg_advisory_xact_lock\(74351/);
   assert.match(service,/pg_advisory_xact_lock\(74352/);
   assert.match(service,/for update/);
-  assert.match(service,/if\(lobby\?\.status!=="WAITING"\)return null/);
+  assert.match(service,/if\(lobby\?\.status!=="WAITING"\|\|lobby\.topic!==topic\|\|!lobby\.eligible\)return null/);
+  assert.ok(service.indexOf("pg_advisory_xact_lock(74352")<service.indexOf("for update"),"topic lock must precede row lock");
   assert.match(service,/delete from public\.arena_lobby where user_id=/);
   assert.match(ddl,/arena_guard_human_lobby/);
   assert.match(ddl,/ARENA_AI_ACTIVE/);

@@ -18,7 +18,8 @@ export default async function DemoPage() {
     snapshot,
     plan,
     assessment,
-    diff
+    diff,
+    replanDecision
   ] = await Promise.all([
     supabase
       .from("profile_documents")
@@ -56,10 +57,17 @@ export default async function DemoPage() {
       .eq("user_id", auth.user.id)
       .order("created_at", { ascending: false })
       .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("replan_decisions")
+      .select("decision,reason_code,reason,created_at")
+      .eq("user_id", auth.user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle()
   ]);
 
-  for (const result of [documents, snapshot, plan, assessment, diff]) {
+  for (const result of [documents, snapshot, plan, assessment, diff, replanDecision]) {
     if (result.error) throw result.error;
   }
 
@@ -68,6 +76,7 @@ export default async function DemoPage() {
   const activePlan = plan.data;
   const latestAssessment = assessment.data;
   const latestDiff = diff.data;
+  const latestDecision = replanDecision.data;
 
   const steps: Array<{ label: string; ready: boolean; detail: string; href: Route }> = [
     {
@@ -101,11 +110,15 @@ export default async function DemoPage() {
       href: "/practice"
     },
     {
-      label: "5. PlanDiff created",
-      ready: Boolean(latestDiff),
+      label: "5. Replanning decision",
+      ready: Boolean(latestDiff || latestDecision),
       detail: latestDiff
-        ? "v" + latestDiff.from_version + " → v" + (latestDiff.to_version ?? "—") + " · " + latestDiff.status
-        : "No roadmap change yet",
+        ? "PlanDiff v" + latestDiff.from_version + " → v" + (latestDiff.to_version ?? "—") + " · " + latestDiff.status
+        : latestDecision
+          ? String(latestDecision.decision) === "NO_OP"
+            ? "Unchanged by design · " + String(latestDecision.reason_code ?? "No safe future patch")
+            : "Replanning decision · " + String(latestDecision.decision)
+          : "No adaptation decision recorded yet",
       href: latestDiff ? (("/roadmap/changes/" + latestDiff.id) as Route) : "/roadmap"
     },
     {

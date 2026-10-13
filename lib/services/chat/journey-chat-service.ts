@@ -2,6 +2,8 @@ import "server-only";
 import { getSql } from "@/lib/db/postgres";
 import { classifyJourneyIntent, findMentionedSkill, type JourneyIntent } from "@/lib/domain/journey-intent";
 import { buildTwinProofTrail } from "@/lib/domain/twin-challenge";
+import { isMutatingJourneyIntent, type AgentReadIntent } from "@/lib/domain/agent-read-plan";
+import { getAgentReadOrchestrator } from "@/lib/services/chat/agent-read-orchestrator";
 
 type Row = Record<string, unknown>;
 
@@ -57,7 +59,28 @@ export class JourneyChatService {
     const userMessageId = String(userMessageRows[0].id);
 
     const context = await this.context(input.userId, input.message);
-    const generated = await this.answer(intent, input.message, context, input.userId);
+    // Model selection only applies to read-only requests. Every mutation still
+    // uses the existing confirmation-gated deterministic proposal workflow.
+    let readRun: Awaited<ReturnType<ReturnType<typeof getAgentReadOrchestrator>["run"]>> | null = null;
+    if (!isMutatingJourneyIntent(intent)) {
+      try {
+        readRun = await getAgentReadOrchestrator().run({
+          userId:input.userId,
+          message:input.message,
+          intent:intent as AgentReadIntent,
+          context,
+          readAssessmentProof:async ()=>{
+            const proof=await this.explainAssessment(input.userId,context.mentionedSkill);
+            return {content:proof.content,refs:proof.refs};
+          }
+        });
+      } catch (error) {
+        console.warn("journey.agent.read.fallback", {
+          errorType:error instanceof Error ? error.name : "Unknown"
+        });
+      }
+    }
+    const generated = readRun ?? await this.answer(intent, input.message, context, input.userId);
     let actionProposal: ChatActionProposal | null = null;
 
     if (generated.action) {
@@ -94,7 +117,8 @@ export class JourneyChatService {
         JSON.stringify({
           grounded: true,
           actionProposalId: actionProposal?.id ?? null,
-          generator: "deterministic-grounded-i1"
+          generator: readRun?.meta.generator ?? "deterministic-grounded-i1",
+          readTools: readRun?.meta.readTools ?? []
         })
       ]
     ));
@@ -113,6 +137,8 @@ export class JourneyChatService {
         intent,
         refs: generated.refs,
         evidenceRefs: generated.evidenceRefs,
+        agentMode:readRun?.meta.generator ?? "deterministic-grounded-i1",
+        readTools:readRun?.meta.readTools ?? [],
         createdAt: new Date(String(assistantRows[0].created_at)).toISOString()
       },
       actionProposal

@@ -143,6 +143,18 @@ CI validates TypeScript, Next.js build, static read-only/auth invariants and tes
 - The new route is linked from Today and Orbit navigation. Existing `/skills` remains unchanged as the production fallback.
 - Authenticated branch-preview testing is still required. See `docs/ORBIT_AUTHENTICATED_QA.md`; do not claim that CI with fictional data validates real user records.
 
+## Prove center and evidence-to-plan feedback (Phase 4 preview)
+
+- Authenticated `/orbit-prove` is a new **canonical read-only** skill inspector. It reads the same skill state, accepted/non-aggregating evidence, assessment outcomes, stored before/after skill history, NO_OP decisions and applied PlanDiff references as the original Challenge My Twin screen. Its server-only query exposes **question counts**, never prompts, answer keys or grading rubrics.
+- The original `lib/domain/twin-challenge.ts` functions `challengeAvailability` and `buildTwinProofTrail` provide challenge-readiness and exact persisted result/decision relationships. Lack of history is shown as unknown, not a synthesized outcome.
+- Learners can inspect sources, choose a *non-scoring* concern, and launch a real verified challenge via existing authenticated `POST /api/assessments`. Active challenges are resumed. Concern selection is **not sent to the evaluator**.
+- Authenticated `/orbit-prove/session/[id]` wraps the working `ChallengeSession`. Question answering, scoring, evidence commits and replan decisions remain owned entirely by the existing assessment services.
+- After completing a challenge, the learner returns to the Prove center to see saved results and the exact changed/unchanged/unrecorded roadmap status. If a PlanDiff was applied, the inspector links to the existing PlanDiff page.
+- `/orbit-lab/proof-demo` uses **fictional data** and the same presentation component with `demoOnly` enforced; assessment launch is disabled. Browser QA checks no assessment API POSTs and tests empty/unavailable/proof-result states at four viewport sizes.
+- No production assessment route was replaced, and no migration, scoring formula or model write logic was introduced.
+
+**Remaining gate:** Execute the private authenticated test plan in `docs/ORBIT_AUTHENTICATED_QA.md` in an authorized isolated environment and validate an actual assessment-evidence-replan round trip on a dedicated account before merging.
+
 ## Route/data integration approach
 
 Do **not** replace existing domain components or database logic. Extract a reusable OrbitShell and Orbit tokens. Integrate route by route behind an environment/feature gate, preserving old screens as a fallback until verified.

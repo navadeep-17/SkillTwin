@@ -135,3 +135,16 @@ html[data-theme="light"] .oh-site .oh-footer a{color:#473aab!important}
 /* Prevent transitions from flashing mixed palettes; never animate data values. */
 @media(prefers-reduced-motion:reduce){html[data-theme] :is(.st-theme-panel,.orbit-lab,.oh-site){transition:none!important}}
 @media print{html[data-theme="dark"] .st-classic-shell{color:#111827!important}html[data-theme="light"] .osw-native-content{background:white!important}}
+
+/* Preserve readable graph labels in intentional dark visualization islands. */
+.st-classic-nav{display:contents}
+html[data-theme="light"] .orbit-lab :is(.orbit-live-graph,.orbit-skills-flow){
+ background:radial-gradient(circle at 50% 48%,#27335b,#141c32 78%)!important;
+ color:#eaf0ff!important;border-radius:14px;
+}
+html[data-theme="light"] .orbit-lab .orbit-live-graph :is(p,small,span){color:#d4dcf5!important}
+html[data-theme="light"] .orbit-lab .orbit-live-graph .orbit-live-node-list{background:transparent!important}
+html[data-theme="light"] .orbit-lab .orbit-live-graph .orbit-live-node-option{
+ color:#ecf1ff!important;background:#242e4d!important;border-color:#515c7e!important;
+}
+html[data-theme="light"] .orbit-lab .orbit-live-graph .orbit-live-node-option strong{color:#f0f4ff!important}

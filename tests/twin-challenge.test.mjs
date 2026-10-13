@@ -106,3 +106,33 @@ test("unrelated assessment NO_OP never counts as a successful proof adaptation",
   assert.equal(proof.planStatus,"NOT_RECORDED");
   assert.equal(proof.planDiffId,null);
 });
+
+test("lower assessed capability raises confidence without forcing a roadmap patch",()=>{
+  const outcome={
+    assessment_id:"assess-correction",skill_id:"skill-js",
+    normalized_score:0.2368,coverage:1,created_at:"2026-10-13T13:47:29.000Z"
+  };
+  const history={
+    skill_id:"skill-js",trigger_ref:"assess-correction",
+    before_state:JSON.stringify({level:"INTERMEDIATE",capabilityScore:1.55,confidence:0.49}),
+    after_state:JSON.stringify({level:"BEGINNER",capabilityScore:1.189,confidence:0.809}),
+    explanation:"Evidence-supported downward revision."
+  };
+  const decision={
+    trigger_ref:"assess-correction",decision:"NO_OP",
+    reason_code:"SKILL_OUTSIDE_ACTIVE_HORIZON",
+    reason:"No mutable future objective for the validated skill."
+  };
+  const proof=buildTwinProofTrail(outcome,[history],[decision],[]);
+  assert.equal(proof.scorePercent,24);
+  assert.equal(proof.coveragePercent,100);
+  assert.equal(proof.before?.level,"INTERMEDIATE");
+  assert.equal(proof.after?.level,"BEGINNER");
+  assert.equal(proof.before?.capability,1.55);
+  assert.equal(proof.after?.capability,1.189);
+  assert.equal(proof.before?.confidencePercent,49);
+  assert.equal(proof.after?.confidencePercent,81);
+  assert.equal(proof.planStatus,"UNCHANGED");
+  assert.equal(proof.planDiffId,null);
+  assert.match(proof.planReason,/No mutable future objective/);
+});

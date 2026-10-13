@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight, CheckCircle2, ChevronRight, CircleAlert, FileCheck2,
   Fingerprint, History, LoaderCircle, LockKeyhole, Search,
-  ShieldCheck, Sparkles, Target, TrendingUp, Zap
+  ShieldCheck, Sparkles, Target, ArrowLeftRight, Zap
 } from "lucide-react";
 import {
   evidenceReliabilityLabel,normalizedConfidence,
@@ -48,7 +48,8 @@ export function TwinChallengeWorkbench({skills,initialSkillId}:{
   initialSkillId?:string;
 }) {
   const router=useRouter();
-  const defaultSkill=initialSkillId??skills.find(s=>s.evidenceCount>0&&s.availability!=="NO_VALIDATED_BANK")?.id
+  const defaultSkill=initialSkillId??skills.find(s=>s.proof?.before&&s.proof?.after)?.id
+    ??skills.find(s=>s.evidenceCount>0&&s.availability!=="NO_VALIDATED_BANK")?.id
     ??skills.find(s=>s.availability!=="NO_VALIDATED_BANK")?.id??skills[0]?.id??"";
   const [selectedId,setSelectedId]=useState(defaultSkill);
   const [search,setSearch]=useState("");
@@ -181,6 +182,16 @@ export function TwinChallengeWorkbench({skills,initialSkillId}:{
               </div>
 
               <div className="space-y-7 p-6 sm:p-7">
+                <section aria-label="Latest proof trail">
+                  <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
+                    <History className="size-5 text-brand-600"/> What did the last proof change?
+                  </h3>
+                  {selected.proof?<ProofTrail proof={selected.proof}/>:(
+                    <p className="mt-3 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                      No completed proof challenge is recorded for this skill yet. Finish an assessment to see a traceable outcome here.
+                    </p>
+                  )}
+                </section>
                 <section>
                   <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
                     <Fingerprint className="size-5 text-brand-600"/> Why SkillTwin currently believes this
@@ -243,16 +254,7 @@ export function TwinChallengeWorkbench({skills,initialSkillId}:{
                   </p>
                 </section>
 
-                <section aria-label="Latest proof trail">
-                  <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
-                    <History className="size-5 text-brand-600"/> What did the last proof change?
-                  </h3>
-                  {selected.proof?<ProofTrail proof={selected.proof}/>:(
-                    <p className="mt-3 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-                      No completed proof challenge is recorded for this skill yet. Finish an assessment to see a traceable outcome here.
-                    </p>
-                  )}
-                </section>
+
               </div>
             </div>
           ):<div className="surface-card p-8 text-sm text-slate-600">No skill catalog entries are available.</div>}
@@ -282,46 +284,108 @@ function Metric({title,value}:{title:string;value:string}) {
 }
 
 function ProofTrail({proof}:{proof:TwinProofTrail}) {
-  return (
-    <div className="mt-4 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <Metric title="Recorded assessment score" value={proof.scorePercent!=null?proof.scorePercent+"%":"Not recorded"} />
-        <Metric title="Concept coverage" value={proof.coveragePercent!=null?proof.coveragePercent+"%":"Not recorded"} />
-      </div>
-      {proof.before&&proof.after?(
-        <div className="rounded-xl border border-brand-100 bg-brand-50/30 p-4">
-          <p className="flex items-center gap-2 text-sm font-semibold text-slate-900"><TrendingUp className="size-4 text-brand-600"/> SkillTwin before → after</p>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-white p-3">
-              <p className="text-xs text-slate-500">Before</p>
-              <p className="mt-1 text-sm font-semibold text-slate-700">{proof.before.level?asLabel(proof.before.level):"Unknown"}</p>
-              <p className="mt-1 text-xs text-slate-500">Confidence {proof.before.confidencePercent==null?"Unknown":proof.before.confidencePercent+"%"}</p>
-            </div>
-            <div className="rounded-lg bg-white p-3">
-              <p className="text-xs text-slate-500">After</p>
-              <p className="mt-1 text-sm font-semibold text-brand-700">{proof.after.level?asLabel(proof.after.level):"Unknown"}</p>
-              <p className="mt-1 text-xs text-slate-500">Confidence {proof.after.confidencePercent==null?"Unknown":proof.after.confidencePercent+"%"}</p>
-            </div>
-          </div>
-          {proof.skillExplanation?<p className="mt-3 text-xs leading-5 text-slate-600">{proof.skillExplanation}</p>:null}
-        </div>
-      ):<div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-        Assessment outcome exists, but no matching material skill-history change was recorded for that assessment.
-      </div>}
+  const before = proof.before;
+  const after = proof.after;
+  const shift = before?.capability != null && after?.capability != null
+    ? after.capability - before.capability : null;
+  const shiftLabel = shift == null ? "Evidence-based reassessment"
+    : shift < -0.001 ? "Estimate revised downward"
+    : shift > 0.001 ? "Estimate revised upward"
+    : "Estimate confirmed by new evidence";
+  const confidenceChange = before?.confidencePercent != null && after?.confidencePercent != null
+    ? after.confidencePercent - before.confidencePercent : null;
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <p className="text-sm font-semibold text-slate-900">
-          {proof.planStatus==="CHANGED"?"Roadmap change recorded":
-            proof.planStatus==="UNCHANGED"?"Roadmap unchanged by design":"Roadmap decision not confirmed"}
-        </p>
+  return (
+    <div className="mt-4 space-y-4">
+      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 p-5 text-white sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-sky-300">
+              <CheckCircle2 className="size-4" /> Completed evidence challenge
+            </p>
+            <h4 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">{shiftLabel}</h4>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              SkillTwin reconsidered its estimate using the stored assessment outcome—not the direction you preferred.
+            </p>
+          </div>
+          <span className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold text-slate-200">
+            {proof.planStatus==="CHANGED"?"Plan updated":proof.planStatus==="UNCHANGED"?"Plan unchanged":"Plan not confirmed"}
+          </span>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-white/15 bg-white/5 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Before the challenge</p>
+            <p className="mt-2 text-xl font-semibold">{before?.level?asLabel(before.level):"Unknown"}</p>
+            <p className="mt-1 text-sm text-slate-300">
+              {before?.capability == null ? "Capability not recorded" : "Capability " + before.capability.toFixed(2)}
+            </p>
+            <p className="mt-4 text-sm text-slate-200">
+              Confidence {before?.confidencePercent==null?"unknown":before.confidencePercent+"%"}
+            </p>
+            {before?.confidencePercent!=null?
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-700" aria-label={"Previous confidence "+before.confidencePercent+"%"}>
+                <div className="h-full rounded-full bg-slate-400" style={{width:before.confidencePercent+"%"}} />
+              </div>:null}
+          </div>
+          <div className="rounded-xl border border-sky-400/40 bg-sky-400/10 p-4">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-sky-300">
+              <ArrowLeftRight className="size-4" /> After assessed evidence
+            </p>
+            <p className="mt-2 text-xl font-semibold">{after?.level?asLabel(after.level):"Unknown"}</p>
+            <p className="mt-1 text-sm text-slate-200">
+              {after?.capability == null ? "Capability not recorded" : "Capability " + after.capability.toFixed(2)}
+            </p>
+            <p className="mt-4 text-sm text-slate-100">
+              Confidence {after?.confidencePercent==null?"unknown":after.confidencePercent+"%"}
+            </p>
+            {after?.confidencePercent!=null?
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-700" aria-label={"Updated confidence "+after.confidencePercent+"%"}>
+                <div className="h-full rounded-full bg-sky-400" style={{width:after.confidencePercent+"%"}} />
+              </div>:null}
+          </div>
+        </div>
+        {confidenceChange != null?
+          <p className="mt-4 text-sm text-sky-200">
+            Confidence {confidenceChange>=0?"+":""}{confidenceChange} percentage points.
+            A more certain estimate can be lower or higher than the previous one.
+          </p>:null}
+        {proof.skillExplanation?
+          <p className="mt-3 text-sm leading-6 text-slate-300">{proof.skillExplanation}</p>:null}
+        {(!before||!after)?
+          <p className="mt-3 text-sm text-amber-200">
+            The assessment was saved, but a matching before/after skill-history record was not found.
+          </p>:null}
+        <div className="mt-5 grid grid-cols-2 gap-3 border-t border-white/15 pt-4">
+          <div>
+            <p className="text-xs text-slate-400">Assessment score</p>
+            <p className="mt-1 text-lg font-semibold">{proof.scorePercent==null?"Not recorded":proof.scorePercent+"%"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-400">Concept coverage</p>
+            <p className="mt-1 text-lg font-semibold">{proof.coveragePercent==null?"Not recorded":proof.coveragePercent+"%"}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="size-5 text-brand-600" />
+          <h4 className="font-semibold text-slate-900">
+            {proof.planStatus==="CHANGED"?"Roadmap adjusted to the evidence":
+              proof.planStatus==="UNCHANGED"?"Roadmap deliberately unchanged":"Roadmap decision not recorded"}
+          </h4>
+        </div>
         <p className="mt-2 text-sm leading-6 text-slate-600">{proof.planReason}</p>
-        {proof.planDiffId?<Link href={"/roadmap/changes/"+proof.planDiffId} className="quiet-link mt-3 inline-flex items-center gap-1">
-          View recorded PlanDiff <ArrowRight className="size-4"/>
-        </Link>:null}
-        <p className="mt-2 text-xs text-slate-500">Linked by this assessment's saved trigger reference, not by a guessed timeline.</p>
+        <p className="mt-2 text-xs leading-5 text-slate-500">
+          A justified no-change decision is valid. Only an APPLIED PlanDiff linked to this assessment counts as a roadmap change.
+        </p>
+        {proof.planDiffId?
+          <Link href={"/roadmap/changes/"+proof.planDiffId} className="quiet-link mt-3 inline-flex items-center gap-1">
+            View actual PlanDiff <ArrowRight className="size-4"/>
+          </Link>:null}
       </div>
       <Link href={"/practice/"+proof.assessmentId} className="quiet-link inline-flex items-center gap-2">
-        <CheckCircle2 className="size-4"/> Review the completed assessment <ArrowRight className="size-4"/>
+        <CheckCircle2 className="size-4"/> Review this assessment <ArrowRight className="size-4"/>
       </Link>
     </div>
   );

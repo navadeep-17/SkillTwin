@@ -19,6 +19,7 @@ export default async function DemoPage() {
     snapshot,
     plan,
     assessment,
+    skillHistory,
     diffs,
     replanDecisions
   ] = await Promise.all([
@@ -53,6 +54,13 @@ export default async function DemoPage() {
       .limit(1)
       .maybeSingle(),
     supabase
+      .from("skill_history")
+      .select("skill_id,trigger_ref,before_state,after_state,explanation,created_at")
+      .eq("user_id", auth.user.id)
+      .eq("trigger_type", "ASSESSMENT_COMPLETED")
+      .order("created_at", { ascending: false })
+      .limit(100),
+    supabase
       .from("plan_diffs")
       .select("id,status,trigger_refs,from_version,to_version,summary,created_at")
       .eq("user_id", auth.user.id)
@@ -66,7 +74,7 @@ export default async function DemoPage() {
       .limit(100)
   ]);
 
-  for (const result of [documents, snapshot, plan, assessment, diffs, replanDecisions]) {
+  for (const result of [documents, snapshot, plan, assessment, skillHistory, diffs, replanDecisions]) {
     if (result.error) throw result.error;
   }
 
@@ -85,7 +93,7 @@ export default async function DemoPage() {
           coverage: latestAssessment.coverage,
           created_at: String(latestAssessment.created_at)
         },
-        [],
+        skillHistory.data ?? [],
         replanDecisions.data ?? [],
         diffs.data ?? []
       )
@@ -172,6 +180,53 @@ export default async function DemoPage() {
         <Link href="/challenge-my-twin" className="btn-primary">Start a proof challenge →</Link>
         <Link href="/practice" className="btn-secondary">Resume a challenge</Link>
       </div>
+
+      {proof ? (
+        <section className="mt-8 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 p-5 text-white sm:p-7" aria-label="Verified assessment transformation">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-sky-300">Real learner proof · assessment linked</p>
+              <h2 className="mt-2 text-2xl font-semibold">What SkillTwin actually learned</h2>
+              <p className="mt-2 max-w-2xl text-sm text-slate-300">
+                This result comes from stored assessment evidence, not a fixture or simulated score.
+              </p>
+            </div>
+            <span className="rounded-full border border-slate-600 px-3 py-1 text-xs text-slate-200">
+              {proof.planStatus === "CHANGED" ? "Roadmap changed" :
+                proof.planStatus === "UNCHANGED" ? "Justified no-change" : "Roadmap pending"}
+            </span>
+          </div>
+          {proof.before && proof.after ? (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-white/15 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-wider text-slate-400">Estimate before</p>
+                <p className="mt-2 text-xl font-semibold capitalize">{proof.before.level?.replaceAll("_"," ").toLowerCase() ?? "Unknown"}</p>
+                <p className="mt-1 text-sm text-slate-300">Capability {proof.before.capability == null ? "unknown" : proof.before.capability.toFixed(2)}</p>
+                <p className="mt-2 text-sm text-slate-300">Confidence {proof.before.confidencePercent == null ? "unknown" : proof.before.confidencePercent + "%"}</p>
+              </div>
+              <div className="rounded-xl border border-sky-400/40 bg-sky-400/10 p-4">
+                <p className="text-xs uppercase tracking-wider text-sky-300">After assessed evidence</p>
+                <p className="mt-2 text-xl font-semibold capitalize">{proof.after.level?.replaceAll("_"," ").toLowerCase() ?? "Unknown"}</p>
+                <p className="mt-1 text-sm text-slate-200">Capability {proof.after.capability == null ? "unknown" : proof.after.capability.toFixed(2)}</p>
+                <p className="mt-2 text-sm text-slate-200">Confidence {proof.after.confidencePercent == null ? "unknown" : proof.after.confidencePercent + "%"}</p>
+              </div>
+            </div>
+          ) : <p className="mt-5 rounded-xl border border-amber-400/30 p-4 text-sm text-amber-200">
+            Assessment saved; an assessment-linked skill-history change is not confirmed.
+          </p>}
+          <div className="mt-5 flex flex-wrap gap-4 border-t border-white/15 pt-4 text-sm">
+            <span>Assessment score: <strong>{proof.scorePercent == null ? "not recorded" : proof.scorePercent + "%"}</strong></span>
+            <span>Concept coverage: <strong>{proof.coveragePercent == null ? "not recorded" : proof.coveragePercent + "%"}</strong></span>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-300">
+            <strong className="text-white">Roadmap decision:</strong> {proof.planReason}
+          </p>
+          <Link href={("/challenge-my-twin?skillId=" + latestAssessment?.skill_id) as Route}
+            className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-sky-300 underline underline-offset-4">
+            Inspect the assessment-linked evidence →
+          </Link>
+        </section>
+      ) : null}
 
       <section className="mt-8 grid gap-4">
         {steps.map(step => (

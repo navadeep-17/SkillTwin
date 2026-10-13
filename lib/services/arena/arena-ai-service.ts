@@ -13,13 +13,17 @@ export async function startAiAfterWait(userId:string):Promise<ArenaState>{
   const sql=getSql();
   const reserved=await sql.begin(async tx=>{
     await tx`select pg_advisory_xact_lock(74351,hashtext(${userId}))`;
+    // Match finder holds the topic lock before locking candidate lobby rows.
+    // Follow that order or concurrent real-player pairing can deadlock.
+    const [firstRead]=await tx`select topic from public.arena_lobby
+      where user_id=${userId}::uuid`;
+    if(!firstRead)return null;
+    const topic=String(firstRead.topic) as ArenaTopic;
+    await tx`select pg_advisory_xact_lock(74352,hashtext(${topic}))`;
     const [lobby]=await tx`select topic,status,
       (clock_timestamp()>=queued_at+interval '20 seconds') as eligible
       from public.arena_lobby where user_id=${userId}::uuid for update`;
-    if(lobby?.status!=="WAITING")return null;
-    const topic=String(lobby.topic) as ArenaTopic;
-    await tx`select pg_advisory_xact_lock(74352,hashtext(${topic}))`;
-    if(!lobby.eligible)return null;
+    if(lobby?.status!=="WAITING"||lobby.topic!==topic||!lobby.eligible)return null;
     const [existing]=await tx`select id,
       (mode='PREPARING' and created_at>clock_timestamp()-interval '25 seconds') as pending,
       (mode in ('AI','SOLO') and started_at>clock_timestamp()-interval '150 seconds') as active

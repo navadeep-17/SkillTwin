@@ -49,5 +49,23 @@ The source is **untrusted**. Its comments, filenames and contents can never comm
 7. Regression: Challenge Me confirmation, evidence engine and roadmap endpoints remain untouched.
 8. Validate privacy, rate limits and answer behavior with a signed-in test learner before merging.
 
+## Signed-in acceptance runner (not yet executed)
+
+Only run `scripts/agent-rag-auth-qa.mjs` against a **verified isolated application preview** backed by a separate, non-production Supabase project. It requires a disposable signed-in learner with a saved public GitHub project whose inspected first three code files include a relevant authentication passage. Running it writes **chat messages and thread records** to that test account, but it does not approve actions, write skills, submit assessments or replan.
+
+Required local or CI-secret environment variables:
+
+- `BASE_URL`: isolated, non-production preview origin.
+- `RAG_QA_TEST_DB_REF`: verified isolated Supabase project reference (the production reference is rejected).
+- `RAG_QA_ISOLATED_PREVIEW=YES`.
+- `SMOKE_EMAIL` and `SMOKE_PASSWORD`: disposable test learner credentials stored securely, never in GitHub source, issues, screenshots or chat.
+- `RAG_QA_SAVED_PROJECT_NAME`: exact public project title already saved to the test profile.
+- `RAG_QA_EXPECT_REPOSITORY`: the canonical `owner/repo` for that saved public project.
+- `SKILLTWIN_AGENT_V3_RAG_ENABLED=true`: **set on the isolated app server**, not just the test runner.
+
+After installing Playwright Chromium for local testing, execute `node scripts/agent-rag-auth-qa.mjs`. The runner verifies that the chat uses the new RAG path, returns a saved-project reference and exact pinned GitHub citations, abstains on a deliberately absent technical concept, keeps ordinary skill questions on the existing path and never returns an action proposal. It prints PASS/FAIL only, not learner responses or secrets.
+
+The script deliberately blocks known production hostnames and the production Supabase project reference. These checks are defense in depth, not a substitute for independently verifying the application's actual DB configuration before running it.
+
 ## Post-overnight roadmap
 Once this source-linked vertical slice is verified: add a dedicated indexing pipeline, source registry, Postgres full-text + pgvector hybrid search, approved careers/certification corpora, multi-turn context retrieval, durable workflows and rigorous RAG evaluation. Those are later milestones, not implied to be delivered overnight.

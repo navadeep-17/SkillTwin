@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ChallengeLauncher } from "@/components/practice/challenge-launcher";
@@ -29,6 +30,10 @@ export default async function PracticePage() {
         </p>
       </header>
 
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-brand-50/50 p-4">
+        <p className="text-sm text-slate-700">Think your Twin's estimate is wrong? Inspect the evidence and challenge a particular skill.</p>
+        <Link href="/challenge-my-twin" className="btn-secondary">Challenge My Twin →</Link>
+      </div>
       <ResumeChallenges challenges={(activeChallenges ?? []).map(challenge => {
         const skill = Array.isArray(challenge.skills) ? challenge.skills[0] : challenge.skills;
         return {

@@ -113,3 +113,13 @@ test("removing short repository names must not corrupt longer technical words",(
   const sources=[mk("src/server/login.ts","function authenticateUser(token) { return verify(token); }")];
   assert.equal(retrieveProjectPassages(question,sources).length,1);
 });
+
+test("optional model summary cannot inject unrelated clickable source URLs",()=>{
+  const source=mk("src/auth/login.ts","function authenticateUser(token) { return verify(token); }");
+  const hits=retrieveProjectPassages("How is authentication implemented?",[source]);
+  const answer=renderProjectRagResult("sample/app",sha,hits,
+    "The helper validates tokens; see https://attacker.example/fake-proof and https://github.com/another/repo/blob/"+sha+"/bogus.ts#L1-L99");
+  assert.doesNotMatch(answer,/attacker\.example|another\/repo/);
+  assert.match(answer,/unverified link omitted/);
+  assert.match(answer,/https:\/\/github\.com\/sample\/app\/blob\//);
+});

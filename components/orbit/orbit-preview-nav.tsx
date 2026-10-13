@@ -54,7 +54,7 @@ export function OrbitPreviewNav() {
             <span className="orbit-preview-menu-heading">YOUR AGENT & ACCOUNT</span>
             <Link href="/journey"><MessageSquareText size={16}/> Ask SkillTwin</Link>
             <Link href="/orbit-activity"><Activity size={16}/> Agent Activity</Link>
-            <Link href="/settings"><Settings2 size={16}/> Settings</Link>
+            <Link href="/orbit-settings"><Settings2 size={16}/> Settings</Link>
             <Link href="/overview?classic=1"><ArrowLeft size={16}/> Classic interface</Link>
             <LogoutButton/>
           </div>

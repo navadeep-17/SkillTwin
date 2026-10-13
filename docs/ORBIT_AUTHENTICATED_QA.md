@@ -21,6 +21,15 @@ Confirm that the isolated `/orbit-beta`, `/orbit-skills`, `/orbit-journey`, `/or
 - Journey shows only the active goal's saved roadmap, milestone status, source-backed PlanDiffs and NO_OP explanations. It never mutates a task or approval.
 - No profile mutation, assessment submission or task-completion action is intentionally triggered.
 
+### Prove-specific review
+
+- `/orbit-prove` is an authenticated, read-only evidence and proof-history inspector. Confirm that capability and confidence match the existing `/challenge-my-twin` screen for the same dedicated test learner.
+- Search/filter/select a skill, review question-bank readiness (>=4 validated questions), resume any already active assessment, and verify the before/after trail references a real stored completed assessment. The concern selector is display-only and **must not influence grading**.
+- The private automated smoke script only **reads** `/orbit-prove`. Starting a challenge is a separate intentional write action and should be tested manually only with a dedicated test learner.
+- In a deliberate manual assessment: launch a challenge, complete questions through `/orbit-prove/session/[id]`, return to Prove, and verify persisted assessment → accepted evidence → skill history → replan decision and applicable PlanDiff or NO_OP. Do not assume a PlanDiff must exist; NO_OP and no recorded decision are distinct.
+- The existing verified assessment component owns answer validation, grading, evidence writes and replan retry; the Orbit wrapper must not create a second scoring engine.
+- Public `/orbit-lab/proof-demo` contains entirely fictional data. Its submission button is disabled and browser tests assert it never POSTs to `/api/assessments`.
+
 ### Additional manual checks (cannot be assumed from CI)
 - Change active role **using only the dedicated test account**, then confirm the readiness snapshot and graph match that role rather than an old goal.
 - Enter onboarding; verify focus order, error/retry behavior, field contrast, custom role generation states and loading accessibility. Saving here **does write** to the test learner account.

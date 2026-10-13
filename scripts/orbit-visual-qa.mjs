@@ -93,6 +93,15 @@ try {
     assert.ok(settingsOverflow<=2,v.name+" Settings overflows horizontally: "+settingsOverflow);
 
 
+    const loginResponse = await page.goto(base+"/login",{waitUntil:"networkidle",timeout:45000});
+    assert.equal(loginResponse?.status(),200,"Public login screen must render");
+    await page.locator(".orbit-auth-root").waitFor();
+    const authSkin=await page.locator(".orbit-auth-root").evaluate(el=>getComputedStyle(el).backgroundColor);
+    assert.notEqual(authSkin,"rgb(247, 248, 250)","Auth skin must not remain classic gray");
+    await page.screenshot({path:out+"/"+v.name+"-orbit-login.png",fullPage:true,animations:"disabled"});
+    const loginOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    assert.ok(loginOverflow<=2,v.name+" login overflows horizontally: "+loginOverflow);
+
     const response = await page.goto(base + "/orbit-lab", { waitUntil: "networkidle", timeout: 45000 });
     assert.equal(response?.status(), 200, v.name + " prototype route must load");
     await page.getByRole("heading", { name: /Meet the AI that/i }).waitFor();

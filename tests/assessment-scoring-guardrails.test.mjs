@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {calculateAssessmentSignals,ASSESSMENT_SCORING_VERSION} from "../dist/lib/domain/assessment-scoring-guardrails.js";
+import {readFileSync} from "node:fs";
+import {calculateAssessmentSignals,calculateLegacyAssessmentSignals,selectAssessmentSignals,ASSESSMENT_SCORING_VERSION,LEGACY_ASSESSMENT_SCORING_VERSION} from "../dist/lib/domain/assessment-scoring-guardrails.js";
 import {estimateSkill} from "../dist/lib/domain/skills.js";
 
 function quiz(difficulty,count=4,score=1,evaluatorConfidence=1){
@@ -88,4 +89,41 @@ test("unbounded and invalid assessment inputs are rejected, never treated as cer
   assert.throws(()=>calculateAssessmentSignals({attempts:quiz(5),coverage:1}),/INVALID_ASSESSMENT_SIGNAL/);
   assert.throws(()=>calculateAssessmentSignals({attempts:quiz(2,4,1,1.1),coverage:1}),/INVALID_ASSESSMENT_SIGNAL/);
   assert.throws(()=>calculateAssessmentSignals({attempts:quiz(2,4,Number.NaN),coverage:1}),/INVALID_ASSESSMENT_SIGNAL/);
+});
+
+test("default-off scoring path preserves the previous e1 assessment outcome",()=>{
+  const input={attempts:quiz(1,4),coverage:1};
+  const legacy=calculateLegacyAssessmentSignals(input);
+  const disabled=selectAssessmentSignals(input,false);
+  const enabled=selectAssessmentSignals(input,true);
+  assert.deepEqual(disabled,legacy);
+  assert.equal(disabled.scoringVersion,LEGACY_ASSESSMENT_SCORING_VERSION);
+  assert.equal(disabled.normalizedScore,1);
+  assert.equal(disabled.levelSignal,2.9);
+  assert.equal(disabled.assessmentConfidence,0.9);
+  assert.equal(enabled.scoringVersion,ASSESSMENT_SCORING_VERSION);
+  assert.equal(enabled.levelSignal,1.0);
+  assert.equal(enabled.assessmentConfidence,0.69);
+});
+
+test("the assessment completion service gates e2 using an opt-in server environment variable",()=>{
+  const service=readFileSync(new URL("../lib/services/assessment/assessment-service.ts",import.meta.url),"utf8");
+  assert.match(service,/process\.env\.SKILLTWIN_SCORING_A2_ENABLED === "true"/);
+  assert.match(service,/selectAssessmentSignals/);
+  assert.match(service,/scoring\.scoringVersion/);
+  assert.match(service,/select a\.score,a\.evaluator_confidence,q\.difficulty/);
+  assert.match(service,/if \(existingOutcomeRows\[0\]\?\.evidence_batch_result\)/,
+    "Already finalized assessments must keep their previously committed evidence");
+});
+
+test("legacy and a2 score paths agree on valid raw percent, not on proficiency interpretation",()=>{
+  const input={attempts:[
+    ...quiz(1,2,1,0.7),
+    ...quiz(4,2,0,0.7)
+  ],coverage:0.5};
+  const legacy=selectAssessmentSignals(input,false);
+  const candidate=selectAssessmentSignals(input,true);
+  assert.equal(legacy.normalizedScore,candidate.normalizedScore);
+  assert.ok(candidate.levelSignal<legacy.levelSignal);
+  assert.ok(candidate.assessmentConfidence<legacy.assessmentConfidence);
 });

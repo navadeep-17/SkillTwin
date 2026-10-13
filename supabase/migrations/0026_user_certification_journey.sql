@@ -22,6 +22,9 @@ create table if not exists public.user_certification_goals (
   constraint certification_goal_credential_url_length check (
     credential_url is null or length(credential_url) <= 1000
   ),
+  constraint certification_goal_credential_url_https check (
+    credential_url is null or credential_url ~* '^https://[^[:space:]@/]+(/|$|[?#])'
+  ),
   constraint certification_goal_reported_requires_date check (
     status <> 'EARNED_SELF_REPORTED' or earned_date is not null
   )

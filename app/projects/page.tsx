@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CheckCircle2, ExternalLink, FolderKanban, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -61,6 +62,13 @@ export default async function ProjectsPage() {
         <SummaryMetric icon={Sparkles} label="SkillTwin changes" value={String(totalDeltas)} />
       </section>
 
+      <Link href="/project-defense" className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50/60 p-5 transition hover:border-brand-400">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">New pilot: Defend your real GitHub code</p>
+          <p className="mt-1 text-xs leading-5 text-slate-600">Three commit-pinned code questions and provisional feedback—no automatic skill score inflation.</p>
+        </div>
+        <span className="btn-primary shrink-0">Start defense →</span>
+      </Link>
       <ProjectRecommendations />
 
       <section className="mt-9 grid gap-6 xl:grid-cols-[.8fr_1.2fr]">

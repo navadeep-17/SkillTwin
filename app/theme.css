@@ -1,0 +1,137 @@
+/* SkillTwin appearance layer. No changes to evidence, assessments, actions or saved learner state.
+   The early inline script sets html[data-theme] before the first paint.
+   Scope visual overrides to Orbit surfaces or the classic authenticated shell.
+*/
+html[data-theme="light"]{
+  color-scheme:light;
+  --background:#f6f8fc;--foreground:#152039;--surface:#fff;--surface-subtle:#edf2f8;
+  --border:#dce3ee;--muted:#52637c;
+}
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --background:#0c1424;--foreground:#eef2ff;--surface:#172238;
+  --surface-subtle:#222e49;--border:#35445f;--muted:#a9bad2;
+}
+html[data-theme="dark"] body{background:radial-gradient(900px circle at 56% -240px,rgba(99,83,203,.15),transparent 58%),var(--background)}
+html[data-theme="dark"] ::selection{background:#776ae7;color:#fff}
+html[data-theme="dark"] .st-classic-shell,
+html[data-theme="dark"] .st-classic-nav{color:#eaf0fd}
+html[data-theme="dark"] .st-classic-shell :is(.surface-card,.surface-muted),
+html[data-theme="dark"] .st-classic-shell [class~="bg-white"],
+html[data-theme="dark"] .st-classic-shell [class~="bg-slate-50"],
+html[data-theme="dark"] .st-classic-shell [class~="bg-slate-50/80"],
+html[data-theme="dark"] .st-classic-shell [class~="bg-white/90"],
+html[data-theme="dark"] .st-classic-nav :is(aside,header.sticky),
+html[data-theme="dark"] .st-classic-nav [class~="bg-white"],
+html[data-theme="dark"] .st-classic-nav [class~="bg-white/95"]{
+  background:#18253c!important;border-color:#384865!important;color:#eaf0fd!important;
+}
+html[data-theme="dark"] .st-classic-shell :is([class~="text-slate-950"],[class~="text-slate-900"],[class~="text-slate-800"]),
+html[data-theme="dark"] .st-classic-nav :is([class~="text-slate-950"],[class~="text-slate-900"],[class~="text-slate-800"]){color:#f3f5ff!important}
+html[data-theme="dark"] .st-classic-shell :is([class~="text-slate-700"],[class~="text-slate-600"],[class~="text-slate-500"],[class~="text-slate-400"]),
+html[data-theme="dark"] .st-classic-nav :is([class~="text-slate-700"],[class~="text-slate-600"],[class~="text-slate-500"],[class~="text-slate-400"]){color:#afbdd4!important}
+html[data-theme="dark"] .st-classic-shell :is(input,textarea,select){
+  color:#f3f7ff;background:#101b31;border-color:#4b5c7d;
+}
+html[data-theme="dark"] .st-classic-shell :is(input,textarea)::placeholder{color:#92a3bf}
+html[data-theme="dark"] .st-classic-shell .btn-secondary{background:#23314c;color:#eef1ff;border-color:#60718b}
+html[data-theme="dark"] .st-classic-shell .skeleton{background:#2c3a50}
+
+/* Orbit light theme: retain the structured violet/mint language, but not its dark canvas.
+   Override hard-coded dark cards individually; don't reinterpret trust/assessment data.
+*/
+html[data-theme="light"] .orbit-lab{
+ --obg:#f5f7fc;--osurface:#fff;--osurface2:#eef1fc;
+ --oborder:#d7ddef;--otext:#17223d;--omuted:#526581;
+ --oviolet:#5648be;--omint:#087d69;--oamber:#9d6514;
+ background:#f5f7fc!important;color:#17223d!important;
+}
+html[data-theme="light"] :is(.orbit-beta-shell,.orbit-skills-page,.orbit-journey,.orbit-prove,.orbit-explore,.orbit-settings,.orbit-secondary-workspace){
+ background:radial-gradient(830px 360px at 70% -5%,rgba(122,102,217,.11),transparent 75%),#f5f7fc!important;
+ color:#17223d!important;
+}
+html[data-theme="light"] .orbit-lab :is(h1,h2,h3,h4){color:#17223d}
+html[data-theme="light"] .orbit-lab :is(.orbit-kicker,.oj-kicker,.oe-family-kicker,.osw-eyebrow,.op-overline){color:#5144b5!important}
+html[data-theme="light"] .orbit-lab p:not(.orbit-kicker),
+html[data-theme="light"] .orbit-lab :is(.oj-muted,.op-quiet,.orbit-skills-muted,.oe-disclaimer){color:#4c5d79!important}
+html[data-theme="light"] .orbit-lab :is(.orbit-live-role,.orbit-live-twin-panel,.orbit-live-inspector,.orbit-live-metric,.orbit-live-next,.orbit-live-priorities,.orbit-live-priority,.orbit-live-explain,.orbit-live-graph,.orbit-live-node-list,
+ .orbit-skills-target,.orbit-skills-overview>div,.orbit-skills-toolbar,.orbit-skills-canvas,.orbit-skills-inspector,.orbit-skills-list-item,.orbit-skills-detail,.orbit-skills-evidence-row,.orbit-skills-empty,
+ .oj-goal,.oj-rail-wrap,.oj-week-panel,.oj-metric,.oj-task,.oj-events,.oj-history-detail,.oj-event,.oj-objectives,.oj-empty,.oj-empty-mini,
+ .op-stats>div,.op-picker,.op-detail,.op-skill-option,.op-evidence,.op-proof-result,.op-ledger,.op-challenge-block,.op-session-content,
+ .oe-catalog,.oe-panel,.oe-role,.oe-role-hero,.oe-req,.oe-compare,.oe-alternative,.oe-comparison-detail,
+ .osw-quick-nav,.osw-content,.osw-side-card,.os-side-card,.os-native-settings,.orbit-panel,.orbit-feature){
+ background:#fff!important;border-color:#d6deef!important;color:#17223d!important;
+ box-shadow:0 8px 24px rgba(42,50,100,.045);
+}
+html[data-theme="light"] .orbit-lab :is(.oj-hero,.oe-hero,.os-hero,.osw-header){
+ background:radial-gradient(500px 280px at 95% 10%,rgba(124,109,232,.15),transparent 80%),linear-gradient(115deg,#f0efff,#fff)!important;
+ border-color:#c9c9e9!important;color:#17223d!important;
+}
+html[data-theme="light"] .orbit-lab :is(.oj-hero-copy>p,.oj-heading p,.oj-week-rationale,.oj-section-heading p,.oj-objectives p,
+ .oe-hero>div:first-child>p,.oe-role-info p,.oe-block-heading p,.os-hero p,.os-side-card p,.osw-header p,
+ .orbit-live-top p,.orbit-skills-heading p,.op-heading p){color:#53637f!important}
+html[data-theme="light"] .orbit-lab :is(.oj-goal small,.oj-metric small,.oj-rail-label small,.oj-task-footer span,.oj-event small,
+ .orbit-live-role small,.orbit-live-metric small,.orbit-skills-target small,.op-stats span,
+ .oe-model-meta,.oe-req small,.os-breadcrumb,.osw-breadcrumb,.osw-footer){color:#56657c!important}
+html[data-theme="light"] .orbit-lab :is(.oj-goal strong,.oj-metric strong,.oj-task h4,.oj-task-footer a,
+ .orbit-live-role strong,.orbit-live-metric strong,.orbit-skills-detail h2,.op-stats strong,
+ .oe-role strong,.oe-req strong,.os-side-card h2){color:#18223d!important}
+html[data-theme="light"] .orbit-lab :is(.oj-ring>div,.orbit-live-number){background:#fff!important;color:#17223d!important}
+html[data-theme="light"] .orbit-lab :is(.oj-rail-stop,.oj-history-more,.orbit-skills-filters button,.op-filters button,
+ .oe-family-select,.oe-search,.op-search,.orbit-skills-search,.osw-quick-nav a){
+ background:#f1f3fa!important;border-color:#d6dcef!important;color:#263355!important;
+}
+html[data-theme="light"] .orbit-lab :is(.oj-rail-stop.selected,.oj-event.selected,.orbit-skills-filters button.active,.op-filters button.active,.oe-role.selected){
+ background:#e9e6ff!important;border-color:#8a79da!important;color:#3a308c!important;
+}
+html[data-theme="light"] .orbit-lab :is(input,textarea,select){color:#19263f;background:#fff;border-color:#ccd5e4}
+html[data-theme="light"] .orbit-lab :is(input,textarea)::placeholder{color:#6d7b93}
+html[data-theme="light"] .orbit-lab :is(.orbit-preview-nav-wrap,.orbit-preview-menu,.orbit-preview-more summary){
+ background:#fff!important;color:#25314b!important;border-color:#d7ddeb!important;
+}
+html[data-theme="light"] .orbit-lab :is(.orbit-preview-brand,.orbit-preview-nav-link,.orbit-preview-more summary,.orbit-preview-menu a){color:#25314b!important}
+html[data-theme="light"] .orbit-lab :is(.orbit-preview-nav-link.active,.orbit-preview-nav-link:hover,.orbit-preview-menu a:hover,.orbit-preview-more[open] summary){
+ color:#4033a8!important;background:#ece9ff!important;
+}
+html[data-theme="light"] .orbit-lab .orbit-preview-menu-heading{color:#5e6580!important;border-color:#d4dbea!important}
+html[data-theme="light"] .orbit-lab .orbit-preview-build{color:#fff!important}
+html[data-theme="light"] .orbit-lab .oj-ring{box-shadow:0 0 30px rgba(110,98,195,.14)}
+html[data-theme="light"] .orbit-lab .os-native-settings :is([class~="text-slate-950"],[class~="text-slate-900"]){color:#1b2942!important}
+html[data-theme="light"] .orbit-lab .os-native-settings :is([class~="text-slate-600"],[class~="text-slate-500"]){color:#566781!important}
+html[data-theme="light"] .orbit-lab .os-native-settings [class~="bg-slate-100"]{background:#edf0f8!important}
+
+/* Shared secondary modules use theme tokens; avoid repainting success, warnings or provenance. */
+html[data-theme="light"] .osw-native-content{
+ --orbit-paper:#fff;--orbit-panel:#f5f7fc;--orbit-raised:#eaf0fa;
+ --orbit-ink:#192440;--orbit-muted:#53627e;--orbit-border:#d4dcef;
+ background:#fff!important;color:#192440!important;border-color:#d4dcef!important;
+ box-shadow:0 15px 35px rgba(23,42,84,.07)!important;
+}
+html[data-theme="light"] .osw-native-content :is([class~="surface-card"],[class~="bg-white"],[class~="bg-slate-50"]){
+ background:#f6f8fc!important;color:#192440!important;border-color:#dde3ef!important;
+}
+html[data-theme="light"] .osw-native-content :is([class~="text-slate-950"],[class~="text-slate-900"],[class~="text-slate-800"]){color:#17213a!important}
+html[data-theme="light"] .osw-native-content :is([class~="text-slate-700"],[class~="text-slate-600"],[class~="text-slate-500"]){color:#566781!important}
+
+/* Public marketing page also participates; decorative constellation retains contrast. */
+html[data-theme="light"] .oh-site{--oh-bg:#f5f7fc;--oh-violet:#5a4dbd;--oh-mint:#087a66;--oh-line:#d8deed;background:#f5f7fc!important;color:#192541!important}
+html[data-theme="light"] .oh-site :is(h1,h2,h3){color:#192541}
+html[data-theme="light"] .oh-site :is(.oh-brand,.oh-signin,.oh-header-nav a,.oh-hero-copy h1,.oh-section-top h2){color:#192541!important}
+html[data-theme="light"] .oh-site :is(.oh-hero-copy p,.oh-section-top>p,.oh-journey-item p,.oh-proof-copy>p:not(.oh-section-kicker)){color:#53627e!important}
+html[data-theme="light"] .oh-site :is(.oh-journey-item,.oh-proof-showcase,.oh-showcase-before,.oh-showcase-after){
+ background:#fff!important;color:#1a2742!important;border-color:#d7ddeb!important
+}
+html[data-theme="light"] .oh-site :is(.oh-journey-item h3,.oh-showcase-cards b){color:#1a2742!important}
+html[data-theme="light"] .oh-site .oh-proof-chip,
+html[data-theme="light"] .oh-site .oh-evolve-chip{background:#fff!important;color:#273553!important;border-color:#d9ddec!important}
+html[data-theme="light"] .oh-site .oh-universe{background:radial-gradient(ellipse at center,rgba(120,101,209,.1),transparent 68%)}
+html[data-theme="light"] .oh-site .oh-universe-svg text[fill="#f1f3ff"]{fill:#243253}
+html[data-theme="light"] .oh-site .oh-bottom-cta{background:linear-gradient(115deg,#e9e7fd,#fff)!important;color:#182541!important;border-color:#cdd0ea!important}
+html[data-theme="light"] .oh-site .oh-bottom-cta p{color:#53637d!important}
+html[data-theme="light"] .oh-site .oh-brand-footer{color:#24304d!important}
+html[data-theme="light"] .oh-site .oh-footer{color:#54657e!important}
+html[data-theme="light"] .oh-site .oh-footer a{color:#473aab!important}
+
+/* Prevent transitions from flashing mixed palettes; never animate data values. */
+@media(prefers-reduced-motion:reduce){html[data-theme] :is(.st-theme-panel,.orbit-lab,.oh-site){transition:none!important}}
+@media print{html[data-theme="dark"] .st-classic-shell{color:#111827!important}html[data-theme="light"] .osw-native-content{background:white!important}}

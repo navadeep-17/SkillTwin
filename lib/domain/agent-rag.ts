@@ -14,7 +14,9 @@ const STOP_WORDS=new Set([
   "could","would","should","please","tell","show","explain","about","with",
   "from","that","this","these","there","their","into","were","have","has",
   "my","our","your","the","and","for","are","was","code","source","file",
-  "files","project","repo","repository","github","implementation","implemented"
+  "files","project","repo","repository","github","implementation","implemented",
+  "function","functions","algorithm","algorithms","logic","architecture","design","review","bug",
+  "locate","find","search","works","working","used","using"
 ]);
 function canonical(term:string):string {
   const word=term.toLowerCase();

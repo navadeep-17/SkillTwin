@@ -126,3 +126,32 @@ test("Sample constellation is explicitly fictional and never imports private lea
   assert.ok(!page.includes("createClient"));
   assert.ok(!page.includes("supabase"));
 });
+
+
+test("Orbit Journey is user-scoped read-only and uses persisted PlanDiff/NO_OP", () => {
+  const page=read("app/orbit-journey/page.tsx");
+  const ui=read("app/orbit-journey/orbit-journey.tsx");
+  const middleware=read("middleware.ts");
+  const css=read("app/orbit-journey/orbit-journey.css");
+  assert.ok(middleware.includes('"/orbit-journey"'));
+  assert.ok(page.includes("supabase.auth.getUser()"));
+  assert.ok(page.includes('.eq("user_id",auth.user.id)'));
+  assert.ok(page.includes('.eq("goal_id",goal.id)'));
+  for (const name of ["learning_plans","plan_weeks","learning_objectives","learning_tasks","plan_diffs","replan_decisions"]) assert.ok(page.includes('"' + name + '"'), "missing "+name);
+  assert.ok(ui.includes('decision==="NO_OP"'));
+  assert.ok(ui.includes('href={"/roadmap/task/"+encodeURIComponent(task.id)}'));
+  assert.ok(ui.includes('href={"/roadmap/changes/"+encodeURIComponent(diff.id)}'));
+  assert.ok(ui.includes('aria-valuenow={completion(currentWeek)}'));
+  assert.ok(css.includes("prefers-reduced-motion"));
+  assert.ok(!page.includes(".insert(") && !page.includes(".update(") && !page.includes(".delete("));
+});
+
+test("Public Journey demo is fictional and tested for PlanDiff and NO_OP", () => {
+  const demo=read("app/orbit-lab/journey-demo/page.tsx");
+  const testScript=read("scripts/orbit-visual-qa.mjs");
+  assert.ok(demo.includes("Sample concept"));
+  assert.ok(demo.includes("no learner records or changes"));
+  assert.ok(!demo.includes("createClient"));
+  assert.ok(testScript.includes("/orbit-lab/journey-demo"));
+  assert.ok(testScript.includes("Plan preserved intentionally"));
+});

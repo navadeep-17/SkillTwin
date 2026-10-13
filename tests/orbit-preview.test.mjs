@@ -326,4 +326,10 @@ test("Orbit default navigation and authentication follow SERVER rollout state, n
   assert.ok(form.includes('const signupDestination = orbitDefault ? "/orbit-onboarding" : "/onboarding"'));
   assert.ok(!form.includes("process.env."));
   assert.ok(callback.includes("isOrbitDefaultEnabled()"));
+  const overview=read("app/overview/page.tsx");
+  const orbitNav=read("components/orbit/orbit-preview-nav.tsx");
+  assert.ok(overview.includes('query.classic !== "1"') && overview.includes('redirect("/orbit-beta")'),
+    "Old dashboard bookmarks should land on Orbit by default");
+  assert.ok(orbitNav.includes('href="/overview?classic=1"'),
+    "The explicit classic-view fallback must not loop back to Orbit");
 });

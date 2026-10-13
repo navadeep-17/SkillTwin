@@ -9,7 +9,8 @@ export const ARENA_LABELS:Record<ArenaTopic,string>={
 const matchId=z.string().uuid();
 const common=z.object({topic:arenaTopicSchema});
 const idle=z.object({status:z.literal("IDLE")});
-const waiting=common.extend({status:z.literal("WAITING")});
+const waiting=common.extend({status:z.literal("WAITING"),aiAvailableInSeconds:z.number().int().min(0).optional()});
+const aiPreparing=common.extend({status:z.literal("AI_PREPARING")});
 const playing=common.extend({
   status:z.literal("PLAYING"),matchId,
   questionNumber:z.number().int().min(1).max(5),
@@ -19,14 +20,18 @@ const playing=common.extend({
   answered:z.boolean(),rivalAnswered:z.boolean(),
   secondsRemaining:z.number().int().min(0).max(30)
 });
+const soloPlaying=playing.omit({rivalAnswered:true}).extend({status:z.literal("SOLO_PLAYING")});
+const aiPlaying=playing.extend({status:z.literal("AI_PLAYING")});
 const finished=common.extend({
   status:z.literal("FINISHED"),matchId,totalQuestions:z.literal(5),
   myScore:z.number().int().min(0).max(5),
   rivalScore:z.number().int().min(0).max(5),
   outcome:z.enum(["WIN","LOSS","TIE"])
 });
+const aiFinished=finished.extend({status:z.literal("AI_FINISHED")});
+const soloFinished=common.extend({status:z.literal("SOLO_FINISHED"),matchId,totalQuestions:z.literal(5),myScore:z.number().int().min(0).max(5)});
 export const arenaStateSchema=z.discriminatedUnion("status",[
-  idle,waiting,playing,finished
+  idle,waiting,playing,finished,aiPreparing,aiPlaying,soloPlaying,aiFinished,soloFinished
 ]);
 export type ArenaState=z.infer<typeof arenaStateSchema>;
 
@@ -40,6 +45,8 @@ export function arenaApiError(error:unknown):{status:number;code:string;message:
     ?String(error.message):"";
   if(msg.includes("ARENA_INVALID_TOPIC"))
     return {status:400,code:"ARENA_INVALID_TOPIC",message:"Choose a supported Arena topic."};
+  if(msg.includes("ARENA_AI_ACTIVE"))
+    return {status:409,code:"ARENA_AI_ACTIVE",message:"Finish your AI or solo round before joining another match."};
   if(msg.includes("ARENA_INVALID_ANSWER"))
     return {status:400,code:"ARENA_INVALID_ANSWER",message:"Invalid quiz answer."};
   if(msg.includes("ARENA_QUESTION_CLOSED"))

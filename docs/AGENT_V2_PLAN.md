@@ -1,6 +1,6 @@
 # SkillTwin Agent V2 — evidence-grounded autonomous learning coach
 
-Status: Phase 1 implemented on a feature branch (2026-10-13). No unverified autonomy claims.
+Status: Phase 1 deployed; Phase 2 stale-state guards implemented in PR pending CI and release (2026-10-13). No unverified autonomy claims.
 
 ## What is implemented today (code audit)
 - Journey Chat persists conversations and retrieves the signed-in learner's skills, gap snapshot, tasks, plans, last assessment and latest applied PlanDiff.
@@ -20,6 +20,14 @@ The learner can ask an open question, the system selects narrow read-only tools,
 - Tests prohibit unrelated PlanDiff attribution or ambiguous intent routing.
 
 ## Phase 2: Action authorization and stale-state protection (P0)
+- [x] Validate allowlisted action payload types and UUID identifiers before execution.
+- [x] Re-evaluate user-owned active-goal snapshot, active plan and version, approved PlanDiff status, and validation-question availability before dispatch.
+- [x] Reject stale/expired/invalid proposals and only claim PROPOSED rows once using a conditional SQL update.
+- [x] Record executed proposal status and an agent_events audit item in one transaction after a domain action succeeds; leave CONFIRMED for manual reconciliation if that result cannot be persisted.
+- [x] Add focused agent action safety regression tests; UI invalidates rejected confirmation cards.
+- [ ] Run authenticated concurrent action-confirmation smoke; verify no duplicate downstream mutation.
+- [ ] Fully crash-safe execution recovery needs a durable result reference and a separate DB migration/transaction design. The current status is at-most-once dispatch, NOT guaranteed exactly-once, and a CONFIRMED state may require manual reconciliation after a process crash.
+
 - Verify proposal baseline_ref against CURRENT gap snapshot, active Plan/PlanDiff version and selected skill before dispatch; rejected stale proposals must not launch side effects.
 - Move from claim-first/dispatch-later failure semantics toward recoverable idempotent execution, with request IDs and explicit status transitions.
 - Validate action payload server side; action proposals must never accept arbitrary SQL, URLs, targets or hidden model instructions.

@@ -204,6 +204,16 @@ assert(
   "assessment creation is missing safe slow-request diagnostics"
 );
 
+const actionConfirm = read("app/api/chat/actions/[id]/confirm/route.ts");
+assert(actionConfirm.includes("decodeAgentAction(")
+  && actionConfirm.includes("authorizeAgentAction(")
+  && actionConfirm.includes("chat.action.executed")
+  && actionConfirm.includes("and status='PROPOSED' and expires_at>now()"),
+  "Journey Chat actions must validate payload, current baseline and a single atomic claim");
+const actionGuard = read("lib/domain/agent-action-guard.ts");
+assert(actionGuard.includes("STALE_PROPOSAL") && actionGuard.includes("INELIGIBLE_SKILL"),
+  "Journey Chat action guard must reject stale and unsupported targets");
+
 const releaseSmoke = read("scripts/release-smoke.mjs");
 for (const marker of [
   "PUBLIC_SMOKE=PASS",

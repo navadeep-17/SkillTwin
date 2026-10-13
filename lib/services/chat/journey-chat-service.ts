@@ -194,11 +194,11 @@ export class JourneyChatService {
       assessmentResult
     ] = await Promise.all([
       sql.unsafe(
-        "select gs.*,tr.name role_name,rv.version role_model_version from public.gap_snapshots gs join public.role_versions rv on rv.id=gs.role_version_id join public.target_roles tr on tr.id=rv.role_id where gs.user_id=$1::uuid order by gs.created_at desc limit 1",
+        "select gs.*,tr.name role_name,rv.version role_model_version from public.gap_snapshots gs join public.role_versions rv on rv.id=gs.role_version_id join public.target_roles tr on tr.id=rv.role_id join public.career_goals g on g.id=gs.goal_id where gs.user_id=$1::uuid and g.user_id=$1::uuid and g.status='ACTIVE' order by gs.created_at desc limit 1",
         [userId]
       ),
       sql.unsafe(
-        "select sgr.*,s.canonical_name,s.slug,(select count(*) from public.assessment_question_bank qb where qb.skill_id=sgr.skill_id and qb.is_active=true and qb.type in ('MCQ','SHORT_TEXT','SCENARIO'))::int question_count from public.skill_gap_results sgr join public.skills s on s.id=sgr.skill_id where sgr.snapshot_id=(select id from public.gap_snapshots where user_id=$1::uuid order by created_at desc limit 1) order by sgr.priority_score desc limit 12",
+        "select sgr.*,s.canonical_name,s.slug,(select count(*) from public.assessment_question_bank qb where qb.skill_id=sgr.skill_id and qb.is_active=true and qb.type in ('MCQ','SHORT_TEXT','SCENARIO'))::int question_count from public.skill_gap_results sgr join public.skills s on s.id=sgr.skill_id where sgr.snapshot_id=(select gs.id from public.gap_snapshots gs join public.career_goals g on g.id=gs.goal_id where gs.user_id=$1::uuid and g.user_id=$1::uuid and g.status='ACTIVE' order by gs.created_at desc limit 1) order by sgr.priority_score desc limit 12",
         [userId]
       ),
       sql.unsafe(

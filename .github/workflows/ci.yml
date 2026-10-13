@@ -17,6 +17,7 @@ jobs:
       - run: node --check scripts/career-feature-qa.mjs
       - run: npm run typecheck:core
       - run: npm run test:core
+      - run: node --test tests/assessment-replay.test.mjs
       - run: node --test tests/occupation-mapping.test.mjs
       - run: node --test tests/reviewed-career-model.test.mjs
       - run: node scripts/reviewed-career-models.mjs status > /dev/null

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeft, ArrowRight, Compass, Fingerprint, LockKeyhole, Sparkles, WandSparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
+import { OrbitPreviewNav } from "@/components/orbit/orbit-preview-nav";
 import "../orbit-lab/orbit-lab.css";
 import "./orbit-onboarding.css";
 
@@ -25,6 +26,7 @@ export default async function OrbitOnboardingPage({
 
   return (
     <main className="orbit-lab orbit-onboarding">
+      <OrbitPreviewNav />
       <div className="orbit-onboarding-back"><Link href="/orbit-beta"><ArrowLeft size={15}/> Back to Orbit Today</Link><span><LockKeyhole size={14}/> Private learner workspace</span></div>
       <div className="orbit-onboarding-inner">
         <section className="orbit-onboarding-hero" aria-labelledby="orbit-build-heading">

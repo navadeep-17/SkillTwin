@@ -26,6 +26,8 @@ const starters = [
   "Why did my roadmap change?",
   "How ready am I for my target role?",
   "Challenge me",
+  "Explain my latest assessment",
+  "Why didn't my roadmap change after my assessment?",
   "Explain my biggest skill gap"
 ];
 

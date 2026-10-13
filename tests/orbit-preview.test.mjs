@@ -185,7 +185,10 @@ test("Orbit Prove uses the existing authenticated assessment and evidence servic
 test("Orbit proof sessions reuse ChallengeSession rather than implementing a second grader", () => {
   const page=read("app/orbit-prove/session/[id]/page.tsx");
   assert.ok(page.includes("supabase.auth.getUser()"));
-  assert.ok(page.includes("<ChallengeSession assessmentId={id}/>"));
+  assert.ok(page.includes('<ChallengeSession assessmentId={id} proofReturnBase="/orbit-prove"/>'));
+  const session=read("components/practice/challenge-session.tsx");
+  assert.ok(session.includes('proofReturnBase="/challenge-my-twin"'));
+  assert.ok(session.includes('href={proofReturnBase+"?skillId="+encodeURIComponent(assessment.skill.id)}'));
   assert.ok(!page.includes("getAssessmentService") && !page.includes("grade("));
 });
 

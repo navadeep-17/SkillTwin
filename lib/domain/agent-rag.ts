@@ -60,6 +60,26 @@ function hasCanonicalPinnedCitation(source:RagCodeSource):boolean {
   return Boolean(match && matchesSourceClaim(match[1]+"/"+match[2],match[3],source));
 }
 
+/**
+ * Saved project names select the repository. They are not evidence that
+ * a source file answers the technical question. Remove them from retrieval
+ * keywords without touching terms embedded inside longer identifiers.
+ */
+export function codeQuestionWithoutProjectName(
+  question:string,projectTitle:string,repository:string
+):string {
+  const repoName=repository.split("/").pop()??"";
+  const keys=[repository,projectTitle,repoName]
+    .map(key=>key.trim()).filter(key=>key.length>=3)
+    .sort((a,b)=>b.length-a.length);
+  let result=question;
+  for(const key of keys) {
+    const safe=key.replace(/[.*+?^${}()|[\]\\]/g,"\\/** Rank ONLY existing inspected, pinned, public source snippets. No speculative retrieval. */");
+    result=result.replace(new RegExp("(^|[^a-z0-9])"+safe+"(?=$|[^a-z0-9])","gi"),"$1 ");
+  }
+  return result;
+}
+
 /** Rank ONLY existing inspected, pinned, public source snippets. No speculative retrieval. */
 export function retrieveProjectPassages(
   question:string,sources:readonly RagCodeSource[],limit=2

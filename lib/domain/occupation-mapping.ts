@@ -155,3 +155,31 @@ export function validateMappingReviewManifest(
   }
   return errors;
 }
+
+/**
+ * Machine-readable output for a later, separately reviewed role-model import.
+ * An approved identifier crosswalk is NOT a validated target proficiency,
+ * professional qualification, or assessment.
+ */
+export function getApprovedOccupationCrosswalk(
+  source: SourceSnapshot, catalog: CanonicalSnapshot, manifest: MappingReviewManifest
+) {
+  const errors=validateMappingReviewManifest(source,catalog,manifest);
+  if(errors.length) throw new Error("Invalid mapping review manifest: "+errors.join("; "));
+  const queue=buildMappingReviewQueue(source,catalog,manifest);
+  return {
+    sourceSnapshotId:source.snapshotId,
+    canonicalSnapshotId:catalog.snapshotId,
+    status:"REVIEWED_CROSSWALK_ONLY" as const,
+    mappings:queue.filter(item=>item.review?.decision==="APPROVED").map(item=>({
+      sourceSkillKey:item.sourceSkillKey,
+      sourceSkillName:item.sourceName,
+      sourceGroup:item.sourceGroup,
+      canonicalSkillSlug:item.review!.canonicalSkillSlug!,
+      reviewer:item.review!.reviewer,
+      reviewedAt:item.review!.reviewedAt,
+      rationale:item.review!.rationale,
+      sourceOccupations:item.sourceOccupations
+    }))
+  };
+}

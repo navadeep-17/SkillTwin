@@ -49,6 +49,7 @@ function ref(type: JourneyReference["type"], row: Row, label: string): JourneyRe
 
 export class JourneyChatService {
   async send(input: { userId: string; message: string; threadId?: string | null }) {
+    const startedAt=Date.now();
     const sql = getSql();
     const intent = classifyJourneyIntent(input.message);
     const threadId = await this.resolveThread(input.userId, input.threadId ?? null);
@@ -123,7 +124,8 @@ export class JourneyChatService {
           grounded: true,
           actionProposalId: actionProposal?.id ?? null,
           generator: readRun?.meta.generator ?? "deterministic-grounded-i1",
-          readTools: readRun?.meta.readTools ?? []
+          readTools: readRun?.meta.readTools ?? [],
+          durationMs: Date.now()-startedAt
         })
       ]
     ));

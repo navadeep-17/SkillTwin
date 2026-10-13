@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getServerEnv } from "@/lib/config/env";
 import { DemoResetControl } from "@/components/demo/demo-reset-control";
+import { buildTwinProofTrail } from "@/lib/domain/twin-challenge";
 
 export default async function DemoPage() {
   const env = getServerEnv();
@@ -18,8 +19,8 @@ export default async function DemoPage() {
     snapshot,
     plan,
     assessment,
-    diff,
-    replanDecision
+    diffs,
+    replanDecisions
   ] = await Promise.all([
     supabase
       .from("profile_documents")
@@ -46,28 +47,26 @@ export default async function DemoPage() {
       .maybeSingle(),
     supabase
       .from("skill_assessment_outcomes")
-      .select("id,normalized_score,coverage,created_at")
+      .select("id,assessment_id,skill_id,normalized_score,coverage,created_at")
       .eq("user_id", auth.user.id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
     supabase
       .from("plan_diffs")
-      .select("id,status,from_version,to_version,summary,created_at")
+      .select("id,status,trigger_refs,from_version,to_version,summary,created_at")
       .eq("user_id", auth.user.id)
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .limit(100),
     supabase
       .from("replan_decisions")
-      .select("decision,reason_code,reason,created_at")
+      .select("trigger_ref,decision,reason_code,reason,created_at")
       .eq("user_id", auth.user.id)
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .limit(100)
   ]);
 
-  for (const result of [documents, snapshot, plan, assessment, diff, replanDecision]) {
+  for (const result of [documents, snapshot, plan, assessment, diffs, replanDecisions]) {
     if (result.error) throw result.error;
   }
 
@@ -75,8 +74,26 @@ export default async function DemoPage() {
   const gap = snapshot.data;
   const activePlan = plan.data;
   const latestAssessment = assessment.data;
-  const latestDiff = diff.data;
-  const latestDecision = replanDecision.data;
+  // Link the demonstrated adaptation only to the exact completed assessment,
+  // never to an unrelated past NO_OP or PlanDiff from the same learner.
+  const proof = latestAssessment
+    ? buildTwinProofTrail(
+        {
+          assessment_id: String(latestAssessment.assessment_id),
+          skill_id: String(latestAssessment.skill_id),
+          normalized_score: latestAssessment.normalized_score,
+          coverage: latestAssessment.coverage,
+          created_at: String(latestAssessment.created_at)
+        },
+        [],
+        replanDecisions.data ?? [],
+        diffs.data ?? []
+      )
+    : null;
+  const appliedDiff = proof?.planDiffId
+    ? (diffs.data ?? []).find(item => item.id === proof.planDiffId)
+    : null;
+  const assessmentReplanned = proof?.planStatus === "CHANGED" || proof?.planStatus === "UNCHANGED";
 
   const steps: Array<{ label: string; ready: boolean; detail: string; href: Route }> = [
     {
@@ -107,31 +124,35 @@ export default async function DemoPage() {
       detail: latestAssessment
         ? "Latest score " + Math.round(Number(latestAssessment.normalized_score) * 100) + "%"
         : "No completed assessment yet",
-      href: "/practice"
+      href: latestAssessment
+        ? (("/challenge-my-twin?skillId=" + latestAssessment.skill_id) as Route)
+        : "/practice"
     },
     {
-      label: "5. Replanning decision",
-      ready: Boolean(latestDiff || latestDecision),
-      detail: latestDiff
-        ? "PlanDiff v" + latestDiff.from_version + " → v" + (latestDiff.to_version ?? "—") + " · " + latestDiff.status
-        : latestDecision
-          ? String(latestDecision.decision) === "NO_OP"
-            ? "Unchanged by design · " + String(latestDecision.reason_code ?? "No safe future patch")
-            : "Replanning decision · " + String(latestDecision.decision)
-          : "No adaptation decision recorded yet",
-      href: latestDiff ? (("/roadmap/changes/" + latestDiff.id) as Route) : "/roadmap"
+      label: "5. Assessment-linked replanning decision",
+      ready: assessmentReplanned,
+      detail: proof
+        ? proof.planStatus === "CHANGED" && appliedDiff
+          ? "APPLIED PlanDiff v" + appliedDiff.from_version + " → v" + (appliedDiff.to_version ?? "—")
+          : proof.planStatus === "UNCHANGED"
+            ? "Justified NO_OP for this assessment"
+            : "No decision linked to this completed assessment yet"
+        : "Complete one real skill assessment first",
+      href: appliedDiff
+        ? (("/roadmap/changes/" + appliedDiff.id) as Route)
+        : "/challenge-my-twin"
     },
     {
       label: "6. Grounded explanation",
-      ready: Boolean(latestDiff),
-      detail: latestDiff
-        ? "Ask: “Why did my roadmap change?”"
-        : "Create a roadmap change first",
-      href: "/journey"
+      ready: assessmentReplanned,
+      detail: proof && assessmentReplanned
+        ? proof.planReason
+        : "A reason is required for this assessment's plan outcome",
+      href: "/challenge-my-twin"
     },
     {
       label: "7. Audit trail",
-      ready: Boolean(gap || latestAssessment || latestDiff),
+      ready: Boolean(gap || latestAssessment),
       detail: "Verify committed actions are visible without hidden reasoning",
       href: "/activity"
     }
@@ -146,6 +167,11 @@ export default async function DemoPage() {
           Hidden hackathon utility. It reads only the current signed-in learner state and does not alter the normal product flow.
         </p>
       </header>
+
+      <div className="mt-5 flex flex-wrap gap-3">
+        <Link href="/challenge-my-twin" className="btn-primary">Start a proof challenge →</Link>
+        <Link href="/practice" className="btn-secondary">Resume a challenge</Link>
+      </div>
 
       <section className="mt-8 grid gap-4">
         {steps.map(step => (

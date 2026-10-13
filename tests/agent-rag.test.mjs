@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {retrieveProjectPassages,renderProjectRagResult,shouldRetrieveProjectCode,codeQuestionWithoutProjectName} from "../dist/lib/domain/agent-rag.js";
+import {retrieveProjectPassages,renderProjectRagResult,shouldRetrieveProjectCode,codeQuestionWithoutProjectName,selectSavedCodeProject} from "../dist/lib/domain/agent-rag.js";
 import {classifyJourneyIntent} from "../dist/lib/domain/journey-intent.js";
 import {isMutatingJourneyIntent} from "../dist/lib/domain/agent-read-plan.js";
 const sha="a".repeat(40),blob="b".repeat(40);
@@ -139,4 +139,34 @@ test("ordinary repository code questions remain in the existing read-only intent
   for(const request of ["Generate my project learning roadmap","Challenge me on my skills"]) {
     assert.equal(shouldRetrieveProjectCode(request),false);
   }
+});
+
+test("single learner-owned public repository is selected deterministically",()=>{
+  const a={id:"a",title:"Auth Service",repository:"me/auth-service"};
+  assert.deepEqual(selectSavedCodeProject("How is the login implemented in my project?",[a]),{
+    status:"SELECTED",project:a
+  });
+});
+
+test("multiple saved GitHub projects require an unambiguous title or repository",()=>{
+  const projects=[
+    {id:"a",title:"App",repository:"alpha/app"},
+    {id:"b",title:"Application Server",repository:"beta/application-server"},
+    {id:"c",title:"ML Pipeline",repository:"gamma/ml-pipeline"}
+  ];
+  assert.equal(selectSavedCodeProject("Explain my codebase",projects).status,"AMBIGUOUS");
+  assert.equal(selectSavedCodeProject("How does authentication work in application-server repo?",projects).status,"SELECTED");
+  assert.equal(selectSavedCodeProject("Find code in ML Pipeline",projects).project.id,"c");
+  assert.equal(selectSavedCodeProject("Show me code in both App and ML Pipeline",projects).status,"AMBIGUOUS");
+  assert.equal(selectSavedCodeProject("Review beta/application-server repository",projects).project.id,"b");
+  assert.deepEqual(selectSavedCodeProject("Review my repo",[]),{status:"NONE"});
+});
+
+test("short project names cannot match substrings of longer code concepts",()=>{
+  const candidates=[
+    {id:"auth",title:"Auth",repository:"owner/auth"},
+    {id:"other",title:"Other Project",repository:"owner/other"}
+  ];
+  assert.equal(selectSavedCodeProject("Explain authentication design in my project",candidates).status,"AMBIGUOUS");
+  assert.equal(selectSavedCodeProject("Inspect auth repository",candidates).project.id,"auth");
 });

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { AppNavLinks, MobileNavLinks } from "@/components/shell/app-nav-links";
 
-export async function AppNav({ userId, email }: { userId: string; email?: string | null }) {
+export async function AppNav({ userId, email, orbitDefault = false }: { userId: string; email?: string | null; orbitDefault?: boolean }) {
   const supabase = await createClient();
 
   const [{ data: goal }, { data: snapshot }] = await Promise.all([
@@ -46,7 +46,7 @@ export async function AppNav({ userId, email }: { userId: string; email?: string
         </Link>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 [scrollbar-width:thin]">
-          <AppNavLinks />
+          <AppNavLinks orbitDefault={orbitDefault} />
         </div>
 
         <div className="shrink-0 space-y-3 border-t border-slate-200/80 pt-3">
@@ -92,7 +92,7 @@ export async function AppNav({ userId, email }: { userId: string; email?: string
       </header>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-        <MobileNavLinks />
+        <MobileNavLinks orbitDefault={orbitDefault} />
       </div>
     </>
   );

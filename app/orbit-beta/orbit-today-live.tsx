@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { OrbitPreviewNav } from "@/components/orbit/orbit-preview-nav";
 import { useMemo, useState } from "react";
 import {
   ArrowRight, BrainCircuit, CheckCircle2, Compass, Fingerprint,
@@ -138,6 +139,7 @@ export function OrbitTodayLive({ model }: { model: OrbitTodayModel }) {
   const stamp = model.lastUpdated ? new Date(model.lastUpdated).toISOString().slice(0,10) : null;
   return (
     <main className="orbit-lab orbit-live">
+      <OrbitPreviewNav />
       <div className="orbit-live-inner">
         <header className="orbit-live-top">
           <div><div className="orbit-kicker"><span className="orbit-live-dot"/> YOUR PERSONAL MISSION CONTROL</div>

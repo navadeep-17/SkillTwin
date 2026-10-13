@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {retrieveProjectPassages,renderProjectRagResult,shouldRetrieveProjectCode} from "../dist/lib/domain/agent-rag.js";
+import {retrieveProjectPassages,renderProjectRagResult,shouldRetrieveProjectCode,codeQuestionWithoutProjectName} from "../dist/lib/domain/agent-rag.js";
 const sha="a".repeat(40),blob="b".repeat(40);
 const mk=(path,excerpt)=>({
   path,excerpt,blobSha:blob,startLine:1,endLine:30,
@@ -88,4 +88,28 @@ test("encoded source filenames resolve to precisely pinned repository lines",()=
   const hits=retrieveProjectPassages("How is authentication handled in project code?",[source]);
   assert.equal(hits.length,1);
   assert.match(renderProjectRagResult("sample/app",sha,hits),/token%20helper\.ts#L1-L30/);
+});
+
+
+test("selection labels cannot create false technical matches in unrelated source",()=>{
+  const question=codeQuestionWithoutProjectName(
+    "Where is the zzqvvindigoops function in my Backend Demo GitHub project?",
+    "Backend Demo","example/backend-demo"
+  );
+  assert.doesNotMatch(question,/backend demo/i);
+  assert.ok(question.includes("zzqvvindigoops"));
+  const sources=[mk("src/backend-demo/main.ts","export function startServer() { return true; }")];
+  assert.deepEqual(retrieveProjectPassages(question,sources),[],
+    "Unknown concept plus generic function words must not invent a match");
+});
+
+test("removing short repository names must not corrupt longer technical words",()=>{
+  const question=codeQuestionWithoutProjectName(
+    "How is authentication handled inside my auth repository?",
+    "A sample app","sample/auth"
+  );
+  assert.match(question,/authentication/i);
+  assert.doesNotMatch(question,/\bauth\b/i);
+  const sources=[mk("src/server/login.ts","function authenticateUser(token) { return verify(token); }")];
+  assert.equal(retrieveProjectPassages(question,sources).length,1);
 });

@@ -338,6 +338,7 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
         <div className="flex flex-wrap gap-3">
           <Link href="/overview" className="btn-primary">View my SkillTwin</Link>
           <Link href="/roadmap" className="btn-secondary">View roadmap</Link>
+          {assessment?.skill.id ? <Link href={"/challenge-my-twin?skillId="+assessment.skill.id} className="btn-secondary">See how my Twin responded</Link> : null}
         </div>
       </section>
     );

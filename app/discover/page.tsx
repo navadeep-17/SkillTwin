@@ -114,6 +114,7 @@ export default async function DiscoverCareersPage() {
           groupName: group?.name ?? "Competency",
           groupType,
           skillId: item.skill_id,
+          documented: documentedSkillIds.has(item.skill_id),
           name: skill?.canonical_name ?? "Competency",
           category: skill?.category ?? "",
           importance: String(item.importance_band),

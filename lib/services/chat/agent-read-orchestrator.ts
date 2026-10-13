@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { readSavedProjectCode } from "@/lib/services/chat/project-code-rag";
+import { shouldRetrieveProjectCode } from "@/lib/domain/agent-rag";
 import { getSql } from "@/lib/db/postgres";
 import { getGeminiStructuredClient } from "@/lib/ai/gemini-interactions";
 import { CERTIFICATION_CATALOG } from "@/lib/domain/certification-catalog";
@@ -104,8 +105,7 @@ export class AgentReadOrchestrator {
     // Overnight V3 pilot: only explicit project/repository code questions use
     // bounded, cited retrieval. Existing write intents never reach this method.
     // Ordinary skill, assessment and roadmap questions keep V2 behavior.
-    if (/\\b(project|repo|repository|github|source code|codebase)\\b/i.test(input.message)
-        && /\\b(how|why|where|find|show|explain|implement|implemented|authentication|security|function|design|architecture|code|source)\\b/i.test(input.message)) {
+    if (shouldRetrieveProjectCode(input.message)) {
       const rag=await readSavedProjectCode({userId:input.userId,question:input.message});
       return {
         content:rag.content,

@@ -19,6 +19,7 @@ jobs:
       - run: npm run test:core
       - run: node --test tests/assessment-replay.test.mjs
       - run: node --test tests/assessment-scoring-guardrails.test.mjs
+      - run: node --test tests/scoring-evidence-gap-integration.test.mjs
       - run: node --test tests/twin-challenge.test.mjs
       - run: node --test tests/journey-agent.test.mjs
       - run: node --test tests/agent-action-guard.test.mjs

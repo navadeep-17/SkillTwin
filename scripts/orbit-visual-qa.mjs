@@ -34,6 +34,23 @@ try {
       "Landing must lead to real Orbit onboarding");
     const homeOverflow = await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth);
     assert.ok(homeOverflow <= 2, v.name + " default landing overflows horizontally: "+homeOverflow);
+    // Verify the real persisted theme switcher before continuing other UI tests.
+    const theme = page.getByRole("combobox", {name:"Appearance theme"});
+    await theme.selectOption("light");
+    assert.equal(await page.locator("html").getAttribute("data-theme"),"light");
+    const lightSurface = await page.locator("main.oh-site").evaluate(el=>getComputedStyle(el).backgroundColor);
+    assert.notEqual(lightSurface,"rgb(11, 16, 32)","Light appearance must repaint the landing surface");
+    await page.screenshot({path:out+"/"+v.name+"-appearance-light.png",fullPage:true,animations:"disabled"});
+    await theme.selectOption("dark");
+    assert.equal(await page.locator("html").getAttribute("data-theme"),"dark");
+    await page.reload({waitUntil:"networkidle"});
+    assert.equal(await page.locator("html").getAttribute("data-theme"),"dark","Saved dark preference survives reload");
+    await page.getByRole("combobox",{name:"Appearance theme"}).selectOption("system");
+    await page.emulateMedia({colorScheme:"dark"});
+    await page.waitForFunction(()=>document.documentElement.dataset.theme==="dark");
+    await page.emulateMedia({colorScheme:"light"});
+    await page.waitForFunction(()=>document.documentElement.dataset.theme==="light");
+    await page.getByRole("combobox",{name:"Appearance theme"}).selectOption("dark");
     await page.screenshot({path:out+"/"+v.name+"-production-landing.png",fullPage:true,animations:"disabled"});
 
     const secondaryResponse = await page.goto(base + "/orbit-lab/workspaces-demo", {waitUntil:"networkidle",timeout:45000});

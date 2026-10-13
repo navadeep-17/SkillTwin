@@ -80,7 +80,7 @@ create policy arena_matches_owner_read on public.arena_matches
  for select to authenticated using (player_a=(select auth.uid()) or player_b=(select auth.uid()));
 
 -- Atomic matchmaking uses fixed lock order: own user lock, then topic lock.
--- Queue heartbeats expire in 25 seconds; match slots expire after 180 seconds.
+-- Queue heartbeats expire in 25 seconds; match slots expire after 150 seconds.
 create or replace function public.arena_find_match(p_topic text)
 returns jsonb language plpgsql security definer set search_path=''
 as $$
@@ -104,7 +104,7 @@ begin
   if v_old_status='PLAYING' then
     select started_at into v_started from public.arena_matches where id=v_old_match
       and (player_a=v_user or player_b=v_user);
-    if v_started is not null and v_started + interval '180 seconds' > clock_timestamp() then
+    if v_started is not null and v_started + interval '150 seconds' > clock_timestamp() then
       return jsonb_build_object('status','PLAYING','matchId',v_old_match);
     end if;
   end if;

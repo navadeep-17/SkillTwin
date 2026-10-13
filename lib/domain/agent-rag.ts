@@ -34,6 +34,24 @@ function tokens(text:string):string[] {
 function containsToken(haystack:string,term:string):boolean {
   return haystack.includes(term);
 }
+/**
+ * A citation must resolve to the same saved public repository, pinned
+ * commit, exact encoded path, and visible line interval. A GitHub hostname
+ * alone is not enough to establish the provenance of an answer.
+ */
+function matchesSourceClaim(repository:string,commitSha:string,source:RagCodeSource):boolean {
+  if(!/^[a-f0-9]{40}$/i.test(commitSha))return false;
+  const match=/^([A-Za-z0-9-]+)\/([A-Za-z0-9_.-]+)$/.exec(repository);
+  if(!match || !source.path || source.path.startsWith("/") ||
+    source.path.includes("\\") || source.path.split("/").some(part=>!part||part==="."||part==="..") ||
+    !Number.isInteger(source.startLine)||!Number.isInteger(source.endLine)||
+    source.startLine<1||source.endLine<source.startLine)return false;
+  const encoded=source.path.split("/").map(encodeURIComponent).join("/");
+  return source.sourceUrl===
+    "https://github.com/"+match[1]+"/"+match[2]+"/blob/"+commitSha+"/"+encoded+
+    "#L"+source.startLine+"-L"+source.endLine;
+}
+
 /** Rank ONLY existing inspected, pinned, public source snippets. No speculative retrieval. */
 export function retrieveProjectPassages(
   question:string,sources:readonly RagCodeSource[],limit=2
@@ -62,11 +80,13 @@ export function renderProjectRagResult(
   repository:string,commitSha:string,hits:readonly RagHit[],generatedSummary?:string|null
 ):string {
   if(!hits.length)return "I inspected the available bounded code excerpts but could not find a passage matching your question. The current pilot reads up to three source files, not the entire repository. I cannot infer unseen implementation.";
+  const verified=hits.filter(hit=>matchesSourceClaim(repository,commitSha,hit.source));
+  if(!verified.length)return "I cannot verify that the retrieved excerpts belong to the specified repository, commit and line range. No source-backed conclusion can be made.";
   const summary=generatedSummary?.trim().slice(0,850);
   const intro=summary
     ? "Based on the retrieved public code (not verified authorship): "+summary+"\n\n"
     : "I found relevant code passages, but cannot conclusively explain behavior beyond these excerpts:\n\n";
-  const lines=hits.map(({source},i)=>
+  const lines=verified.map(({source},i)=>
     "Source "+(i+1)+": "+source.path+" (lines "+source.startLine+"–"+source.endLine+")\n"+
     source.sourceUrl+"\n"+
     "Excerpt: "+source.excerpt.replace(/\s+/g," ").trim().slice(0,350));

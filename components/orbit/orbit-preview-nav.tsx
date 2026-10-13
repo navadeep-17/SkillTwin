@@ -9,7 +9,7 @@ const items = [
   { href: "/orbit-skills", label: "My Twin", icon: BrainCircuit, orbit: true },
   { href: "/orbit-journey", label: "Journey", icon: Route, orbit: true },
   { href: "/orbit-prove", label: "Prove", icon: Fingerprint, orbit: true },
-  { href: "/discover", label: "Explore", icon: Compass, orbit: false }
+  { href: "/orbit-explore", label: "Explore", icon: Compass, orbit: true }
 ] as const;
 
 export function OrbitPreviewNav() {

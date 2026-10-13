@@ -6,7 +6,8 @@ export const AGENT_READ_TOOLS = [
   "get_active_plan",
   "get_next_tasks",
   "get_replan_reason",
-  "get_activity"
+  "get_activity",
+  "get_certification_preparation"
 ] as const;
 export type AgentReadTool = typeof AGENT_READ_TOOLS[number];
 
@@ -16,6 +17,7 @@ export type AgentReadIntent =
   | "WHAT_NEXT"
   | "READINESS"
   | "SKILL_STATUS"
+  | "CERTIFICATION_PREP"
   | "JOURNEY_SUMMARY";
 
 export function fallbackReadTools(intent: AgentReadIntent): AgentReadTool[] {
@@ -25,6 +27,7 @@ export function fallbackReadTools(intent: AgentReadIntent): AgentReadTool[] {
     case "WHAT_NEXT": return ["get_next_tasks","get_active_plan"];
     case "READINESS": return ["get_role_gap"];
     case "SKILL_STATUS": return ["get_skill_state","get_role_gap"];
+    case "CERTIFICATION_PREP": return ["get_certification_preparation"];
     default: return ["get_role_gap","get_next_tasks"];
   }
 }

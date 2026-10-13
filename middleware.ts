@@ -5,6 +5,7 @@ const PROTECTED_PREFIXES = [
   "/overview",
   "/onboarding",
   "/passport",
+  "/challenge-my-twin",
   "/discover",
   "/occupations",
   "/occupations/mappings",

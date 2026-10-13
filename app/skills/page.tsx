@@ -177,9 +177,10 @@ export default async function SkillsPage() {
             Capability, confidence, target level, and priority stay intentionally separate.
           </p>
         </div>
-        <Link href="/onboarding" className="btn-secondary">
-          Add evidence
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/challenge-my-twin" className="btn-primary">Challenge My Twin</Link>
+          <Link href="/onboarding" className="btn-secondary">Add evidence</Link>
+        </div>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-3">

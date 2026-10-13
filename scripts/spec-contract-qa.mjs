@@ -214,6 +214,17 @@ const actionGuard = read("lib/domain/agent-action-guard.ts");
 assert(actionGuard.includes("STALE_PROPOSAL") && actionGuard.includes("INELIGIBLE_SKILL"),
   "Journey Chat action guard must reject stale and unsupported targets");
 
+const readAgent = read("lib/services/chat/agent-read-orchestrator.ts");
+const journeyChat = read("lib/services/chat/journey-chat-service.ts");
+assert(
+  readAgent.includes("validateReadPlan(result)")
+  && readAgent.includes("timeoutMs:3500")
+  && readAgent.includes("maxOutputTokens:220")
+  && journeyChat.includes("!isMutatingJourneyIntent(intent)")
+  && journeyChat.includes("getAgentReadOrchestrator().run("),
+  "Agentic Journey Chat must use a bounded read-only planner with deterministic fallback"
+);
+
 const releaseSmoke = read("scripts/release-smoke.mjs");
 for (const marker of [
   "PUBLIC_SMOKE=PASS",

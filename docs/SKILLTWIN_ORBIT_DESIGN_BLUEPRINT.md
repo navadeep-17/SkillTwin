@@ -106,6 +106,23 @@ Use transform/opacity for most animated transitions; avoid layout thrashing. Do 
 - Every chart needs readable axis/units, source/explanation, accessible table alternative and graceful missing-data treatment.
 - Click/keyboard select in constellation → inspector → evidence sources → challenge route; graph view and matrix stay synchronized.
 
+## Read-only beta preview (Phase 2)
+
+A separate authenticated `/orbit-beta` route now shows the real active target, role requirements, prerequisite edges, saved UserSkill capability/confidence, evidence record counts, latest readiness/coverage, and high-priority role gaps.
+
+- All values come from authenticated, user-scoped Supabase reads; the page exposes no mutation controls.
+- Skill-node selection updates only local inspector visibility, not backend state.
+- The preview intentionally avoids a historic readiness chart when no source-backed time series is available.
+- If the user has no goal, role graph or gap snapshot, it shows an explicit setup state instead of manufactured metrics.
+- A subset of at most 16 role requirements is shown on the prototype graph; the existing Skills page remains available for complete graph and evidence inspection.
+- Readiness, confidence, target and gap status remain distinct. Colors are secondary to accessible status labels.
+- The route is included in the authentication middleware and has contract tests in CI.
+- **Not a production replacement:** the original `/overview`, `/skills`, `/roadmap` and `/challenge-my-twin` routes stay unchanged.
+
+### Verification limitations
+
+CI validates TypeScript, Next.js build, static read-only/auth invariants and test suites, but cannot establish actual visual layout quality. An authenticated browser walkthrough is still required to verify Supabase join behavior and visually inspect screen widths, focus handling, graph legibility, contrast and performance before offering this as a live beta.
+
 ## Route/data integration approach
 
 Do **not** replace existing domain components or database logic. Extract a reusable OrbitShell and Orbit tokens. Integrate route by route behind an environment/feature gate, preserving old screens as a fallback until verified.

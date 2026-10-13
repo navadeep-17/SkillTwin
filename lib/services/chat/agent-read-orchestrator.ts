@@ -113,7 +113,10 @@ export class AgentReadOrchestrator {
     userId:string;context:AgentReadContext;readAssessmentProof:ProofReader
   }):Promise<ToolObservation> {
     const c=input.context;
-    if(tool==="get_assessment_proof")return input.readAssessmentProof();
+    if(tool==="get_assessment_proof") {
+      const proof=await input.readAssessmentProof();
+      return {text:proof.content,refs:proof.refs};
+    }
     if(tool==="get_skill_state") {
       const skill=c.mentionedSkill;
       if(!skill)return {text:"Name a specific skill to inspect its recorded level and confidence.",refs:[]};
@@ -162,7 +165,10 @@ export class AgentReadOrchestrator {
     if(tool==="get_replan_reason") {
       // The assessment reader uses exact assessment-ID matching, including NO_OP.
       // An unrelated latest PlanDiff must never be used to explain an assessment.
-      if(!c.latestDiff && c.latestAssessment)return input.readAssessmentProof();
+      if(!c.latestDiff && c.latestAssessment) {
+        const proof=await input.readAssessmentProof();
+        return {text:proof.content,refs:proof.refs};
+      }
       if(!c.latestDiff)return {text:"There is no applied roadmap revision or assessment decision to explain.",refs:[]};
       return {
         text:"Latest recorded roadmap revision: "+labelOf(c.latestDiff,"summary")+". "+

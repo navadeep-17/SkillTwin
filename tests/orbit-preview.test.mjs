@@ -357,7 +357,7 @@ test("Orbit secondary features remain authenticated, use a shared shell and pres
   assert.ok(bridgeCss.includes("prefers-reduced-motion"));
   assert.ok(bridgeCss.includes(".osw-content"),"Preserve readable native legacy forms in accessible island");
   assert.ok(nav.includes('href="/project-defense"') && nav.includes('href="/passport"'));
-  assert.ok(nav.includes('href="/orbit-activity"') && nav.includes('href="/settings"'));
+  assert.ok(nav.includes('href="/orbit-activity"') && nav.includes('href="/orbit-settings"'));
   assert.ok(nav.includes('href="/overview?classic=1"'));
   assert.ok(fixture.includes("Fictional demonstration"));
   assert.ok(qa.includes('"/orbit-lab/workspaces-demo"'));
@@ -388,4 +388,29 @@ test("Native Orbit Agent Activity is authenticated, read-only, and uses persiste
   assert.ok(css.includes("prefers-reduced-motion"));
   assert.ok(sample.includes("Fictional activity"));
   assert.ok(qa.includes('"/orbit-lab/activity-demo"'));
+});
+
+
+test("Native Orbit Settings uses current persisted preferences and original secure save API",()=>{
+  const page=read("app/orbit-settings/page.tsx");
+  const form=read("components/settings/learning-settings-form.tsx");
+  const css=read("app/orbit-settings/orbit-settings.css");
+  const middleware=read("middleware.ts");
+  const nav=read("components/orbit/orbit-preview-nav.tsx");
+  const demo=read("app/orbit-lab/settings-demo/page.tsx");
+  const qa=read("scripts/orbit-visual-qa.mjs");
+  assert.ok(middleware.includes('"/orbit-settings"'));
+  assert.ok(page.includes("supabase.auth.getUser()"));
+  assert.ok(page.includes('from("user_learning_settings")'));
+  assert.ok(page.includes('.eq("user_id",auth.user.id)'));
+  assert.ok(page.includes("<LearningSettingsForm initial={preferences} orbit/>"));
+  assert.ok(form.includes('fetch("/api/settings"'));
+  assert.ok(form.includes("if (pending || demoOnly) return;"));
+  assert.ok(form.includes("disabled={pending || demoOnly}"));
+  assert.ok(!page.includes(".insert(") && !page.includes(".update("));
+  assert.ok(nav.includes('href="/orbit-settings"'));
+  assert.ok(css.includes(".os-native-settings"));
+  assert.ok(css.includes("prefers-reduced-motion"));
+  assert.ok(demo.includes("orbit demoOnly"));
+  assert.ok(qa.includes('"/orbit-lab/settings-demo"'));
 });

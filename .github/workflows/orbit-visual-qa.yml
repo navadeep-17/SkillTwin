@@ -1,0 +1,59 @@
+name: Orbit Prototype Visual QA
+
+on:
+  pull_request:
+    paths:
+      - "app/orbit-lab/**"
+      - "app/orbit-beta/**"
+      - "app/orbit-skills/**"
+      - "app/orbit-journey/**"
+      - "app/orbit-prove/**"
+      - "app/orbit-explore/**"
+      - "app/orbit-onboarding/**"
+      - "scripts/orbit-visual-qa.mjs"
+      - "tests/orbit-preview.test.mjs"
+      - ".github/workflows/orbit-visual-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  orbit-visual-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: orbit-visual-qa-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - name: Install Chromium
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Build the preview branch
+        run: npm run build
+      - name: Start local Next.js server and capture interactions
+        shell: bash
+        run: |
+          npm run start -- -p 3017 > /tmp/skilltwin-orbit-server.log 2>&1 &
+          for i in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:3017/orbit-lab > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:3017/orbit-lab > /dev/null || (cat /tmp/skilltwin-orbit-server.log && exit 1)
+          node scripts/orbit-visual-qa.mjs
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbit-prototype-screenshots
+          path: artifacts/orbit-visual-qa
+          if-no-files-found: warn
+      - name: Show server logs on failure
+        if: failure()
+        run: cat /tmp/skilltwin-orbit-server.log || true

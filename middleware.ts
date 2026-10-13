@@ -3,6 +3,12 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED_PREFIXES = [
   "/overview",
+  "/orbit-beta",
+  "/orbit-skills",
+  "/orbit-journey",
+  "/orbit-prove",
+  "/orbit-explore",
+  "/orbit-onboarding",
   "/onboarding",
   "/passport",
   "/challenge-my-twin",

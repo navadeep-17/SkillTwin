@@ -71,7 +71,7 @@ function asStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.map(String) : [];
 }
 
-export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
+export function ChallengeSession({ assessmentId, proofReturnBase="/challenge-my-twin" }: { assessmentId: string; proofReturnBase?: string }) {
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [question, setQuestion] = useState<Question | null>(null);
   const [pendingQuestion, setPendingQuestion] = useState<Question | null>(null);
@@ -338,7 +338,7 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
         <div className="flex flex-wrap gap-3">
           <Link href="/overview" className="btn-primary">View my SkillTwin</Link>
           <Link href="/roadmap" className="btn-secondary">View roadmap</Link>
-          {assessment?.skill.id ? <Link href={"/challenge-my-twin?skillId="+assessment.skill.id} className="btn-secondary">See how my Twin responded</Link> : null}
+          {assessment?.skill.id ? <Link href={proofReturnBase+"?skillId="+encodeURIComponent(assessment.skill.id)} className="btn-secondary">See how my Twin responded</Link> : null}
         </div>
       </section>
     );

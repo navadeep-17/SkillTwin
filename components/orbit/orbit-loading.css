@@ -1,0 +1,20 @@
+.orbit-loading-shell{min-height:100vh;display:grid;place-items:center;background:radial-gradient(600px 360px at 50% 36%,rgba(128,100,250,.16),transparent 76%),#0B1020;color:#F4F7FF;padding:32px 18px}
+.orbit-loading-inner{width:min(100%,600px);text-align:center;display:flex;align-items:center;flex-direction:column}
+.orbit-loading-mark{position:relative;display:grid;place-items:center;width:102px;height:102px;margin:12px 0 26px}
+.orbit-loading-ring{position:absolute;inset:0;border:1px dashed rgba(169,154,255,.64);border-radius:50%;animation:orbit-load-spin 9s linear infinite}
+.orbit-loading-core{height:66px;width:66px;display:grid;place-items:center;border-radius:20px;background:linear-gradient(135deg,#9181FF,#5141B0);color:#fff;box-shadow:0 0 48px rgba(146,125,255,.42)}
+.orbit-loading-kicker{color:#B7A8FF;font-size:10px;letter-spacing:2px;font-weight:800}
+.orbit-loading-inner h1{font-size:clamp(25px,4vw,38px);letter-spacing:-.055em;margin:12px 0 10px;font-weight:800}
+.orbit-loading-inner>p:not(.orbit-loading-kicker){font-size:13px;color:#A9B8D5;line-height:1.7}
+.orbit-loading-bar{width:min(100%,350px);height:5px;border-radius:20px;overflow:hidden;background:#313550;margin:30px 0 18px;position:relative}
+.orbit-loading-bar span{height:100%;width:36%;position:absolute;left:-36%;background:linear-gradient(90deg,#8C79FB,#52E7C7);border-radius:20px;animation:orbit-load-traverse 1.8s ease-in-out infinite}
+.orbit-loading-inner small{display:inline-flex;align-items:center;gap:7px;font-size:10px;color:#8096AD}.orbit-loading-inner small svg{color:#52E7C7}
+.orbit-loading-skeleton{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:43px}
+.orbit-loading-skeleton>div{display:flex;flex-direction:column;gap:12px;padding:18px;border:1px solid rgba(173,184,239,.13);background:#161F37;border-radius:14px}
+.orbit-loading-skeleton i{height:12px;border-radius:7px;background:linear-gradient(90deg,#29334D,#3C4268,#29334D);background-size:220% 100%;animation:orbit-load-shimmer 2s linear infinite}
+.orbit-loading-skeleton i:nth-child(2){width:75%}.orbit-loading-skeleton i:nth-child(3){width:50%}
+@keyframes orbit-load-spin{to{transform:rotate(360deg)}}
+@keyframes orbit-load-traverse{0%{left:-36%}100%{left:100%}}
+@keyframes orbit-load-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media(max-width:480px){.orbit-loading-skeleton{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.orbit-loading-ring,.orbit-loading-bar span,.orbit-loading-skeleton i{animation:none!important}.orbit-loading-bar span{left:32%}}

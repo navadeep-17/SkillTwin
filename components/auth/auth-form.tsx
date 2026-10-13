@@ -51,7 +51,9 @@ export function AuthForm({
       return;
     }
 
-    router.replace(mode === "signin" ? nextPath : "/onboarding");
+    const signupDestination = process.env.NEXT_PUBLIC_SKILLTWIN_ORBIT_DEFAULT === "true"
+      ? "/orbit-onboarding" : "/onboarding";
+    router.replace(mode === "signin" ? nextPath : signupDestination);
     router.refresh();
   }
 

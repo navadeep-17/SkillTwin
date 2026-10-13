@@ -10,12 +10,13 @@ export default async function LoginPage({
 }) {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
-  if (data.user) redirect("/onboarding");
+  const orbitDefault = process.env.NEXT_PUBLIC_SKILLTWIN_ORBIT_DEFAULT === "true";
+  if (data.user) redirect(orbitDefault ? "/orbit-beta" : "/onboarding");
 
   const params = await searchParams;
   const nextPath = params.next?.startsWith("/") && !params.next.startsWith("//")
     ? params.next
-    : "/onboarding";
+    : orbitDefault ? "/orbit-beta" : "/onboarding";
 
   return (
     <AuthShell

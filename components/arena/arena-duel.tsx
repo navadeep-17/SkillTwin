@@ -102,7 +102,7 @@ export function ArenaDuel(){
   }
 
   async function answer(index:number){
-    if(!["PLAYING","AI_PLAYING","SOLO_PLAYING"].includes(arena.status)||!("answered" in arena)||arena.answered||answering||!("secondsRemaining" in arena)||arena.secondsRemaining===0)return;
+    if(!["PLAYING","AI_PLAYING","SOLO_PLAYING"].includes(arena.status)||!("answered" in arena)||!("matchId" in arena)||!("questionNumber" in arena)||arena.answered||answering||!("secondsRemaining" in arena)||arena.secondsRemaining===0)return;
     const key=questionKey(arena);
     setAnswering(true);setError("");
     try{
@@ -222,7 +222,7 @@ export function ArenaDuel(){
       </aside>
     </section>:null}
 
-    {!loading&&waiting?<section className="mx-auto mt-6 max-w-2xl rounded-2xl border border-indigo-200 bg-white px-6 py-10 text-center shadow-sm" role="status" aria-live="polite">
+    {!loading&&arena.status==="WAITING"?<section className="mx-auto mt-6 max-w-2xl rounded-2xl border border-indigo-200 bg-white px-6 py-10 text-center shadow-sm" role="status" aria-live="polite">
       <div className="mx-auto flex size-20 items-center justify-center rounded-full bg-indigo-50">
         <LoaderCircle className="size-10 animate-spin text-indigo-600"/>
       </div>
@@ -252,11 +252,18 @@ export function ArenaDuel(){
       </button>
     </section>:null}
 
-    {!loading&&playing?<section className="mx-auto mt-6 max-w-3xl space-y-4" aria-live="polite">
+    {!loading&&arena.status==="AI_PREPARING"?<section className="mx-auto mt-6 max-w-2xl rounded-2xl border border-indigo-200 bg-white p-10 text-center" role="status">
+      <Bot className="mx-auto size-10 text-indigo-600"/>
+      <h2 className="mt-4 text-xl font-semibold text-slate-900">Preparing your AI practice round</h2>
+      <p className="mt-2 text-sm text-slate-600">An AI is independently answering the quiz. If the model is unavailable, you will still receive a Solo Practice quiz.</p>
+      <LoaderCircle className="mx-auto mt-4 size-5 animate-spin text-indigo-600"/>
+    </section>:null}
+
+    {!loading&&playing&&"questionNumber" in arena?<section className="mx-auto mt-6 max-w-3xl space-y-4" aria-live="polite">
       <div className="grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 bg-white p-4 sm:gap-4 sm:p-6">
         <div><p className="text-xs text-slate-500">You</p><p className="mt-1 text-sm font-semibold text-indigo-700">Player 1</p></div>
-        <div className="text-center"><Swords className="mx-auto size-6 text-slate-500"/><p className="mt-1 text-[11px] text-slate-500">LIVE DUEL</p></div>
-        <div className="text-right"><p className="text-xs text-slate-500">Opponent</p><p className="mt-1 text-sm font-semibold text-slate-800">Random rival</p></div>
+        <div className="text-center"><Swords className="mx-auto size-6 text-slate-500"/><p className="mt-1 text-[11px] text-slate-500">{isSolo?"SOLO PRACTICE":isAi?"AI CHALLENGE":"LIVE DUEL"}</p></div>
+        <div className="text-right"><p className="text-xs text-slate-500">Opponent</p><p className="mt-1 text-sm font-semibold text-slate-800">{isSolo?"Solo practice":isAi?"AI Opponent":"Random rival"}</p></div>
       </div>
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -291,23 +298,26 @@ export function ArenaDuel(){
         </div>
         <div className="mt-5 flex flex-wrap justify-between gap-2 border-t border-slate-100 pt-4 text-xs text-slate-500">
           <span>{arena.answered?"Answer locked.":"Submit one answer before time expires."}</span>
-          <span>{arena.rivalAnswered?"Your rival answered.":"Your rival is thinking…"}</span>
+          <span>{isSolo?"Practice at your pace.":isAi?"AI answers are locked privately.":"rivalAnswered" in arena && arena.rivalAnswered?"Your rival answered.":"Your rival is thinking…"}</span>
         </div>
       </div>
       <p className="text-center text-xs text-slate-500">Answers are locked on the server. No chat or answers are shared during live questions.</p>
     </section>:null}
 
-    {!loading&&finished?<section className="mx-auto mt-6 max-w-2xl rounded-2xl border border-slate-200 bg-white p-7 text-center shadow-sm sm:p-10">
+    {!loading&&finished&&"myScore" in arena?<section className="mx-auto mt-6 max-w-2xl rounded-2xl border border-slate-200 bg-white p-7 text-center shadow-sm sm:p-10">
       <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-amber-50"><Trophy className="size-8 text-amber-600"/></div>
       <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-indigo-600">{ARENA_LABELS[arena.topic]} · Match complete</p>
       <h2 className="mt-2 text-3xl font-semibold text-slate-900">
-        {arena.outcome==="WIN"?"You won the duel!":arena.outcome==="LOSS"?"Your rival wins this round":"It's a tie!"}
+        {isSolo?"Solo practice complete":"outcome" in arena && arena.outcome==="WIN"?"You won the duel!":"outcome" in arena && arena.outcome==="LOSS"?(isAi?"AI Opponent wins this round":"Your rival wins this round"):"It's a tie!"}
       </h2>
-      <div className="mt-7 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-xl bg-slate-50 p-5">
+      {isSolo?<div className="mt-7 rounded-xl bg-slate-50 p-5">
+        <p className="text-xs text-slate-500">Solo practice score</p>
+        <p className="mt-1 text-4xl font-bold text-indigo-600">{arena.myScore}/5</p>
+      </div>:<div className="mt-7 grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-xl bg-slate-50 p-5">
         <div><p className="text-xs text-slate-500">You</p><p className="mt-1 text-3xl font-bold text-indigo-600">{arena.myScore}</p></div>
         <span className="text-sm text-slate-400">vs</span>
-        <div><p className="text-xs text-slate-500">Random rival</p><p className="mt-1 text-3xl font-bold text-slate-800">{arena.rivalScore}</p></div>
-      </div>
+        <div><p className="text-xs text-slate-500">{isAi?"AI Opponent":"Random rival"}</p><p className="mt-1 text-3xl font-bold text-slate-800">{"rivalScore" in arena?arena.rivalScore:0}</p></div>
+      </div>}
       <p className="mt-4 text-xs leading-6 text-slate-500">
         Score out of {arena.totalQuestions}. This was a casual practice match; no validated skill or career-readiness scores were modified.
       </p>

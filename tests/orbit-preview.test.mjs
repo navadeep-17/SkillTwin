@@ -298,6 +298,9 @@ test("Orbit default activation is opt-in, reversible and preserves classic sign-
   }
   assert.ok(links.includes('href: "/orbit-beta"') && links.includes('href: "/overview"'));
   assert.ok(links.includes('label: "Try SkillTwin Orbit"'), "Classic product must offer explicit opt-in before the default switch is enabled");
+  const mobileHeader=read("components/shell/app-nav.tsx");
+  assert.ok(mobileHeader.includes('href="/orbit-beta"') && mobileHeader.includes("Try Orbit"),"Mobile header must expose the opt-in path");
+  assert.ok(mobileHeader.includes('href="/journey"'),"Mobile navigation must preserve Ask SkillTwin");
   assert.ok(links.includes('href: "/orbit-prove"') && links.includes('href: "/practice"'));
   assert.ok(login.includes('orbitDefault ? "/orbit-beta" : "/onboarding"'));
   assert.ok(form.includes('"/orbit-onboarding" : "/onboarding"'));

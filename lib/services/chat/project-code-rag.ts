@@ -5,7 +5,7 @@ import type { RagHit } from "@/lib/domain/agent-rag";
 import { getSql } from "@/lib/db/postgres";
 import { inspectPublicRepository } from "@/lib/services/projects/project-defense-service";
 import { parsePublicGitHubRepo } from "@/lib/domain/project-defense";
-import { retrieveProjectPassages, renderProjectRagResult, codeQuestionWithoutProjectName } from "@/lib/domain/agent-rag";
+import { retrieveProjectPassages, renderProjectRagResult, codeQuestionWithoutProjectName, selectSavedCodeProject } from "@/lib/domain/agent-rag";
 
 /**
  * This intentionally reuses Project Defense's vetted public GitHub reader:
@@ -58,26 +58,24 @@ export async function readSavedProjectCode(input:{userId:string;question:string}
     "select id,title,artifact_url from public.profile_projects where user_id=$1::uuid and artifact_url is not null order by created_at desc limit 20",
     [input.userId]
   ) as Array<{id:string;title:string;artifact_url:string}>;
-  const eligible=projects.filter(p=>parsePublicGitHubRepo(p.artifact_url)!==null);
-  if(!eligible.length)return {
+  const eligible=projects.flatMap(project=>{
+    const parsed=parsePublicGitHubRepo(project.artifact_url);
+    return parsed?[{...project,repository:parsed.owner+"/"+parsed.repo}]:[];
+  });
+  const selection=selectSavedCodeProject(input.question,eligible);
+  if(selection.status==="NONE")return {
     content:"I could not find a saved public GitHub repository for your learner account. Add a project with a public github.com/owner/repository URL in Projects first.",
     refs:[] as Array<{type:"profile_project";id:string;label:string}>,
-    meta:{generator:"source-rag-fallback-v1",readTools:["get_project_code"] as string[]}
+    meta:{generator:"source-rag-fallback-v1" as const,readTools:["get_project_code"] as string[]}
   };
-  const question=input.question.toLowerCase();
-  const matched=eligible.filter(p=>{
-    const repo=parsePublicGitHubRepo(p.artifact_url);
-    return repo && (question.includes(repo.repo.toLowerCase()) ||
-      question.includes((repo.owner+"/"+repo.repo).toLowerCase()) ||
-      (p.title.trim().length>=4 && question.includes(p.title.toLowerCase())));
-  });
-  if(matched.length>1 || (matched.length===0 && eligible.length>1))return {
+  if(selection.status==="AMBIGUOUS")return {
     content:"You have multiple saved public GitHub projects. Mention the repository name or exact saved project title so I don't inspect the wrong code. Options: "+
-      eligible.slice(0,8).map(p=>p.title).join(", ")+".",
+      selection.titles.join(", ")+".",
     refs:[] as Array<{type:"profile_project";id:string;label:string}>,
-    meta:{generator:"source-rag-fallback-v1",readTools:["get_project_code"] as string[]}
+    meta:{generator:"source-rag-fallback-v1" as const,readTools:["get_project_code"] as string[]}
   };
-  const selected=matched[0]??eligible[0];
+  const selected=eligible.find(p=>p.id===selection.project.id);
+  if(!selected)throw new Error("INVALID_PROJECT_SELECTION");
   try {
     const snapshot=await inspectPublicRepository(selected.artifact_url);
     const technicalQuestion=codeQuestionWithoutProjectName(input.question,selected.title,snapshot.repository);

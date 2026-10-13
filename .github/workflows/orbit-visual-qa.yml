@@ -5,6 +5,7 @@ on:
     paths:
       - "app/orbit-lab/**"
       - "app/orbit-beta/**"
+      - "app/orbit-onboarding/**"
       - "scripts/orbit-visual-qa.mjs"
       - "tests/orbit-preview.test.mjs"
       - ".github/workflows/orbit-visual-qa.yml"

@@ -58,7 +58,7 @@ function RealSkillGraph({
   }, [visible]);
   const byId = useMemo(() => new Map(points.map(point => [point.node.id, point])), [points]);
   if (!visible.length) {
-    return <div className="orbit-live-graph-empty"><BrainCircuit size={30} /><strong>Your Twin is waiting for a career goal</strong><p>Select a role and add evidence to reveal the role's actual competency network.</p><Link href="/onboarding">Start building your Twin <ArrowRight size={16}/></Link></div>;
+    return <div className="orbit-live-graph-empty"><BrainCircuit size={30} /><strong>Your Twin is waiting for a career goal</strong><p>Select a role and add evidence to reveal the role's actual competency network.</p><Link href="/orbit-onboarding">Start building your Twin <ArrowRight size={16}/></Link></div>;
   }
   return (
     <div className="orbit-live-graph">
@@ -177,7 +177,7 @@ export function OrbitTodayLive({ model }: { model: OrbitTodayModel }) {
             <section className="orbit-live-explain"><ShieldCheck size={20}/><div><strong>The numbers come from SkillTwin.</strong><p>Graph relationships, confidence, readiness and priorities are read from your saved learner state. Selecting a node never changes it.</p></div></section>
           </aside>
         </div>
-        <footer className="orbit-live-footer"><span><CheckCircle2 size={15}/> Read-only design preview</span><div><Link href="/overview">Current Home</Link><Link href="/roadmap">Current Plan <Route size={14}/></Link></div></footer>
+        <footer className="orbit-live-footer"><span><CheckCircle2 size={15}/> Read-only design preview</span><div><Link href="/orbit-onboarding">Edit your goal</Link><Link href="/overview">Current Home</Link><Link href="/roadmap">Current Plan <Route size={14}/></Link></div></footer>
       </div>
     </main>
   );

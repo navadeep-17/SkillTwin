@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { TaskDetailActions } from "@/components/roadmap/task-detail-actions";
+import { getLearnLensLesson } from "@/lib/domain/learnlens-lessons";
+import { LearnLensLessonPanel } from "@/components/roadmap/learnlens-lesson-panel";
 
 function one<T>(value: T | T[] | null | undefined): T | null {
   if (Array.isArray(value)) return value[0] ?? null;
@@ -73,6 +75,12 @@ export default async function RoadmapTaskPage({
     | { id?: string; title?: string; provider?: string; url?: string; format?: string; duration_minutes?: number; quality?: number }
     | Array<{ id?: string; title?: string; provider?: string; url?: string; format?: string; duration_minutes?: number; quality?: number }>
     | null);
+
+  const lesson = getLearnLensLesson({
+    skillSlug: skill?.slug ?? "",
+    taskType: String(task.type),
+    difficulty: String(task.difficulty)
+  });
 
   const completed = task.status === "COMPLETED";
   const stale = plan?.status !== "ACTIVE";
@@ -229,6 +237,8 @@ export default async function RoadmapTaskPage({
           ) : null}
         </div>
       </section>
+
+      {lesson ? <LearnLensLessonPanel lesson={lesson} taskMinutes={Number(task.duration_minutes) || lesson.estimatedMinutes}/> : null}
 
       <div className="mt-7 flex flex-wrap gap-3">
         <Link href="/roadmap" className="btn-secondary">Back to roadmap</Link>

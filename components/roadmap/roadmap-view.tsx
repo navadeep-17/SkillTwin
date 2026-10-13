@@ -9,8 +9,10 @@ import {
   Clock3,
   ExternalLink,
   LoaderCircle,
-  Sparkles
+  Sparkles,
+  Video
 } from "lucide-react";
+import { getLearnLensLesson } from "@/lib/domain/learnlens-lessons";
 import { ToastNotice, type ToastMessage } from "@/components/ui/toast-notice";
 
 type RecommendedLearningResource = {
@@ -56,7 +58,7 @@ type Objective = {
   type: string;
   success_criteria: string;
   target_score: number;
-  skills?: { canonical_name?: string; category?: string } | null;
+  skills?: { slug?: string; canonical_name?: string; category?: string } | null;
   tasks: Task[];
 };
 
@@ -280,6 +282,11 @@ export function RoadmapView() {
                         <TaskCard
                           key={task.id}
                           task={task}
+                          hasVideoLesson={Boolean(getLearnLensLesson({
+                            skillSlug: objective.skills?.slug ?? "",
+                            taskType: task.type,
+                            difficulty: task.difficulty
+                          }))}
                           completed={task.status === "COMPLETED" || optimisticCompleted.has(task.id)}
                           onOptimistic={markOptimistic}
                           onRollback={rollbackOptimistic}
@@ -303,6 +310,7 @@ export function RoadmapView() {
 
 function TaskCard({
   task,
+  hasVideoLesson,
   completed,
   onOptimistic,
   onRollback,
@@ -311,6 +319,7 @@ function TaskCard({
   onNotify
 }: {
   task: Task;
+  hasVideoLesson: boolean;
   completed: boolean;
   onOptimistic: (taskId: string) => void;
   onRollback: (taskId: string) => void;
@@ -451,6 +460,22 @@ function TaskCard({
             Opening a resource doesn't mark this task complete. Apply what you learn before submitting evidence.
           </p>
         </div>
+      ) : null}
+
+      {hasVideoLesson ? (
+        <Link
+          href={"/roadmap/task/" + task.id + "#learnlens"}
+          className="mt-3 flex items-center gap-3 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-white p-3 text-sm transition hover:border-blue-400 hover:shadow-sm"
+        >
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+            <Video aria-hidden="true" className="size-4.5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-semibold text-blue-900">LearnLens · Interactive video lesson</span>
+            <span className="mt-0.5 block text-xs text-slate-600">Verified chapters, focused notes, 3 questions and a practice challenge</span>
+          </span>
+          <ArrowRight aria-hidden="true" className="ml-auto size-4 shrink-0 text-blue-700" />
+        </Link>
       ) : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">

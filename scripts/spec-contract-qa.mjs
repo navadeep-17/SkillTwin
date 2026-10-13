@@ -225,6 +225,25 @@ assert(
   "Agentic Journey Chat must use a bounded read-only planner with deterministic fallback"
 );
 
+const savedChat = read("lib/services/chat/journey-chat-service.ts");
+const savedChatUi = read("components/journey/journey-chat.tsx");
+const dismissRoute = read("app/api/chat/actions/[id]/reject/route.ts");
+const confirmedAction = read("app/api/chat/actions/[id]/confirm/route.ts");
+assert(
+  savedChat.includes("hydrateChatMessages(messages)")
+  && savedChat.includes("pendingChatAction(proposals,Date.now())")
+  && savedChat.includes("durationMs: Date.now()-startedAt")
+  && savedChatUi.includes("Restoring conversation")
+  && savedChatUi.includes("Start new conversation"),
+  "Agent conversation history, provenance and evaluation timings must survive reload"
+);
+assert(
+  dismissRoute.includes("status='REJECTED'")
+  && dismissRoute.includes("status='PROPOSED'")
+  && confirmedAction.includes("confirmed-action-event-v1"),
+  "Chat action dismissal and confirmation must persist across sessions"
+);
+
 const releaseSmoke = read("scripts/release-smoke.mjs");
 for (const marker of [
   "PUBLIC_SMOKE=PASS",

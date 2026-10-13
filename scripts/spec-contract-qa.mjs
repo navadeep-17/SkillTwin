@@ -168,6 +168,16 @@ assert(
   "structured AI output is missing a bounded repair-and-fail path"
 );
 
+// Migration 0025 revokes learner SELECT on answer-bearing bank tables.
+// Any learner-scoped PostgREST lookup here would regress /api/roadmap to 500.
+const roadmapRoute = read("app/api/roadmap/route.ts");
+assert(
+  roadmapRoute.includes("getSql().unsafe(")
+    && roadmapRoute.includes("count(*)::integer as question_count")
+    && !/\.from\(["']assessment_question_bank["']\)/.test(roadmapRoute),
+  "roadmap challenge availability must use server-only aggregate SQL, not client question-bank access"
+);
+
 const readinessRoute = read("app/api/readiness/route.ts");
 assert(
   readinessRoute.includes("checkDatabaseSecurity")

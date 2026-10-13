@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getSql } from "@/lib/db/postgres";
 import { TwinChallengeWorkbench, type TwinChallengeSkill } from "@/components/twin/twin-challenge-workbench";
 import {
   buildTwinProofTrail, challengeAvailability,
@@ -29,9 +30,11 @@ export default async function ChallengeMyTwinPage({
     supabase.from("user_skills")
       .select("skill_id,level_value,capability_score,confidence,conflict_state,evidence_count,last_validated_at")
       .eq("user_id",userId).limit(200),
-    supabase.from("assessment_question_bank")
-      .select("skill_id")
-      .eq("is_active",true).in("type",["MCQ","SHORT_TEXT","SCENARIO"]).limit(500),
+    // Answer keys and rubrics must never be fetched through the learner's
+    // Supabase/PostgREST role. Query aggregate counts via server-owned SQL.
+    getSql().unsafe(
+      "select skill_id::text as skill_id, count(*)::integer as question_count from public.assessment_question_bank where is_active=true and type in ('MCQ','SHORT_TEXT','SCENARIO') group by skill_id"
+    ),
     supabase.from("skill_evidence")
       .select("id,skill_id,source_type,claim,status,created_at")
       .eq("user_id",userId)
@@ -55,15 +58,15 @@ export default async function ChallengeMyTwinPage({
       .eq("user_id",userId).eq("status","ACTIVE")
       .order("created_at",{ascending:false}).limit(100)
   ]);
-  for(const request of [skills,states,bank,evidence,history,outcomes,decisions,diffs,active]) {
+  for(const request of [skills,states,evidence,history,outcomes,decisions,diffs,active]) {
     if(request.error) throw request.error;
   }
 
-  const questionCounts=new Map<string,number>();
-  for(const question of bank.data ?? []) {
-    const id=String(question.skill_id);
-    questionCounts.set(id,(questionCounts.get(id)??0)+1);
-  }
+  // Only counts cross this server-component boundary; no question prompts,
+  // answer keys, rubrics or scoring secrets are placed in the client props.
+  const questionCounts=new Map<string,number>(
+    bank.map(row=>[String(row.skill_id),Number(row.question_count)])
+  );
   const stateBySkill=new Map((states.data??[]).map(x=>[String(x.skill_id),x]));
   const activeBySkill=new Map<string,string>();
   for(const assessment of active.data??[]) {

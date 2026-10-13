@@ -73,7 +73,7 @@ export function OrbitAgentActivity({events}: {events:OrbitActivityEvent[]}){
               <div className="oa-event-body">
                 <div className="oa-event-top">
                   <div><span className="oa-event-category">{labels[category]}</span><h3>{readable(event.eventType)}</h3></div>
-                  {safeTime&&<time dateTime={event.createdAt}>{safeTime.toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</time>}
+                  {safeTime&&<time dateTime={event.createdAt}>{safeTime.toLocaleString("en-IN",{timeZone:"UTC",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})+" UTC"}</time>}
                 </div>
                 <p>{event.summary}</p>
                 <div className="oa-event-tags">

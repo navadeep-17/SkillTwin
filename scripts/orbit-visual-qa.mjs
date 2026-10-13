@@ -88,7 +88,7 @@ try {
     await page.getByRole("heading", { name: /Your skills deserve real proof/i }).waitFor();
     await page.getByText(/Fictional data preview/).waitFor();
     await page.getByRole("heading", { name: "Python", exact: true }).waitFor();
-    await page.getByRole("heading", { name: /Roadmap deliberately unchanged/i }).waitFor();
+    await page.getByText("Roadmap deliberately unchanged").waitFor();
     await page.screenshot({ path: out + "/" + v.name + "-proof-outcome.png", fullPage: true, animations: "disabled" });
     const demoButton = page.getByRole("button", { name: /Preview only — sign in to assess/ });
     assert.equal(await demoButton.isDisabled(), true, "Public fictional demo must not launch assessments");

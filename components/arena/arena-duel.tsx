@@ -4,7 +4,7 @@ import {useCallback,useEffect,useRef,useState} from "react";
 import Link from "next/link";
 import {
   ArrowLeft,CheckCircle2,Clock3,LoaderCircle,RefreshCw,
-  ShieldCheck,Swords,Trophy,UsersRound,X
+  Bot,ShieldCheck,Swords,Trophy,UsersRound,X
 } from "lucide-react";
 import {
   ARENA_LABELS,ARENA_TOPICS,type ArenaState,type ArenaTopic,
@@ -17,7 +17,9 @@ type LocalPick={key:string;option:number};
 
 const validError=(reply:Envelope)=>reply.error?.message??"Please retry.";
 const questionKey=(state:ArenaState)=>{
-  return state.status==="PLAYING"?state.matchId+":"+state.questionNumber:"";
+  return ["PLAYING","AI_PLAYING","SOLO_PLAYING"].includes(state.status)
+    && "matchId" in state && "questionNumber" in state
+    ?state.matchId+":"+state.questionNumber:"";
 };
 
 export function ArenaDuel(){
@@ -25,6 +27,10 @@ export function ArenaDuel(){
   const [arena,setArena]=useState<ArenaState>({status:"IDLE"});
   const [loading,setLoading]=useState(true);
   const [busy,setBusy]=useState(false);
+  const [autoAi,setAutoAi]=useState(true);
+  const [aiBusy,setAiBusy]=useState(false);
+  const aiInFlight=useRef(false);
+  const aiRetryAfter=useRef(0);
   const [answering,setAnswering]=useState(false);
   const [error,setError]=useState("");
   const [localPick,setLocalPick]=useState<LocalPick|null>(null);
@@ -50,10 +56,34 @@ export function ArenaDuel(){
 
   useEffect(()=>{void refresh()},[refresh]);
   useEffect(()=>{
-    if(arena.status!=="WAITING"&&arena.status!=="PLAYING")return;
+    if(!["WAITING","PLAYING","AI_PREPARING","AI_PLAYING","SOLO_PLAYING"].includes(arena.status))return;
     const handle=window.setInterval(()=>void refresh(),1500);
     return ()=>window.clearInterval(handle);
   },[arena.status,refresh]);
+
+  const startAi=useCallback(async()=>{
+    if(aiInFlight.current||Date.now()<aiRetryAfter.current)return;
+    aiInFlight.current=true;setAiBusy(true);setError("");
+    try{
+      const response=await fetch("/api/arena/ai",{
+        method:"POST",headers:{"Content-Type":"application/json"}
+      });
+      const payload:Envelope=await response.json();
+      if(!response.ok||!payload.ok)throw Error(validError(payload));
+      setArena(parseArenaState(payload.data?.arena));
+      setLocalPick(null);
+    }catch(err){
+      setError(err instanceof Error?err.message:"Unable to start AI practice.");
+      aiRetryAfter.current=Date.now()+10000;
+    }finally{aiInFlight.current=false;setAiBusy(false)}
+  },[]);
+
+  useEffect(()=>{
+    if(arena.status==="WAITING"&&autoAi&&!busy&&!aiBusy
+      && arena.aiAvailableInSeconds===0&&Date.now()>=aiRetryAfter.current){
+      void startAi();
+    }
+  },[arena,autoAi,busy,aiBusy,startAi]);
 
   async function changeQueue(action:"find"|"cancel"){
     if(busy)return;
@@ -72,21 +102,22 @@ export function ArenaDuel(){
   }
 
   async function answer(index:number){
-    if(arena.status!=="PLAYING"||arena.answered||answering||arena.secondsRemaining===0)return;
+    if(!["PLAYING","AI_PLAYING","SOLO_PLAYING"].includes(arena.status)||!("answered" in arena)||arena.answered||answering||!("secondsRemaining" in arena)||arena.secondsRemaining===0)return;
     const key=questionKey(arena);
     setAnswering(true);setError("");
     try{
       const response=await fetch("/api/arena/answer",{
         method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
-          matchId:arena.matchId,questionNumber:arena.questionNumber,optionIndex:index
+          matchId:arena.matchId,questionNumber:arena.questionNumber,optionIndex:index,
+          mode:arena.status==="AI_PLAYING"?"AI":arena.status==="SOLO_PLAYING"?"SOLO":"HUMAN"
         })
       });
       const payload:Envelope=await response.json();
       if(!response.ok||!payload.ok)throw Error(validError(payload));
       if(payload.data?.accepted){
         setLocalPick({key,option:index});
-        setArena(current=>current.status==="PLAYING"&&questionKey(current)===key
+        setArena(current=>["PLAYING","AI_PLAYING","SOLO_PLAYING"].includes(current.status)&&questionKey(current)===key
           ?{...current,answered:true}:current);
       }else{
         await refresh();
@@ -97,9 +128,11 @@ export function ArenaDuel(){
     }finally{setAnswering(false)}
   }
 
-  const playing=arena.status==="PLAYING";
+  const playing=["PLAYING","AI_PLAYING","SOLO_PLAYING"].includes(arena.status);
+  const isAi=arena.status==="AI_PLAYING"||arena.status==="AI_FINISHED";
+  const isSolo=arena.status==="SOLO_PLAYING"||arena.status==="SOLO_FINISHED";
   const waiting=arena.status==="WAITING";
-  const finished=arena.status==="FINISHED";
+  const finished=["FINISHED","AI_FINISHED","SOLO_FINISHED"].includes(arena.status);
   const picked=playing&&localPick?.key===questionKey(arena)?localPick.option:null;
 
   return <main className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
@@ -117,11 +150,11 @@ export function ArenaDuel(){
           Meet a random rival. Prove what you know.
         </h1>
         <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300">
-          Two real learners. The same five questions. Thirty seconds per question.
+          Find a real learner first, then switch to a clearly labeled AI rival after 20 seconds if nobody is available.
           Your answers are scored on the server, not by the browser.
         </p>
         <div className="mt-5 flex flex-wrap gap-4 text-xs font-medium text-indigo-100">
-          <span className="inline-flex items-center gap-1.5"><UsersRound className="size-4"/> Real-player matching</span>
+          <span className="inline-flex items-center gap-1.5"><UsersRound className="size-4"/> Humans first · AI fallback</span>
           <span className="inline-flex items-center gap-1.5"><Clock3 className="size-4"/> 2m 30s per round</span>
           <span className="inline-flex items-center gap-1.5"><ShieldCheck className="size-4"/> Practice only</span>
         </div>
@@ -158,6 +191,13 @@ export function ArenaDuel(){
             </label>)}
           </div>
         </fieldset>
+        <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-sm text-indigo-900">
+          <input type="checkbox" checked={autoAi} onChange={event=>setAutoAi(event.target.checked)}
+            className="mt-1 accent-indigo-600"/>
+          <span><strong>AI fallback after 20 seconds</strong><span className="mt-1 block text-xs leading-5 text-indigo-700">
+            If no human is available, challenge a labeled AI rival. If the model is unavailable, switch to solo practice.
+          </span></span>
+        </label>
         <button type="button" onClick={()=>void changeQueue("find")} disabled={busy}
           className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-indigo-200 transition hover:bg-indigo-700 disabled:opacity-60">
           {busy?<LoaderCircle className="size-4 animate-spin"/>:<Swords className="size-4"/>}
@@ -168,7 +208,7 @@ export function ArenaDuel(){
         <h3 className="font-semibold text-slate-900">The rules of Arena</h3>
         <div className="mt-5 space-y-4">
           {[
-            ["01","Match","You need another real player waiting for your chosen skill."],
+            ["01","Match","Search for a real player first; after 20 seconds, AI fallback is available."],
             ["02","Compete","Five independently curated MCQs appear for both rivals on a shared clock."],
             ["03","Reveal","Final scores and the winner are shown after the round ends."]
           ].map(([index,name,body])=><div key={index} className="flex gap-3">
@@ -189,9 +229,24 @@ export function ArenaDuel(){
       <h2 className="mt-5 text-2xl font-semibold text-slate-900">Looking for a rival…</h2>
       <p className="mt-2 text-sm text-slate-600">{ARENA_LABELS[arena.topic]} · Waiting for a real learner</p>
       <p className="mx-auto mt-3 max-w-md text-xs leading-6 text-slate-500">
-        Matches only start when two players are actively in the queue. We never simulate or invent an opponent.
+        Still searching for a real player. If nobody joins, you can practise against a clearly labeled AI rival or on your own.
       </p>
-      <button type="button" onClick={()=>void changeQueue("cancel")} disabled={busy}
+      <p className="mt-3 text-sm font-semibold text-indigo-700">
+        {arena.aiAvailableInSeconds
+          ? "AI practice available in "+arena.aiAvailableInSeconds+"s"
+          : aiBusy?"Preparing an AI rival…":"AI practice is available"}
+      </p>
+      <label className="mx-auto mt-3 flex max-w-sm items-center justify-center gap-2 text-xs text-slate-700">
+        <input type="checkbox" checked={autoAi} onChange={event=>setAutoAi(event.target.checked)}
+          className="accent-indigo-600"/>
+        Automatically switch to AI if no one joins
+      </label>
+      {!arena.aiAvailableInSeconds&&!autoAi?
+        <button type="button" onClick={()=>void startAi()} disabled={aiBusy}
+          className="mt-4 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+          Play against AI now
+        </button>:null}
+      <button type="button" onClick={()=>void changeQueue("cancel")} disabled={busy||aiBusy}
         className="mt-6 inline-flex items-center gap-2 rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
         <X className="size-4"/> Cancel search
       </button>

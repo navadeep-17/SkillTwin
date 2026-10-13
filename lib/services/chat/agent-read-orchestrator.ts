@@ -105,7 +105,9 @@ export class AgentReadOrchestrator {
     // Overnight V3 pilot: only explicit project/repository code questions use
     // bounded, cited retrieval. Existing write intents never reach this method.
     // Ordinary skill, assessment and roadmap questions keep V2 behavior.
-    if (shouldRetrieveProjectCode(input.message)) {
+    // Explicit server-side release switch: the RAG pilot remains OFF until
+    // authenticated QA verifies provenance, tenant scoping and failure modes.
+    if (process.env.SKILLTWIN_AGENT_V3_RAG_ENABLED === "true" && shouldRetrieveProjectCode(input.message)) {
       const rag=await readSavedProjectCode({userId:input.userId,question:input.message});
       return {
         content:rag.content,

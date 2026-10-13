@@ -22,6 +22,20 @@ try {
     const page = await context.newPage();
     const screenshotErrors = [];
     page.on("pageerror", e => screenshotErrors.push(e.message));
+    // Default '/' must be the real Orbit landing, not the old SaaS page
+    // and not the fictional prototype under /orbit-lab.
+    const homeResponse = await page.goto(base + "/", { waitUntil: "networkidle", timeout: 45000 });
+    assert.equal(homeResponse?.status(), 200, v.name + " default homepage must load");
+    await page.locator("main.oh-site").waitFor();
+    await page.getByRole("heading", { name: /Your next chapter/i }).waitFor();
+    assert.equal(await page.getByRole("heading", { name: /A learning agent that evolves/i }).count(), 0,
+      "The old landing must not remain primary when Orbit is active");
+    assert.ok(await page.locator('a[href="/orbit-onboarding"]').count()>0,
+      "Landing must lead to real Orbit onboarding");
+    const homeOverflow = await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    assert.ok(homeOverflow <= 2, v.name + " default landing overflows horizontally: "+homeOverflow);
+    await page.screenshot({path:out+"/"+v.name+"-production-landing.png",fullPage:true,animations:"disabled"});
+
     const response = await page.goto(base + "/orbit-lab", { waitUntil: "networkidle", timeout: 45000 });
     assert.equal(response?.status(), 200, v.name + " prototype route must load");
     await page.getByRole("heading", { name: /Meet the AI that/i }).waitFor();

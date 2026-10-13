@@ -44,6 +44,7 @@ export function calculateAssessmentSignals(input:{
   let totalWeight=0;
   let weightedScore=0;
   let weightedDifficulty=0;
+  let demonstratedDifficulty=0;
   let weightedEvaluator=0;
   const concepts=new Set<string>();
 
@@ -57,6 +58,7 @@ export function calculateAssessmentSignals(input:{
     totalWeight+=weight;
     weightedScore+=weight*row.score;
     weightedDifficulty+=weight*row.difficulty;
+    demonstratedDifficulty+=weight*row.score*row.difficulty;
     weightedEvaluator+=weight*row.evaluatorConfidence;
     if(row.conceptId.trim())concepts.add(row.conceptId.trim());
   }
@@ -71,7 +73,8 @@ export function calculateAssessmentSignals(input:{
   // Difficulty 3: 100% -> 2.30 (INTERMEDIATE).
   // Difficulty 4: 100% -> 2.95 (ADVANCED).
   // No short assessment, regardless of score, can grant EXPERT.
-  const levelSignal=clamp(0.35+0.65*normalizedScore*meanDifficulty,0,3.20);
+  // Incorrect difficult items MUST NOT increase estimated capability.
+  const levelSignal=clamp(0.35+0.65*demonstratedDifficulty/totalWeight,0,3.20);
 
   // A confidence indicator only; not P(skill prediction is correct).
   // Four perfect MCQs with full coverage score around 0.69, not 0.90.

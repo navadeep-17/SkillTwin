@@ -7,14 +7,15 @@ import type { ReactNode } from "react";
 // Orbit renders its own primary navigation; never stack two nav systems or
 // preserve the classic 256px offset on an Orbit page.
 export function OrbitAwareChrome({
-  signedIn, legacyNavigation, children
+  signedIn, legacyNavigation, children, orbitDefault = false
 }: {
   signedIn: boolean;
+  orbitDefault?: boolean;
   legacyNavigation: ReactNode;
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const orbit = pathname.startsWith("/orbit-") || pathname === "/orbit-lab" || pathname.startsWith("/orbit-lab/");
+  const orbit = pathname.startsWith("/orbit-") || pathname === "/orbit-lab" || pathname.startsWith("/orbit-lab/") || (orbitDefault && pathname === "/");
   return (
     <>
       {signedIn && !orbit ? legacyNavigation : null}

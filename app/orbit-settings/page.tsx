@@ -39,7 +39,7 @@ export default async function OrbitSettingsPage(){
         <div className="os-settings-form-wrapper">
           <ThemeSwitcher/>
           <LearningSettingsForm initial={preferences} orbit/>
-          <div className="os-warning"><ShieldCheck size={18}/><p>These are actual account preferences. Selecting <strong>Save settings</strong> writes to your saved profile; opening this page alone does not.</p></div>
+          <div className="os-warning"><ShieldCheck size={18}/><p>Appearance changes immediately and is saved in this browser. <strong>Save settings</strong> updates the learning preferences in your account; neither changes your evidence or scores.</p></div>
         </div>
         <aside className="os-side">
           <div className="os-side-card"><Bell size={22}/><h2>Every detail, yours to control.</h2><p>Choose what gets your attention. You can revise these preferences whenever you need.</p><div className="os-side-rule"/><span><ShieldCheck size={16}/> No change to skill evidence or scores</span></div>

@@ -29,6 +29,10 @@ on:
       - "components/orbit/orbit-preview-nav.*"
       - "app/orbit-lab/workspaces-demo/**"
       - "scripts/orbit-visual-qa.mjs"
+      - "app/learnlens-preview/**"
+      - "components/roadmap/learnlens-lesson-panel.tsx"
+      - "lib/domain/learnlens-lessons.ts"
+      - "scripts/learnlens-visual-qa.mjs"
       - "tests/orbit-preview.test.mjs"
       - ".github/workflows/orbit-visual-qa.yml"
   workflow_dispatch:
@@ -66,6 +70,7 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:3017/orbit-lab > /dev/null || (cat /tmp/skilltwin-orbit-server.log && exit 1)
           node scripts/orbit-visual-qa.mjs
+          node scripts/learnlens-visual-qa.mjs
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4

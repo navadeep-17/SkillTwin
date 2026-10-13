@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {retrieveProjectPassages,renderProjectRagResult,shouldRetrieveProjectCode,codeQuestionWithoutProjectName} from "../dist/lib/domain/agent-rag.js";
+import {classifyJourneyIntent} from "../dist/lib/domain/journey-intent.js";
+import {isMutatingJourneyIntent} from "../dist/lib/domain/agent-read-plan.js";
 const sha="a".repeat(40),blob="b".repeat(40);
 const mk=(path,excerpt)=>({
   path,excerpt,blobSha:blob,startLine:1,endLine:30,
@@ -122,4 +124,19 @@ test("optional model summary cannot inject unrelated clickable source URLs",()=>
   assert.doesNotMatch(answer,/attacker\.example|another\/repo/);
   assert.match(answer,/unverified link omitted/);
   assert.match(answer,/https:\/\/github\.com\/sample\/app\/blob\//);
+});
+
+
+test("ordinary repository code questions remain in the existing read-only intent lane",()=>{
+  for(const question of [
+    "Explain the authentication logic in my project repository",
+    "Find the sorting implementation in my GitHub codebase",
+    "How is the API server implemented in my project files?"
+  ]) {
+    assert.equal(shouldRetrieveProjectCode(question),true);
+    assert.equal(isMutatingJourneyIntent(classifyJourneyIntent(question)),false);
+  }
+  for(const request of ["Generate my project learning roadmap","Challenge me on my skills"]) {
+    assert.equal(shouldRetrieveProjectCode(request),false);
+  }
 });

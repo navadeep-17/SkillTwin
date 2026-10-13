@@ -21,6 +21,7 @@ on:
       - "components/settings/learning-settings-form.tsx"
       - "app/orbit-lab/activity-demo/**"
       - "components/orbit/orbit-secondary-workspace.*"
+      - "components/orbit/orbit-native-content.css"
       - "components/shell/orbit-aware-chrome.tsx"
       - "components/orbit/orbit-preview-nav.*"
       - "app/orbit-lab/workspaces-demo/**"

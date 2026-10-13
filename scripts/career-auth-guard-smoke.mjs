@@ -46,6 +46,7 @@ try {
   const privateApi=[
     {method:"GET",path:"/api/chat"},
     {method:"GET",path:"/api/arena/state"},
+    {method:"POST",path:"/api/arena/ai"},
     {method:"POST",path:"/api/arena/match",body:JSON.stringify({action:"find",topic:"python"})},
     {method:"POST",path:"/api/arena/answer",body:JSON.stringify({matchId:unknownId,questionNumber:1,optionIndex:0})},
     {method:"GET",path:"/api/certifications"},

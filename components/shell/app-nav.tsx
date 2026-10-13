@@ -81,9 +81,14 @@ export async function AppNav({ userId, email }: { userId: string; email?: string
           <span className="flex size-8 items-center justify-center rounded-lg bg-brand-500 text-xs font-bold text-white">S</span>
           <span className="font-semibold tracking-tight">SkillTwin</span>
         </Link>
-        <Link href="/journey" className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600">
-          Ask SkillTwin
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/orbit-beta" className="rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-700">
+            Try Orbit
+          </Link>
+          <Link href="/journey" className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600">
+            Ask SkillTwin
+          </Link>
+        </div>
       </header>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">

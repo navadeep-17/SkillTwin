@@ -78,7 +78,8 @@ test("all endpoints authenticate and use only server-owned RPCs",()=>{
   }
   assert.match(match,/arena_find_match/);
   assert.match(match,/arena_cancel_wait/);
-  assert.match(state,/arena_get_state/);
+  assert.match(state,/getArenaState/);
+  assert.match(read("lib/services/arena/arena-ai-service.ts"),/arena_get_state/);
   assert.match(answer,/arena_submit_answer/);
   assert.match(answer,/optionIndex:z\.number\(\)\.int\(\)\.min\(0\)\.max\(3\)/);
   const page=read("app/arena/page.tsx");

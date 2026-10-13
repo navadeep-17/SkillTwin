@@ -3,11 +3,13 @@ import {getRequestId} from "@/lib/api/request-context";
 import {ok,fail} from "@/lib/api/responses";
 import {requireUser,UnauthenticatedError} from "@/lib/auth/require-user";
 import {arenaApiError} from "@/lib/domain/arena";
+import {submitAiAnswer} from "@/lib/services/arena/arena-ai-service";
 
 const answerSchema=z.object({
   matchId:z.string().uuid(),
   questionNumber:z.number().int().min(1).max(5),
-  optionIndex:z.number().int().min(0).max(3)
+  optionIndex:z.number().int().min(0).max(3),
+  mode:z.enum(["HUMAN","AI","SOLO"]).optional()
 }).strict();
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -15,7 +17,7 @@ export const dynamic="force-dynamic";
 export async function POST(request:Request){
   const requestId=await getRequestId();
   try{
-    const {supabase}=await requireUser();
+    const {user,supabase}=await requireUser();
     let body:unknown;
     try{body=await request.json()}catch{
       return fail(requestId,400,"ARENA_INVALID_INPUT","Submit a valid quiz answer.");
@@ -23,14 +25,20 @@ export async function POST(request:Request){
     const parsed=answerSchema.safeParse(body);
     if(!parsed.success)
       return fail(requestId,400,"ARENA_INVALID_INPUT","Choose one answer for the active question.");
-    const {data,error}=await supabase.rpc("arena_submit_answer",{
-      p_match_id:parsed.data.matchId,
-      p_question_no:parsed.data.questionNumber,
-      p_option_index:parsed.data.optionIndex
-    });
-    if(error)throw error;
+    let accepted=false;
+    if(parsed.data.mode==="AI"||parsed.data.mode==="SOLO"){
+      accepted=await submitAiAnswer(user.id,parsed.data);
+    }else{
+      const {data,error}=await supabase.rpc("arena_submit_answer",{
+        p_match_id:parsed.data.matchId,
+        p_question_no:parsed.data.questionNumber,
+        p_option_index:parsed.data.optionIndex
+      });
+      if(error)throw error;
+      accepted=data?.accepted===true;
+    }
     const response=ok(requestId,{
-      accepted:data?.accepted===true,
+      accepted,
       questionNumber:parsed.data.questionNumber
     });
     response.headers.set("Cache-Control","no-store");

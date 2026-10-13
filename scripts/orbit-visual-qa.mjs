@@ -20,6 +20,8 @@ try {
       reducedMotion: v.name === "small-mobile" ? "reduce" : "no-preference"
     });
     const page = await context.newPage();
+    const screenshotErrors = [];
+    page.on("pageerror", e => screenshotErrors.push(e.message));
     const response = await page.goto(base + "/orbit-lab", { waitUntil: "networkidle", timeout: 45000 });
     assert.equal(response?.status(), 200, v.name + " prototype route must load");
     await page.getByRole("heading", { name: /Meet the AI that/i }).waitFor();
@@ -49,8 +51,6 @@ try {
     assert.ok(overflow.scrollWidth <= overflow.viewportWidth + 1,
       v.name + " has horizontal overflow: " + JSON.stringify(overflow));
 
-    const screenshotErrors = [];
-    page.on("pageerror", e => screenshotErrors.push(e.message));
     assert.deepEqual(screenshotErrors, [], v.name + " client errors");
     console.log(v.name + ": screenshots, navigation, checklist, assessment demo and overflow checks passed");
     await context.close();

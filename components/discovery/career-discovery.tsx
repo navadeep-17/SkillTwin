@@ -17,6 +17,8 @@ export type DiscoverableRole = {
   requirementCount: number;
   documentedCount: number;
   requirements: {
+    groupName: string;
+    groupType: "SINGLE" | "ALL_OF" | "ANY_OF";
     skillId: string;
     name: string;
     category: string;
@@ -203,6 +205,11 @@ export function CareerDiscovery({ roles }: Props) {
                         <p className="font-semibold text-slate-900">{requirement.name}</p>
                         <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">{titlecase(requirement.importance)}</span>
                       </div>
+                      {requirement.groupType === "ANY_OF" ? (
+                        <p className="mt-1.5 text-xs font-semibold text-brand-700">Alternative pathway · choose one from {requirement.groupName}</p>
+                      ) : requirement.groupType === "ALL_OF" ? (
+                        <p className="mt-1.5 text-xs font-semibold text-slate-600">Combined competency group · {requirement.groupName}</p>
+                      ) : null}
                       <p className="mt-1.5 text-xs text-slate-500">
                         Learning stage {requirement.stage} · Target competency {requirement.targetScore.toFixed(1)} / 4 · {requirement.category}
                       </p>

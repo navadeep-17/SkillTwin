@@ -155,3 +155,48 @@ test("Public Journey demo is fictional and tested for PlanDiff and NO_OP", () =>
   assert.ok(testScript.includes("/orbit-lab/journey-demo"));
   assert.ok(testScript.includes("Plan preserved intentionally"));
 });
+
+
+test("Orbit Prove uses the existing authenticated assessment and evidence services", () => {
+  const page=read("app/orbit-prove/page.tsx");
+  const ui=read("app/orbit-prove/orbit-proof.tsx");
+  const middleware=read("middleware.ts");
+  const nav=read("components/orbit/orbit-preview-nav.tsx");
+  const css=read("app/orbit-prove/orbit-prove.css");
+  assert.ok(middleware.includes('"/orbit-prove"'), "Prove must be auth-protected");
+  assert.ok(nav.includes('href: "/orbit-prove"'));
+  assert.ok(page.includes("supabase.auth.getUser()"));
+  assert.ok(page.includes('.eq("user_id",userId)'));
+  for(const table of ["skills","user_skills","skill_evidence","skill_history","skill_assessment_outcomes","replan_decisions","plan_diffs","skill_assessments"]) {
+    assert.ok(page.includes('"' + table + '"'), "Missing canonical source "+table);
+  }
+  assert.ok(page.includes("buildTwinProofTrail"));
+  assert.ok(page.includes("challengeAvailability"));
+  assert.ok(!page.includes("correct_answer") && !page.includes("rubric"), "No answer keys on the Prove route");
+  assert.ok(!page.includes(".insert(") && !page.includes(".update(") && !page.includes(".delete("));
+  assert.ok(ui.includes('fetch("/api/assessments"'));
+  assert.ok(ui.includes('mode:"CHALLENGE_ME"'));
+  assert.ok(ui.includes("if(pending||demoOnly)return;"));
+  assert.ok(ui.includes("demoOnly||pending"));
+  assert.ok(ui.includes("trail.planStatus"));
+  assert.ok(css.includes("prefers-reduced-motion"));
+});
+
+test("Orbit proof sessions reuse ChallengeSession rather than implementing a second grader", () => {
+  const page=read("app/orbit-prove/session/[id]/page.tsx");
+  assert.ok(page.includes("supabase.auth.getUser()"));
+  assert.ok(page.includes("<ChallengeSession assessmentId={id}/>"));
+  assert.ok(!page.includes("getAssessmentService") && !page.includes("grade("));
+});
+
+test("Public Proof demo uses fictional data and cannot write assessments", () => {
+  const page=read("app/orbit-lab/proof-demo/page.tsx");
+  const qa=read("scripts/orbit-visual-qa.mjs");
+  assert.ok(page.includes("Fictional demo"));
+  assert.ok(page.includes("<OrbitProof skills={demoSkills} initialSkillId="));
+  assert.ok(page.includes("demoOnly/>"));
+  assert.ok(!page.includes("createClient") && !page.includes("supabase"));
+  assert.ok(qa.includes('"/orbit-lab/proof-demo"'));
+  assert.ok(qa.includes("proofCalls"));
+  assert.ok(qa.includes('"/orbit-prove"'));
+});

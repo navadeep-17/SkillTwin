@@ -36,6 +36,19 @@ try {
     assert.ok(homeOverflow <= 2, v.name + " default landing overflows horizontally: "+homeOverflow);
     await page.screenshot({path:out+"/"+v.name+"-production-landing.png",fullPage:true,animations:"disabled"});
 
+    const secondaryResponse = await page.goto(base + "/orbit-lab/workspaces-demo", {waitUntil:"networkidle",timeout:45000});
+    assert.equal(secondaryResponse?.status(),200,"Secondary-workspace preview must render");
+    await page.locator(".osw-header h1").getByText("Certifications").waitFor();
+    await page.getByText(/Fictional demonstration/).waitFor();
+    await page.locator(".osw-quick-nav").getByRole("link",{name:/Project Defense/}).waitFor();
+    await page.locator(".orbit-preview-more summary").click();
+    await page.getByRole("link",{name:"Evidence Passport",exact:true}).waitFor();
+    await page.getByRole("link",{name:"Agent Activity",exact:true}).waitFor();
+    await page.getByRole("link",{name:"My Certification Journey",exact:true}).waitFor();
+    await page.screenshot({path:out+"/"+v.name+"-connected-workspace.png",fullPage:true,animations:"disabled"});
+    const bridgedOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    assert.ok(bridgedOverflow<=2,v.name+" feature workspace overflows horizontally: "+bridgedOverflow);
+
     const response = await page.goto(base + "/orbit-lab", { waitUntil: "networkidle", timeout: 45000 });
     assert.equal(response?.status(), 200, v.name + " prototype route must load");
     await page.getByRole("heading", { name: /Meet the AI that/i }).waitFor();

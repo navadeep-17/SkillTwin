@@ -218,3 +218,42 @@ html[data-theme="light"] .oh-site .oh-universe-svg text[fill="#8da0c7"]{fill:#40
 html[data-theme="light"] .oh-site .oh-pulse{
  background:#168b77;box-shadow:0 0 0 4px rgba(13,128,107,.12);
 }
+
+/* Visual QA: fix light-mode contrast on Prove and Explore insight cards. */
+html[data-theme="light"] .orbit-lab :is(h1,h2,h3) em{
+ color:#5744bb!important;
+}
+html[data-theme="light"] .orbit-lab .orbit-sample-header :is(a,span,strong){color:#4b4299!important}
+html[data-theme="light"] .orbit-lab .orbit-sample-header>div{
+ border-color:#d6c6a5!important;color:#825718!important;background:#fff7e7!important;
+}
+html[data-theme="light"] .orbit-lab :is(.op-demo-banner,.oe-demo-banner){
+ color:#83530e!important;background:#fff7e9!important;border-color:#e8c998!important;
+}
+html[data-theme="light"] .orbit-lab :is(.op-estimate-row>div,.oe-detail-stats>div){
+ background:#27334f!important;border-color:#465576!important;color:#f5f8ff!important;
+}
+html[data-theme="light"] .orbit-lab :is(.op-estimate-row>div strong,.oe-detail-stats>div strong){
+ color:#f4f7ff!important;
+}
+html[data-theme="light"] .orbit-lab :is(.op-estimate-row>div small,.oe-detail-stats>div small,.oe-detail-stats em){
+ color:#c7d2e6!important;
+}
+html[data-theme="light"] .orbit-lab :is(.op-proof-result-title,.op-proof-result-title svg,.op-trust svg){
+ color:#087963!important;
+}
+html[data-theme="light"] .orbit-lab .op-proof-result-numbers>div{
+ background:#23433d!important;color:#f5fff9!important;
+}
+html[data-theme="light"] .orbit-lab .op-proof-result-numbers :is(span,strong){
+ color:#e4fff5!important;
+}
+html[data-theme="light"] .orbit-lab :is(.op-back-link,.op-foot a,.oe-hero-notice){
+ color:#5541aa!important;
+}
+html[data-theme="light"] .orbit-lab :is(.op-trust p,.oe-req p,.oe-role-info small){
+ color:#4a5c78!important;
+}
+html[data-theme="light"] .orbit-lab .oe-req strong{color:#1d2942!important}
+html[data-theme="light"] .orbit-lab .oe-req small{color:#5544ac!important}
+html[data-theme="light"] .orbit-lab .op-proof-result{background:#f1faf7!important}

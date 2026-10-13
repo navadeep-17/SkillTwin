@@ -65,13 +65,13 @@ on conflict (topic,question_no) do nothing;
 
 -- Table-level privacy: authenticated users never read question keys or write scores.
 alter table public.arena_questions enable row level security;
-alter table public.arena_questions force row level security;
+-- SECURITY DEFINER routines run as the table owner; direct client grants are revoked.
 alter table public.arena_matches enable row level security;
-alter table public.arena_matches force row level security;
+-- SECURITY DEFINER routines run as the table owner; direct client grants are revoked.
 alter table public.arena_lobby enable row level security;
-alter table public.arena_lobby force row level security;
+-- SECURITY DEFINER routines run as the table owner; direct client grants are revoked.
 alter table public.arena_answers enable row level security;
-alter table public.arena_answers force row level security;
+-- SECURITY DEFINER routines run as the table owner; direct client grants are revoked.
 
 revoke all on public.arena_questions,public.arena_matches,public.arena_lobby,public.arena_answers from public,anon,authenticated;
 -- Only the explicitly redacted RPCs below grant browser-facing arena access.
@@ -183,7 +183,7 @@ begin
     from public.arena_matches where id=v_match
       and (player_a=v_user or player_b=v_user);
   if v_started is null then return '{"status":"IDLE"}'::jsonb; end if;
-  v_current:=pg_catalog.floor(pg_catalog.extract(epoch from clock_timestamp()-v_started)/30)::integer+1;
+  v_current:=pg_catalog.floor(extract(epoch from clock_timestamp()-v_started)/30)::integer+1;
   if v_current>5 then
     select count(*)::integer into v_score
       from public.arena_answers a join public.arena_questions q
@@ -206,7 +206,7 @@ begin
   select exists(select 1 from public.arena_answers where match_id=v_match
     and user_id<>v_user and question_no=v_current) into v_opponent;
   v_seconds:=greatest(0,pg_catalog.ceil(
-    pg_catalog.extract(epoch from (v_started + v_current*interval '30 seconds' - clock_timestamp()))
+    extract(epoch from (v_started + v_current*interval '30 seconds' - clock_timestamp()))
   )::integer);
   return jsonb_build_object('status','PLAYING','matchId',v_match,
     'topic',v_topic,'questionNumber',v_current,'totalQuestions',5,
@@ -235,7 +235,7 @@ begin
   if not exists(select 1 from public.arena_lobby
     where user_id=v_user and status='PLAYING' and match_id=p_match_id) then
     raise exception 'ARENA_MATCH_INACTIVE'; end if;
-  v_current:=pg_catalog.floor(pg_catalog.extract(epoch from clock_timestamp()-v_match.started_at)/30)::integer+1;
+  v_current:=pg_catalog.floor(extract(epoch from clock_timestamp()-v_match.started_at)/30)::integer+1;
   if v_current<>p_question_no then raise exception 'ARENA_QUESTION_CLOSED'; end if;
   insert into public.arena_answers(match_id,user_id,question_no,option_index)
     values(p_match_id,v_user,p_question_no,p_option_index)

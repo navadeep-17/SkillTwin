@@ -1,6 +1,6 @@
 # SkillTwin Agent V2 — evidence-grounded autonomous learning coach
 
-Status: Phase 1 deployed; Phase 2 stale-state guards implemented in PR pending CI and release (2026-10-13). No unverified autonomy claims.
+Status: Phases 1-2 deployed; Phase 3 read-tool orchestration awaiting CI and browser verification.
 
 ## What is implemented today (code audit)
 - Journey Chat persists conversations and retrieves the signed-in learner's skills, gap snapshot, tasks, plans, last assessment and latest applied PlanDiff.
@@ -34,6 +34,12 @@ The learner can ask an open question, the system selects narrow read-only tools,
 - Test concurrent confirmations, duplicate HTTP requests, expired proposals and cross-user access.
 
 ## Phase 3: Bounded agentic orchestration (P1)
+- [x] Seven server-owned, allowlisted read tools; Gemini selects at most three names.
+- [x] Strict JSON validation and a 3.5-second Gemini request timeout with a deterministic fallback.
+- [x] Read-only server-side execution; existing approval-gated actions remain unchanged.
+- [x] Evidence-linked results and executed tool names are visible in Journey Chat.
+- [ ] Production authenticated browser verification and adversarial evaluation are still required.
+
 - Define allowlisted **read tools**: get_skill_state, get_assessment_proof, get_role_gap, get_active_plan, get_next_tasks, get_replan_reason, get_activity.
 - Add a structured planning step (optional Gemini) to choose a maximum of 2–3 tools and return a constrained plan. Validate tool names/arguments with zod and server-owned user context; enforce wall-clock and token budgets.
 - Execute only read tools automatically. Mutation tools remain separate proposals needing explicit user approval and are revalidated on execution. No recursive uncontrolled tool loops.

@@ -68,3 +68,17 @@ test("Orbit readiness snapshot belongs to the selected goal and role", () => {
   assert.ok(page.includes('.eq("goal_id", goal.id)'));
   assert.ok(page.includes('.eq("role_version_id", goal.role_version_id)'));
 });
+
+
+test("Orbit Today retrieves an actionable task from the current active plan", () => {
+  const page = read("app/orbit-beta/page.tsx");
+  const ui = read("app/orbit-beta/orbit-today-live.tsx");
+  assert.ok(page.includes('from("learning_plans")'));
+  assert.ok(page.includes('from("learning_tasks")'));
+  assert.ok(page.includes('.eq("goal_id", goal.id)'));
+  assert.ok(page.includes('.eq("status", "ACTIVE")'));
+  assert.ok(page.includes('"IN_PROGRESS", "PLANNED"'));
+  assert.ok(ui.includes("model.nextTask.title"));
+  assert.ok(ui.includes('href="/roadmap"'));
+  assert.ok(!ui.includes('fetch("/api/tasks/'));
+});

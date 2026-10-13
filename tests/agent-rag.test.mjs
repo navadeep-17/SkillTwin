@@ -170,3 +170,13 @@ test("short project names cannot match substrings of longer code concepts",()=>{
   assert.equal(selectSavedCodeProject("Explain authentication design in my project",candidates).status,"AMBIGUOUS");
   assert.equal(selectSavedCodeProject("Inspect auth repository",candidates).project.id,"auth");
 });
+
+test("explicit GitHub URL must refer to a saved project, never substitute a different repo",()=>{
+  const projects=[
+    {id:"a",title:"My App",repository:"owner/my-app"},
+    {id:"b",title:"My ML",repository:"owner/my-ml"}
+  ];
+  assert.equal(selectSavedCodeProject("Review https://github.com/outsider/private-repo code",[projects[0]]).status,"UNSAVED");
+  assert.equal(selectSavedCodeProject("Review https://github.com/owner/my-ml source code",projects).project.id,"b");
+  assert.equal(selectSavedCodeProject("Review https://github.com/owner/my-app code and https://github.com/owner/my-ml files",projects).status,"AMBIGUOUS");
+});

@@ -98,13 +98,29 @@ function parseState(raw: unknown): ChangeState {
 
 /** Match an exact UUID/string reference in structured trigger refs; never substring-match. */
 export function containsExactReference(value: unknown, reference: string): boolean {
-  if (typeof value === "string") return value === reference;
-  if (Array.isArray(value)) return value.some(item=>containsExactReference(item,reference));
-  if (value && typeof value === "object") {
-    return Object.values(value as Record<string,unknown>)
-      .some(item=>containsExactReference(item,reference));
+  // PostgreSQL JSONB may contain a JSON-encoded array/string from legacy
+  // writes. Decode at most two string layers; NEVER use substring matching.
+  function visit(raw: unknown, nesting: number, stringDecodes: number): boolean {
+    if (nesting > 12) return false;
+    if (typeof raw === "string") {
+      if (raw === reference) return true;
+      if (stringDecodes >= 2 || !/^[\\[\\{\\"]/.test(raw.trim())) return false;
+      try {
+        const decoded: unknown = JSON.parse(raw);
+        if (decoded === raw) return false;
+        return visit(decoded,nesting+1,stringDecodes+1);
+      } catch {
+        return false;
+      }
+    }
+    if (Array.isArray(raw)) return raw.some(item=>visit(item,nesting+1,stringDecodes));
+    if (raw && typeof raw === "object") {
+      return Object.values(raw as Record<string,unknown>)
+        .some(item=>visit(item,nesting+1,stringDecodes));
+    }
+    return false;
   }
-  return false;
+  return visit(value,0,0);
 }
 
 export type TwinProofTrail = {

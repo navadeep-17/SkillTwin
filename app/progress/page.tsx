@@ -84,6 +84,7 @@ export default async function ProgressPage() {
         <p className="mt-3 text-[15px] leading-7 text-slate-600">
           SkillTwin keeps learning activity separate from validated capability. Time spent is useful context, but only accepted evidence changes your learner state.
         </p>
+        <Link href="/passport" className="btn-secondary mt-4">View my Career Evidence Passport <ArrowRight className="size-4" /></Link>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

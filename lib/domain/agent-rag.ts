@@ -76,8 +76,8 @@ export function renderProjectRagResult(
 
 /** Route explicit code-search questions only; never hijack skill, plan or readiness questions. */
 export function shouldRetrieveProjectCode(question:string):boolean {
-  const text=question.toLowerCase().replace(/\\s+/g," ").trim();
-  if(!/\\b(project|repo|repository|github|codebase)\\b/.test(text))return false;
-  if(/\\b(readiness|career|confidence|score|assessment|roadmap|learning plan|skill gap|progress)\\b/.test(text))return false;
-  return /\\b(code|source|file|files|function|functions|implement|implemented|implementation|algorithm|logic|pipeline|architecture|auth|authentication|design|security|bug|review)\\b/.test(text);
+  const text=question.toLowerCase().replace(/\s+/g," ").trim();
+  if(!/\b(project|repo|repository|github|codebase)\b/.test(text))return false;
+  if(/\b(readiness|career|confidence|score|assessment|roadmap|learning plan|skill gap|progress)\b/.test(text))return false;
+  return /\b(code|source|file|files|function|functions|implement|implemented|implementation|algorithm|logic|pipeline|architecture|auth|authentication|design|security|bug|review)\b/.test(text);
 }

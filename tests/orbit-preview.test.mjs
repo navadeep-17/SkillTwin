@@ -333,3 +333,32 @@ test("Orbit default navigation and authentication follow SERVER rollout state, n
   assert.ok(orbitNav.includes('href="/overview?classic=1"'),
     "The explicit classic-view fallback must not loop back to Orbit");
 });
+
+
+test("Orbit secondary features remain authenticated, use a shared shell and preserve classic fallback",()=>{
+  const bridge=read("components/orbit/orbit-secondary-workspace.tsx");
+  const bridgeCss=read("components/orbit/orbit-secondary-workspace.css");
+  const chrome=read("components/shell/orbit-aware-chrome.tsx");
+  const nav=read("components/orbit/orbit-preview-nav.tsx");
+  const fixture=read("app/orbit-lab/workspaces-demo/page.tsx");
+  const qa=read("scripts/orbit-visual-qa.mjs");
+  for(const feature of [
+    "/certifications/journey","/certifications","/projects","/project-defense",
+    "/passport","/journey","/activity","/progress","/occupations","/settings","/practice"
+  ]){
+    assert.ok(bridge.includes('path:"'+feature+'"'),"Missing shared Orbit workspace "+feature);
+  }
+  assert.ok(bridge.includes("findOrbitSecondaryWorkspace"));
+  assert.ok(bridge.includes("<OrbitPreviewNav/>"));
+  assert.ok(bridge.includes("{children}"),"Existing functional forms must remain rendered");
+  assert.ok(chrome.includes("signedIn && orbitDefault && findOrbitSecondaryWorkspace(pathname)"),
+    "Do not wrap anonymous or flag-disabled users");
+  assert.ok(chrome.includes("<OrbitSecondaryWorkspace pathname={pathname}>"));
+  assert.ok(bridgeCss.includes("prefers-reduced-motion"));
+  assert.ok(bridgeCss.includes(".osw-content"),"Preserve readable native legacy forms in accessible island");
+  assert.ok(nav.includes('href="/project-defense"') && nav.includes('href="/passport"'));
+  assert.ok(nav.includes('href="/activity"') && nav.includes('href="/settings"'));
+  assert.ok(nav.includes('href="/overview?classic=1"'));
+  assert.ok(fixture.includes("Fictional demonstration"));
+  assert.ok(qa.includes('"/orbit-lab/workspaces-demo"'));
+});

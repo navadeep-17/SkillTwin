@@ -270,3 +270,54 @@ test("planner marks movable learning work flexible while validation remains fixe
   assert.ok(tasks.some(task => task.type === "BUILD" && task.flexible));
   assert.ok(tasks.some(task => task.type === "VALIDATE" && task.flexible === false));
 });
+
+
+import { compareCareerRequirements } from "../dist/lib/domain/career-transferability.js";
+
+const transferReq = (id, name, documented = false, groupType = "SINGLE") => ({
+  skillId: id, name, documented, groupType, groupName: groupType === "ANY_OF" ? "Choose one technology" : "Core skills"
+});
+
+test("cross-career comparison reports canonical skill overlap rather than a fit score", () => {
+  const result = compareCareerRequirements(
+    [transferReq("python", "Python", true), transferReq("sql", "SQL")],
+    [transferReq("sql", "SQL"), transferReq("design", "Design")]
+  );
+  assert.deepEqual(result.shared.map(row => row.skillId), ["sql"]);
+  assert.deepEqual(result.leftOnly.map(row => row.skillId), ["python"]);
+  assert.deepEqual(result.rightOnly.map(row => row.skillId), ["design"]);
+  assert.equal(result.recordedSharedCount, 0);
+  assert.equal(Object.prototype.hasOwnProperty.call(result, "readiness"), false);
+});
+
+test("cross-career comparison records existing skill evidence without inventing proficiency", () => {
+  const result = compareCareerRequirements(
+    [transferReq("sql", "SQL", true)],
+    [transferReq("sql", "SQL", true)]
+  );
+  assert.equal(result.shared[0].documented, true);
+  assert.equal(result.recordedSharedCount, 1);
+  assert.equal(result.shared[0].name, "SQL");
+});
+
+test("cross-career comparison deduplicates skills and retains alternative-path labels", () => {
+  const result = compareCareerRequirements(
+    [transferReq("python", "Python", false, "ANY_OF"), transferReq("python", "Python", true, "ANY_OF"), transferReq("sql", "SQL")],
+    [transferReq("python", "Python"), transferReq("java", "Java")]
+  );
+  assert.equal(result.leftCount, 2);
+  assert.equal(result.rightCount, 2);
+  assert.equal(result.shared.length, 1);
+  assert.equal(result.shared[0].leftGroupType, "ANY_OF");
+  assert.equal(result.shared[0].documented, true);
+  assert.equal(result.recordedSharedCount, 1);
+});
+
+test("cross-career comparison preserves unknown as unrecorded and handles empty roles", () => {
+  const result = compareCareerRequirements([], [transferReq("nursing", "Nursing")]);
+  assert.equal(result.shared.length, 0);
+  assert.equal(result.recordedSharedCount, 0);
+  assert.equal(result.rightOnly[0].documented, false);
+  assert.equal(result.leftCount, 0);
+  assert.equal(result.rightCount, 1);
+});

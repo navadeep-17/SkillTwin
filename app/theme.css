@@ -156,3 +156,23 @@ html[data-theme="light"] .orbit-lab .orbit-live-graph .orbit-live-node-option st
  .orbit-preview-actions{gap:5px}
  .orbit-preview-nav-wrap>.orbit-preview-build{padding:9px 7px;font-size:10px}
 }
+
+/* Authentication and assistant use the same preference, without changing auth flows. */
+html[data-theme="light"] .orbit-auth-root{background:radial-gradient(820px 460px at 75% 0,rgba(118,103,212,.1),transparent 73%),#f6f8fc!important;color:#1b2842!important}
+html[data-theme="light"] .orbit-auth-root>div{background:#fff!important;border-color:#d9dfeb!important;box-shadow:0 20px 55px rgba(29,42,72,.08)!important}
+html[data-theme="light"] .orbit-auth-root>div>section:last-child{background:#fff!important;color:#17243d!important}
+html[data-theme="light"] .orbit-auth-root>div>section:last-child :is([class~="text-slate-950"],[class~="text-slate-900"],[class~="text-slate-800"]){color:#17243d!important}
+html[data-theme="light"] .orbit-auth-root>div>section:last-child :is([class~="text-slate-700"],[class~="text-slate-600"],[class~="text-slate-500"]){color:#5a6a80!important}
+html[data-theme="light"] .orbit-auth-root :is(input:not([type="checkbox"]),textarea,select){background:#fff!important;color:#17243d!important;border-color:#c8d1df!important}
+html[data-theme="light"] .orbit-auth-root [class~="bg-brand-50"]{background:#edeaff!important}
+html[data-theme="light"] .orbit-auth-root .quiet-link{color:#5547b3!important}
+html[data-theme="light"] .orbit-dock-dialog aside[role="dialog"]{background:#f7f9fc!important;color:#17243d!important;border-color:#d9dfeb!important}
+html[data-theme="light"] .orbit-dock-dialog :is([class~="bg-white"],[class~="bg-slate-50"],[class~="surface-card"]){background:#fff!important;border-color:#d9dfeb!important}
+html[data-theme="light"] .orbit-dock-dialog :is([class~="text-slate-950"],[class~="text-slate-900"],[class~="text-slate-800"]){color:#17243d!important}
+html[data-theme="light"] .orbit-dock-dialog :is([class~="text-slate-700"],[class~="text-slate-600"],[class~="text-slate-500"],[class~="text-slate-400"]){color:#566680!important}
+html[data-theme="light"] .orbit-dock-dialog :is(textarea,input,select){background:#fff!important;color:#17243d!important;border-color:#bfcbdc!important}
+html[data-theme="light"] .orbit-dock-dialog .btn-secondary{color:#243252!important;background:#eef1f8!important;border-color:#d1d8e7!important}
+html[data-theme="light"] .orbit-dock-toolbar button:first-child{background:#fff!important;color:#5546b6!important;border-color:#d7dcef!important}
+html[data-theme="light"] .oh-site :is(.oh-hero-copy h1 em,.oh-section-top h2 em,.oh-proof-copy h2 em,.oh-bottom-cta h2 em,.oh-eyebrow,.oh-section-kicker,.oh-mini-eyebrow){color:#5846b6!important}
+html[data-theme="light"] .oh-site .oh-showcase-after{background:#eefbf6!important;border-color:#9bdac4!important}
+html[data-theme="light"] .oh-site .oh-showcase-after :is(span,small){color:#286a58!important}

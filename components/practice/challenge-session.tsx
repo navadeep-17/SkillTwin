@@ -47,6 +47,11 @@ type CompletionResult = {
   } | null;
   replan?: {
     changed?: boolean;
+    decision?: {
+      reason?: string;
+      reason_code?: string;
+      reasonCode?: string;
+    };
     diff?: {
       diffId?: string;
       fromVersion?: number;
@@ -307,6 +312,25 @@ export function ChallengeSession({ assessmentId }: { assessmentId: string }) {
                   See what changed <ArrowRight className="size-4" />
                 </Link>
               ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        {completion.replan && !completion.replan.changed && !replanPending ? (
+          <div className="surface-card border-slate-200 p-5 sm:p-6" role="status">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-brand-600" />
+              <div>
+                <h2 className="font-semibold text-slate-900">Why your roadmap stayed the same</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {completion.replan.decision?.reason?.trim()
+                    || "This assessment did not require a safe change to future learning tasks. Your new evidence remains recorded even when the plan stays unchanged."}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  SkillTwin changes the future plan only when the evidence justifies a valid, safe adjustment.
+                  An unchanged plan is an explicit result, not an assessment failure.
+                </p>
+              </div>
             </div>
           </div>
         ) : null}

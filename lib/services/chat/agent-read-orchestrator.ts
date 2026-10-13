@@ -111,7 +111,7 @@ export class AgentReadOrchestrator {
         content:rag.content,
         refs:rag.refs.map(r=>({type:"profile_project" as const,id:r.id,label:r.label})),
         evidenceRefs:[] as string[],action:null,
-        meta:{generator:"source-rag-fallback-v1" as const,readTools:[] as AgentReadTool[]}
+        meta:{generator:rag.meta.generator,readTools:[] as AgentReadTool[]}
       };
     }
     const plan=await chooseReadTools(input.message,input.intent);

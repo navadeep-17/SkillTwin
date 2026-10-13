@@ -4,6 +4,7 @@ import { classifyJourneyIntent, findMentionedSkill, type JourneyIntent } from "@
 import { buildTwinProofTrail } from "@/lib/domain/twin-challenge";
 import { isMutatingJourneyIntent, type AgentReadIntent } from "@/lib/domain/agent-read-plan";
 import { getAgentReadOrchestrator } from "@/lib/services/chat/agent-read-orchestrator";
+import { firstChatTitle, hydrateChatMessages, pendingChatAction } from "@/lib/domain/agent-thread-history";
 
 type Row = Record<string, unknown>;
 
@@ -57,6 +58,10 @@ export class JourneyChatService {
       [threadId, input.userId, input.message, intent]
     ));
     const userMessageId = String(userMessageRows[0].id);
+    await sql.unsafe(
+      "update public.journey_chat_threads set title=$3 where id=$1::uuid and user_id=$2::uuid and title='SkillTwin journey'",
+      [threadId,input.userId,firstChatTitle(input.message)]
+    );
 
     const context = await this.context(input.userId, input.message);
     // Model selection only applies to read-only requests. Every mutation still
@@ -154,7 +159,7 @@ export class JourneyChatService {
     if (!threadRows[0]) throw new Error("CHAT_THREAD_NOT_FOUND");
 
     const messages = rows(await sql.unsafe(
-      "select id,role,content,intent,entity_refs,evidence_refs,metadata,created_at from public.journey_chat_messages where thread_id=$1::uuid and user_id=$2::uuid order by created_at,id",
+      "select * from (select id,role,content,intent,entity_refs,evidence_refs,metadata,created_at from public.journey_chat_messages where thread_id=$1::uuid and user_id=$2::uuid order by created_at desc,id desc limit 80) recent order by created_at,id",
       [threadId, userId]
     ));
 
@@ -170,6 +175,8 @@ export class JourneyChatService {
         updatedAt: new Date(String(threadRows[0].updated_at)).toISOString()
       },
       messages,
+      hydratedMessages: hydrateChatMessages(messages),
+      pendingAction: pendingChatAction(proposals,Date.now()),
       actionProposals: proposals
     };
   }

@@ -3,6 +3,8 @@ import {redirect} from "next/navigation";
 import {createClient} from "@/lib/supabase/server";
 import {CertificationJourneyTracker} from "@/components/certifications/certification-journey-tracker";
 import type {CertificationJourney} from "@/lib/domain/certification-journey";
+import {buildCertificationPreparationPlan,type PreparationPlan} from "@/lib/domain/certification-preparation";
+import {getCertificationRecommendations} from "@/lib/services/certifications/certification-service";
 
 export const metadata:Metadata={
   title:"My Certification Journey",
@@ -18,5 +20,13 @@ export default async function MyCertificationJourneyPage(){
     .select("id,certification_id,status,completed_topics,target_exam_date,earned_date,credential_url,version,updated_at")
     .eq("user_id",auth.user.id).order("updated_at",{ascending:false}).limit(80);
   if(error)throw error;
-  return <CertificationJourneyTracker initialGoals={(data??[]) as CertificationJourney[]}/>;
+  const goals=(data??[]) as CertificationJourney[];
+  const recommendations=await getCertificationRecommendations(supabase,auth.user.id);
+  const byId=new Map(recommendations.matches.map(match=>[match.certification.id,match]));
+  const preparationPlans:Record<string,PreparationPlan>={};
+  for(const goal of goals){
+    const plan=buildCertificationPreparationPlan(goal,byId.get(goal.certification_id));
+    if(plan)preparationPlans[goal.certification_id]=plan;
+  }
+  return <CertificationJourneyTracker initialGoals={goals} preparationPlans={preparationPlans}/>;
 }

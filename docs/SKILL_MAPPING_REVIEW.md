@@ -4,7 +4,7 @@
 
 The selected O*NET 2026 occupational snapshot contains nine occupations with seven Essential and five Transferable skill entries each. Duplicate source labels are reviewed **once per source-group and normalized label**, but retain every occupation of occurrence and official O*NET URL.
 
-SkillTwin's active canonical catalog snapshot includes **36 active skills**, read from the production `public.skills` table on 2026-10-13. The static snapshots are versioned so review approvals cannot silently drift when the taxonomy or source data changes.
+SkillTwin's original canonical catalog (v1) included **36 active skills**. Taxonomy v2 adds 17 cross-domain definitions for **53 skills**; see `docs/CROSS_DOMAIN_TAXONOMY_V2.md`. The v1 snapshot and decisions are retained for audit, while current review actions use `canonical-skill-snapshot-v2.json` and `review-decisions-v2.json`. The new ledger starts with zero approved mappings. Static snapshots prevent silent drift when source or canonical skills change.
 
 ## Process
 

@@ -1,0 +1,181 @@
+{
+  "extensionId": "skilltwin-cross-domain-2026-10-13-v2",
+  "baseSnapshotId": "skilltwin-canonical-2026-10-13-v1",
+  "targetSnapshotId": "skilltwin-canonical-2026-10-13-v2",
+  "sourceOccupationSnapshotId": "onet-online-curated-2026-10-13-v1",
+  "status": "CURATED_TAXONOMY_ONLY",
+  "modelNotice": "Names are drawn from source occupational skill labels; SkillTwin-authored descriptions are not assessments or approval of semantic equivalence, ability, role requirements or licensing.",
+  "reviewDecisionPolicy": "Mapping equivalences require a separate GitHub-reviewed decision manifest.",
+  "skills": [
+    {
+      "slug": "active-listening",
+      "name": "Active Listening",
+      "category": "Communication",
+      "description": "Attentively interpreting another person's spoken message, confirming understanding and responding appropriately.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Active Listening",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "critical-thinking",
+      "name": "Critical Thinking",
+      "category": "Reasoning",
+      "description": "Evaluating claims, assumptions and available evidence to reach a reasoned conclusion.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Critical Thinking",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "speaking",
+      "name": "Speaking",
+      "category": "Communication",
+      "description": "Communicating information and ideas orally with clarity and attention to the audience.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Speaking",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "reading-comprehension",
+      "name": "Reading Comprehension",
+      "category": "Communication",
+      "description": "Understanding and interpreting written instructions, documents and arguments.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Reading Comprehension",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "monitoring",
+      "name": "Monitoring",
+      "category": "Reasoning",
+      "description": "Tracking progress or changing conditions against criteria and recognizing when corrective action is needed.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Monitoring",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "writing",
+      "name": "Writing",
+      "category": "Communication",
+      "description": "Expressing ideas clearly in written form for a defined audience and purpose.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Writing",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "active-learning",
+      "name": "Active Learning",
+      "category": "Learning",
+      "description": "Applying newly acquired information and feedback to solve unfamiliar problems and update one's approach.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Active Learning",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "social-perceptiveness",
+      "name": "Social Perceptiveness",
+      "category": "Interpersonal",
+      "description": "Noticing relevant social cues and considering how others may interpret an interaction.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Social Perceptiveness",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "coordination",
+      "name": "Coordination",
+      "category": "Interpersonal",
+      "description": "Adjusting one's work and timing in relation to other people's actions to achieve a shared objective.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Coordination",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "service-orientation",
+      "name": "Service Orientation",
+      "category": "Interpersonal",
+      "description": "Recognizing a person's needs and responding in a helpful, appropriate and respectful way.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Service Orientation",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "judgment-decision-making",
+      "name": "Judgment and Decision Making",
+      "category": "Reasoning",
+      "description": "Comparing alternatives, trade-offs and possible consequences before making a decision.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Judgment and Decision Making",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "complex-problem-solving",
+      "name": "Complex Problem Solving",
+      "category": "Reasoning",
+      "description": "Defining complex problems, considering constraints and evaluating potential solutions.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Complex Problem Solving",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "learning-strategies",
+      "name": "Learning Strategies",
+      "category": "Learning",
+      "description": "Selecting and adapting methods that make instruction, study or practice more effective.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Learning Strategies",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "instructing",
+      "name": "Instructing",
+      "category": "Education",
+      "description": "Explaining and demonstrating concepts or procedures and checking another person's understanding.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Instructing",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "time-management",
+      "name": "Time Management",
+      "category": "Self Management",
+      "description": "Prioritizing work and allocating limited time to meet goals and deadlines.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Time Management",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "mathematics",
+      "name": "Mathematics",
+      "category": "Quantitative",
+      "description": "Applying mathematical principles and quantitative reasoning to solve appropriate problems.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Mathematics",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    },
+    {
+      "slug": "persuasion",
+      "name": "Persuasion",
+      "category": "Interpersonal",
+      "description": "Presenting reasons and evidence to influence a decision ethically while respecting the other person's agency.",
+      "taxonomyVersion": 2,
+      "sourceSkillName": "Persuasion",
+      "assessmentStatus": "UNASSESSED",
+      "mappingStatus": "NOT_REVIEWED"
+    }
+  ]
+}

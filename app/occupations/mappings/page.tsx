@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import occupationSnapshot from "@/data/occupations/onet-online-curated-2026-10-13-v1.json";
-import canonicalSnapshot from "@/data/occupation-mappings/canonical-skill-snapshot-v1.json";
-import reviewManifest from "@/data/occupation-mappings/review-decisions-v1.json";
+import canonicalSnapshot from "@/data/occupation-mappings/canonical-skill-snapshot-v2.json";
+import reviewManifest from "@/data/occupation-mappings/review-decisions-v2.json";
 import { buildMappingReviewQueue, validateMappingReviewManifest } from "@/lib/domain/occupation-mapping";
 import { MappingReviewQueue } from "@/components/occupations/mapping-review-queue";
 
@@ -26,7 +26,7 @@ export default async function OccupationMappingStatusPage() {
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Occupational skill mapping review</h1>
         <p className="mt-3 text-sm leading-7 text-slate-600">
           Every O*NET skill must be reviewed before SkillTwin may link it to its own canonical skill taxonomy.
-          Similar wording is not proof of equal competency. This page reports the reviewed ledger; it does not grant review permissions.
+          Similar wording is not proof of equal competency. The catalog now includes {canonicalSnapshot.skills.length} skills across software and other career domains; no new mappings are automatically approved. This page reports the reviewed ledger; it does not grant review permissions.
         </p>
       </header>
       <MappingReviewQueue queue={queue} catalogSkills={canonicalSnapshot.skills} />

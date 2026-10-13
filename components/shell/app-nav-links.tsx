@@ -46,6 +46,7 @@ const primaryLinks: NavLink[] = process.env.NEXT_PUBLIC_SKILLTWIN_ORBIT_DEFAULT 
     ];
 
 const secondaryLinks: NavLink[] = [
+  { href: "/orbit-beta", label: "Try SkillTwin Orbit", icon: Sparkles },
   { href: "/challenge-my-twin", label: "Challenge My Twin", icon: Fingerprint },
   { href: "/discover", label: "Explore Careers", icon: Compass },
   { href: "/occupations", label: "Occupation Atlas", icon: BookOpenText },

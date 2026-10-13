@@ -181,7 +181,8 @@ export function selectSavedCodeProject(
     const explicitlySaved=projects.filter(p=>explicit.includes(p.repository.toLowerCase()));
     if(explicitlySaved.length===1 && explicit.every(name=>name===explicitlySaved[0].repository.toLowerCase()))
       return {status:"SELECTED",project:explicitlySaved[0]};
-    return {status:explicitlySaved.length?"AMBIGUOUS":"UNSAVED",titles:projects.slice(0,8).map(p=>p.title)};
+    if(explicitlySaved.length)return {status:"AMBIGUOUS",titles:projects.slice(0,8).map(p=>p.title)};
+    return {status:"UNSAVED"};
   }
   if(projects.length===1)return {status:"SELECTED",project:projects[0]};
   const exact=projects.filter(project=>{

@@ -1,0 +1,42 @@
+/* Orbit's integrated feature workspaces retain the canonical legacy forms.
+   The surrounding layout is dark; the embedded tools are intentionally light
+   until their internals receive individual accessible theme passes. */
+.orbit-secondary-workspace{min-height:100vh;background:
+  radial-gradient(800px 440px at 70% -110px,rgba(127,95,249,.16),transparent 78%),
+  radial-gradient(420px 340px at 0% 80%,rgba(43,196,175,.07),transparent 80%),#0b1020;
+  color:#f4f7ff;overflow-x:clip;overflow-y:visible}
+.osw-container{max-width:1410px;margin:0 auto;padding:18px 26px 45px}
+.osw-breadcrumb{display:flex;align-items:center;gap:10px;padding:17px 9px;color:#8298bc;font-size:11px;font-weight:680}
+.osw-breadcrumb a{display:flex;align-items:center;gap:8px;color:#bcb2ef;text-decoration:none;transition:color .2s}
+.osw-breadcrumb a:hover{color:#eee9ff}.osw-breadcrumb>span:last-child{color:#c1cce0}
+.osw-header{display:flex;align-items:center;justify-content:space-between;gap:22px;position:relative;isolation:isolate;overflow:hidden;padding:33px 34px;min-height:183px;border-radius:19px;
+  background:linear-gradient(115deg,#262a50 0%,#1b2542 62%,#1a273e 100%);border:1px solid rgba(172,158,248,.25)}
+.osw-header:after{content:"";position:absolute;right:-70px;top:-130px;width:430px;height:370px;background:radial-gradient(circle,rgba(148,121,255,.17),transparent 72%);z-index:-1}
+.osw-header-copy{max-width:810px;position:relative;z-index:1}.osw-eyebrow{display:flex;align-items:center;gap:9px;font-size:10px;font-weight:800;letter-spacing:1.5px;color:#b8a7ff;text-transform:uppercase}
+.osw-header h1{font-size:clamp(29px,4vw,47px);letter-spacing:-.065em;font-weight:800;line-height:1.16;margin:13px 0 9px;color:#f9f8ff}
+.osw-header .osw-star{font-size:18px;vertical-align:top;display:inline-block;margin:2px 0 0 13px;color:#72e8ce;animation:osw-twinkle 4s ease-in-out infinite}
+.osw-header p{font-size:13px;color:#adbfdb;line-height:1.65;max-width:680px}
+.osw-header-mark{width:91px;height:91px;flex-shrink:0;display:grid;place-items:center;border-radius:26px;border:1px solid rgba(202,185,255,.4);background:linear-gradient(130deg,rgba(154,119,245,.31),rgba(70,59,143,.2));box-shadow:0 0 48px rgba(129,104,229,.13);color:#d3c7ff;transform:rotate(-9deg)}
+.osw-quick-nav{display:flex;align-items:center;gap:9px;margin:19px 0 14px;padding:4px 0 9px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#6b6797 transparent}
+.osw-quick-nav a{display:inline-flex;align-items:center;justify-content:center;gap:9px;white-space:nowrap;padding:10px 13px;border-radius:11px;border:1px solid rgba(182,186,228,.18);background:#1a253f;color:#b9c5df;font-size:11px;font-weight:710;text-decoration:none;transition:border-color .18s,background .18s}
+.osw-quick-nav a:hover,.osw-quick-nav a.is-current{border-color:rgba(178,158,255,.62);background:#342d5b;color:#f0ebff}
+.osw-quick-nav a svg{color:#b6a4ff}.osw-quick-nav a.is-current svg{color:#77ead0}
+.osw-source-note{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 2px 15px;color:#95aac5;font-size:11px}
+.osw-source-note span,.osw-source-note a{display:inline-flex;align-items:center;gap:8px}
+.osw-source-note span svg{color:#73e6cc}.osw-source-note a{color:#c8baff;text-decoration:none;font-weight:760}
+.osw-content{min-height:390px;position:relative;isolation:isolate;overflow:clip;border:1px solid rgba(186,196,227,.32);border-radius:19px;background:
+  radial-gradient(850px 290px at 48% -210px,rgba(113,117,245,.07),transparent 80%),#f8f9fc;
+  color:#0f172a;box-shadow:0 23px 62px rgba(0,0,0,.22)}
+/* These pages already include their own semantic headings and padding.
+   The light surface preserves readable forms and source details. */
+.osw-content>main{max-width:100%;margin:auto}
+.osw-content .surface-card{background:#fff}
+.osw-content :is(input,textarea,select){color-scheme:light}
+.osw-content :is(input,textarea,select):focus-visible{outline:2px solid #635bea;outline-offset:2px}
+.osw-content button:focus-visible,.osw-content a:focus-visible{outline:2px solid #635bea;outline-offset:2px}
+.osw-footer{padding:23px 8px 4px;display:flex;align-items:center;justify-content:space-between;gap:16px;color:#91a1bd;font-size:11px}
+.osw-footer a{display:inline-flex;align-items:center;gap:8px;color:#c9bcff;font-weight:740;text-decoration:none}
+@keyframes osw-twinkle{50%{opacity:.42;transform:scale(.72)}}
+@media(max-width:870px){.osw-container{padding:12px 16px 35px}.osw-header{padding:27px}.osw-header-mark{width:66px;height:66px}.osw-content{border-radius:15px}}
+@media(max-width:580px){.osw-container{padding:7px 10px 26px}.osw-breadcrumb{padding:13px 4px}.osw-header{padding:23px 18px;min-height:160px;border-radius:16px}.osw-header h1{font-size:34px}.osw-header p{font-size:12px}.osw-header-mark{display:none}.osw-quick-nav{margin-top:13px}.osw-source-note{align-items:flex-start;flex-direction:column;margin:12px 4px 15px}.osw-content{border-radius:13px}.osw-footer{flex-wrap:wrap;font-size:10px}}
+@media(prefers-reduced-motion:reduce){.osw-header .osw-star{animation:none}.osw-quick-nav a,.osw-breadcrumb a{transition:none}}

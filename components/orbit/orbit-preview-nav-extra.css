@@ -11,3 +11,10 @@
 .orbit-preview-menu>button:hover{background:#45365c;color:#fff}
 .orbit-preview-menu a:focus-visible,.orbit-preview-more summary:focus-visible{outline:2px solid #52E7C7;outline-offset:2px}
 @media(max-width:750px){.orbit-preview-actions{order:2;margin-left:auto}.orbit-preview-menu{right:0}.orbit-preview-nav-wrap>.orbit-preview-build{order:2;margin-left:0}}
+
+/* Keep the expanded More menu usable on short laptop and mobile viewports. */
+.orbit-preview-menu{max-height:min(74vh,650px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#65628b transparent}
+.orbit-preview-menu-heading{display:block;margin:10px 8px 2px;padding:5px 5px 7px;border-bottom:1px solid rgba(177,173,245,.13);font-size:9px;font-weight:850;letter-spacing:1.2px;color:#928eb8}
+.orbit-preview-menu a[aria-current="page"]{color:#fff;background:#403767}
+.orbit-preview-menu a:focus-visible,.orbit-preview-menu button:focus-visible{outline:2px solid #65e7ce;outline-offset:2px}
+@media(max-width:460px){.orbit-preview-menu{min-width:min(255px,86vw);right:0}}

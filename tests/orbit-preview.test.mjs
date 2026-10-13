@@ -333,3 +333,84 @@ test("Orbit default navigation and authentication follow SERVER rollout state, n
   assert.ok(orbitNav.includes('href="/overview?classic=1"'),
     "The explicit classic-view fallback must not loop back to Orbit");
 });
+
+
+test("Orbit secondary features remain authenticated, use a shared shell and preserve classic fallback",()=>{
+  const bridge=read("components/orbit/orbit-secondary-workspace.tsx");
+  const bridgeCss=read("components/orbit/orbit-secondary-workspace.css");
+  const chrome=read("components/shell/orbit-aware-chrome.tsx");
+  const nav=read("components/orbit/orbit-preview-nav.tsx");
+  const fixture=read("app/orbit-lab/workspaces-demo/page.tsx");
+  const qa=read("scripts/orbit-visual-qa.mjs");
+  for(const feature of [
+    "/certifications/journey","/certifications","/projects","/project-defense",
+    "/passport","/journey","/activity","/progress","/occupations","/settings","/practice"
+  ]){
+    assert.ok(bridge.includes('path:"'+feature+'"'),"Missing shared Orbit workspace "+feature);
+  }
+  assert.ok(bridge.includes("findOrbitSecondaryWorkspace"));
+  assert.ok(bridge.includes("<OrbitPreviewNav/>"));
+  assert.ok(bridge.includes("{children}"),"Existing functional forms must remain rendered");
+  assert.ok(chrome.includes("signedIn && orbitDefault && findOrbitSecondaryWorkspace(pathname)"),
+    "Do not wrap anonymous or flag-disabled users");
+  assert.ok(chrome.includes("<OrbitSecondaryWorkspace pathname={pathname}>"));
+  assert.ok(bridgeCss.includes("prefers-reduced-motion"));
+  assert.ok(bridgeCss.includes(".osw-content"),"Preserve readable native legacy forms in accessible island");
+  assert.ok(nav.includes('href="/project-defense"') && nav.includes('href="/passport"'));
+  assert.ok(nav.includes('href="/orbit-activity"') && nav.includes('href="/orbit-settings"'));
+  assert.ok(nav.includes('href="/overview?classic=1"'));
+  assert.ok(fixture.includes("Fictional demonstration"));
+  assert.ok(qa.includes('"/orbit-lab/workspaces-demo"'));
+});
+
+
+test("Native Orbit Agent Activity is authenticated, read-only, and uses persisted events",()=>{
+  const page=read("app/orbit-activity/page.tsx");
+  const ui=read("app/orbit-activity/orbit-agent-activity.tsx");
+  const css=read("app/orbit-activity/orbit-activity.css");
+  const middleware=read("middleware.ts");
+  const menu=read("components/orbit/orbit-preview-nav.tsx");
+  const sample=read("app/orbit-lab/activity-demo/page.tsx");
+  const qa=read("scripts/orbit-visual-qa.mjs");
+  assert.ok(middleware.includes('"/orbit-activity"'));
+  assert.ok(page.includes("supabase.auth.getUser()"));
+  assert.ok(page.includes('from("agent_events")'));
+  assert.ok(page.includes('.eq("user_id",auth.user.id)'));
+  assert.ok(page.includes(".limit(60)"));
+  assert.ok(!page.includes(".insert(") && !page.includes(".update(") && !page.includes(".delete("));
+  assert.ok(page.includes("evidenceCount:") && page.includes("entityCount:"));
+  assert.ok(!page.includes('entity_refs,evidence_refs,metadata') && !page.includes("raw_messages"),
+    "Agent Activity must not select raw event metadata or conversation content");
+  assert.ok(menu.includes('href="/orbit-activity"'));
+  assert.ok(ui.includes("aria-pressed={kind===item.id}"));
+  assert.ok(ui.includes('timeZone:"UTC"'));
+  assert.ok(ui.includes("Category labels are UI-only groupings"));
+  assert.ok(css.includes("prefers-reduced-motion"));
+  assert.ok(sample.includes("Fictional activity"));
+  assert.ok(qa.includes('"/orbit-lab/activity-demo"'));
+});
+
+
+test("Native Orbit Settings uses current persisted preferences and original secure save API",()=>{
+  const page=read("app/orbit-settings/page.tsx");
+  const form=read("components/settings/learning-settings-form.tsx");
+  const css=read("app/orbit-settings/orbit-settings.css");
+  const middleware=read("middleware.ts");
+  const nav=read("components/orbit/orbit-preview-nav.tsx");
+  const demo=read("app/orbit-lab/settings-demo/page.tsx");
+  const qa=read("scripts/orbit-visual-qa.mjs");
+  assert.ok(middleware.includes('"/orbit-settings"'));
+  assert.ok(page.includes("supabase.auth.getUser()"));
+  assert.ok(page.includes('from("user_learning_settings")'));
+  assert.ok(page.includes('.eq("user_id",auth.user.id)'));
+  assert.ok(page.includes("<LearningSettingsForm initial={preferences} orbit/>"));
+  assert.ok(form.includes('fetch("/api/settings"'));
+  assert.ok(form.includes("if (pending || demoOnly) return;"));
+  assert.ok(form.includes("disabled={pending || demoOnly}"));
+  assert.ok(!page.includes(".insert(") && !page.includes(".update("));
+  assert.ok(nav.includes('href="/orbit-settings"'));
+  assert.ok(css.includes(".os-native-settings"));
+  assert.ok(css.includes("prefers-reduced-motion"));
+  assert.ok(demo.includes("orbit demoOnly"));
+  assert.ok(qa.includes('"/orbit-lab/settings-demo"'));
+});

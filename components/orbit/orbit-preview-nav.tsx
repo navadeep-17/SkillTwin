@@ -3,7 +3,7 @@
 import Link from "next/link";
 import "./orbit-preview-nav-extra.css";
 import { usePathname } from "next/navigation";
-import { BrainCircuit, Compass, Fingerprint, House, Route, Sparkles, ChevronDown, Award, MessageSquareText, Settings2, ArrowLeft } from "lucide-react";
+import { BrainCircuit, Compass, Fingerprint, House, Route, Sparkles, ChevronDown, Award, MessageSquareText, Settings2, ArrowLeft, FolderKanban, FileCode2, ScrollText, Activity, TrendingUp, BookOpenText, Beaker } from "lucide-react";
 import { LogoutButton } from "@/components/auth/logout-button";
 
 const items = [
@@ -41,10 +41,20 @@ export function OrbitPreviewNav() {
         <details className="orbit-preview-more">
           <summary>More <ChevronDown size={14} aria-hidden="true"/></summary>
           <div className="orbit-preview-menu">
+            <span className="orbit-preview-menu-heading">GROW & VALIDATE</span>
+            <Link href="/projects"><FolderKanban size={16}/> My Projects</Link>
+            <Link href="/project-defense"><FileCode2 size={16}/> Project Defense</Link>
+            <Link href="/passport"><ScrollText size={16}/> Evidence Passport</Link>
+            <Link href="/practice"><Beaker size={16}/> Practice Hub</Link>
+            <Link href="/progress"><TrendingUp size={16}/> Progress & Reports</Link>
+            <span className="orbit-preview-menu-heading">EXPLORE & PREPARE</span>
             <Link href="/certifications"><Award size={16}/> Certifications</Link>
-            <Link href="/certifications/journey"><Award size={16}/> My certification journey</Link>
+            <Link href="/certifications/journey"><Award size={16}/> My Certification Journey</Link>
+            <Link href="/occupations"><BookOpenText size={16}/> Occupation Atlas</Link>
+            <span className="orbit-preview-menu-heading">YOUR AGENT & ACCOUNT</span>
             <Link href="/journey"><MessageSquareText size={16}/> Ask SkillTwin</Link>
-            <Link href="/settings"><Settings2 size={16}/> Settings</Link>
+            <Link href="/orbit-activity"><Activity size={16}/> Agent Activity</Link>
+            <Link href="/orbit-settings"><Settings2 size={16}/> Settings</Link>
             <Link href="/overview?classic=1"><ArrowLeft size={16}/> Classic interface</Link>
             <LogoutButton/>
           </div>

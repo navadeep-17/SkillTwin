@@ -36,6 +36,53 @@ try {
     assert.ok(homeOverflow <= 2, v.name + " default landing overflows horizontally: "+homeOverflow);
     await page.screenshot({path:out+"/"+v.name+"-production-landing.png",fullPage:true,animations:"disabled"});
 
+    const secondaryResponse = await page.goto(base + "/orbit-lab/workspaces-demo", {waitUntil:"networkidle",timeout:45000});
+    assert.equal(secondaryResponse?.status(),200,"Secondary-workspace preview must render");
+    await page.locator(".osw-header h1").getByText("Certifications").waitFor();
+    await page.getByText(/Fictional demonstration/).waitFor();
+    await page.locator(".osw-quick-nav").getByRole("link",{name:/Project Defense/}).waitFor();
+    await page.locator(".orbit-preview-more summary").click();
+    await page.getByRole("link",{name:"Evidence Passport",exact:true}).waitFor();
+    await page.getByRole("link",{name:"Agent Activity",exact:true}).waitFor();
+    await page.getByRole("link",{name:"My Certification Journey",exact:true}).waitFor();
+    await page.screenshot({path:out+"/"+v.name+"-connected-workspace.png",fullPage:true,animations:"disabled"});
+    const bridgedOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    assert.ok(bridgedOverflow<=2,v.name+" feature workspace overflows horizontally: "+bridgedOverflow);
+
+    const activityResponse=await page.goto(base+"/orbit-lab/activity-demo",{waitUntil:"networkidle",timeout:45000});
+    assert.equal(activityResponse?.status(),200,"Fictional Agent Activity page must render");
+    await page.getByRole("heading",{name:/Every meaningful action/}).waitFor();
+    await page.locator(".oa-event").first().waitFor();
+    assert.equal(await page.locator(".oa-event").count(),4,"Four fictional events should appear");
+    await page.getByRole("button",{name:"Adaptation",exact:true}).click();
+    assert.equal(await page.locator(".oa-event").count(),1,"Adaptation filter should isolate a single event");
+    await page.getByRole("button",{name:"All events",exact:true}).click();
+    await page.getByPlaceholder("Search events…").fill("Python challenge");
+    assert.equal(await page.locator(".oa-event").count(),1,"Keyword search must be interactive");
+    await page.getByPlaceholder("Search events…").fill("");
+    await page.screenshot({path:out+"/"+v.name+"-agent-activity.png",fullPage:true,animations:"disabled"});
+    const activityOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    assert.ok(activityOverflow<=2,v.name+" Agent Activity overflows horizontally: "+activityOverflow);
+
+    const settingsCalls=[];
+    page.on("request",req=>{
+      if(req.method()==="PUT" && new URL(req.url()).pathname==="/api/settings")settingsCalls.push("WRITE_ATTEMPT");
+    });
+    const settingsResponse=await page.goto(base+"/orbit-lab/settings-demo",{waitUntil:"networkidle",timeout:45000});
+    assert.equal(settingsResponse?.status(),200,"Fictional Settings page must render");
+    await page.getByRole("heading",{name:/Settings that fit/}).waitFor();
+    const toggles=page.getByRole("checkbox");
+    assert.equal(await toggles.count(),4,"All existing settings toggles must remain visible");
+    await toggles.first().uncheck();
+    assert.equal(await toggles.first().isChecked(),false,"Preference preview must respond to change");
+    const save=page.getByRole("button",{name:/Demo only — no writes/});
+    assert.equal(await save.isDisabled(),true,"Public preference demo cannot save");
+    assert.deepEqual(settingsCalls,[],"Public preferences demo must never call PUT /api/settings");
+    await page.screenshot({path:out+"/"+v.name+"-settings.png",fullPage:true,animations:"disabled"});
+    const settingsOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    assert.ok(settingsOverflow<=2,v.name+" Settings overflows horizontally: "+settingsOverflow);
+
+
     const response = await page.goto(base + "/orbit-lab", { waitUntil: "networkidle", timeout: 45000 });
     assert.equal(response?.status(), 200, v.name + " prototype route must load");
     await page.getByRole("heading", { name: /Meet the AI that/i }).waitFor();

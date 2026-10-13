@@ -10,7 +10,7 @@ type InitialSettings = {
   compact_density: boolean;
 };
 
-export function LearningSettingsForm({ initial }: { initial: InitialSettings }) {
+export function LearningSettingsForm({ initial, orbit = false, demoOnly = false }: { initial: InitialSettings; orbit?: boolean; demoOnly?: boolean }) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(initial.notifications_enabled);
   const [weeklyReportEnabled, setWeeklyReportEnabled] = useState(initial.weekly_report_enabled);
   const [reducedMotion, setReducedMotion] = useState(initial.reduced_motion);
@@ -19,7 +19,7 @@ export function LearningSettingsForm({ initial }: { initial: InitialSettings }) 
   const [message, setMessage] = useState("");
 
   async function save() {
-    if (pending) return;
+    if (pending || demoOnly) return;
     setPending(true);
     setMessage("");
 
@@ -52,7 +52,7 @@ export function LearningSettingsForm({ initial }: { initial: InitialSettings }) 
   }
 
   return (
-    <div className="surface-card overflow-hidden">
+    <div className={orbit ? "os-native-settings overflow-hidden" : "surface-card overflow-hidden"}>
       <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
         <p className="eyebrow">Preferences</p>
         <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">Learning experience</h2>
@@ -93,9 +93,9 @@ export function LearningSettingsForm({ initial }: { initial: InitialSettings }) 
       </div>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 px-5 py-4 sm:px-6">
-        <button type="button" onClick={() => void save()} disabled={pending} className="btn-primary">
+        <button type="button" onClick={() => void save()} disabled={pending || demoOnly} className="btn-primary">
           <Save className="size-4" />
-          {pending ? "Saving" : "Save settings"}
+          {demoOnly ? "Demo only — no writes" : pending ? "Saving" : "Save settings"}
         </button>
         {message ? <span className="text-sm text-slate-500">{message}</span> : null}
       </div>

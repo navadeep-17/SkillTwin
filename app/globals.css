@@ -345,3 +345,15 @@ select {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Career Evidence Passport prints locally; no server-side export or public link. */
+@media print {
+  @page { size: A4; margin: 12mm; }
+  html, body { background: #fff !important; color: #111827 !important; }
+  aside, header.sticky, .passport-actions, .fixed.inset-x-0.bottom-0, .route-progress-track { display: none !important; }
+  body > div, main.passport-document { margin: 0 !important; padding: 0 !important; max-width: none !important; }
+  main.passport-document { background: #fff !important; }
+  main.passport-document > section { border: none !important; box-shadow: none !important; }
+  main.passport-document article, main.passport-document .rounded-xl { break-inside: avoid; }
+  .lg\\:pl-64 { padding-left: 0 !important; }
+}

@@ -285,3 +285,20 @@ test("Orbit integration preserves newer main certifications and deployment setup
   assert.ok(chrome.includes("signedIn && !orbit"));
   assert.ok(layout.includes("OrbitAwareChrome"));
 });
+
+
+test("Orbit default activation is opt-in, reversible and preserves classic sign-in routes", () => {
+  const links = read("components/shell/app-nav-links.tsx");
+  const login = read("app/login/page.tsx");
+  const form = read("components/auth/auth-form.tsx");
+  const callback = read("app/auth/callback/route.ts");
+  const flag = "NEXT_PUBLIC_SKILLTWIN_ORBIT_DEFAULT";
+  for (const [name,source] of [["links",links],["login",login],["signup",form],["callback",callback]]) {
+    assert.ok(source.includes(flag), name + " should respect the single rollout flag");
+  }
+  assert.ok(links.includes('href: "/orbit-beta"') && links.includes('href: "/overview"'));
+  assert.ok(links.includes('href: "/orbit-prove"') && links.includes('href: "/practice"'));
+  assert.ok(login.includes('orbitDefault ? "/orbit-beta" : "/onboarding"'));
+  assert.ok(form.includes('"/orbit-onboarding" : "/onboarding"'));
+  assert.ok(callback.includes('"/orbit-onboarding" : "/onboarding"'));
+});

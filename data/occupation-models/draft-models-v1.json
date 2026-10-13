@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "sourceSnapshotId": "onet-online-curated-2026-10-13-v1",
+  "canonicalSnapshotId": "skilltwin-canonical-2026-10-13-v2",
+  "mappingLedgerVersion": "review-decisions-v2",
+  "models": [
+    {
+      "occupationId": "onet:29-1141.00",
+      "status": "DRAFT",
+      "jurisdiction": "US",
+      "requirements": []
+    },
+    {
+      "occupationId": "onet:25-2021.00",
+      "status": "DRAFT",
+      "jurisdiction": "US",
+      "requirements": []
+    },
+    {
+      "occupationId": "onet:27-1024.00",
+      "status": "DRAFT",
+      "jurisdiction": "US",
+      "requirements": []
+    },
+    {
+      "occupationId": "onet:13-2011.00",
+      "status": "DRAFT",
+      "jurisdiction": "US",
+      "requirements": []
+    },
+    {
+      "occupationId": "onet:13-1071.00",
+      "status": "DRAFT",
+      "jurisdiction": "US",
+      "requirements": []
+    },
+    {
+      "occupationId": "onet:35-1011.00",
+      "status": "DRAFT",
+      "jurisdiction": "US",
+      "requirements": []
+    },
+    {
+      "occupationId": "onet:17-2051.00",
+      "status": "DRAFT",
+      "jurisdiction": "US",
+      "requirements": []
+    },
+    {
+      "occupationId": "onet:19-2041.00",
+      "status": "DRAFT",
+      "jurisdiction": "US",
+      "requirements": []
+    },
+    {
+      "occupationId": "onet:21-1022.00",
+      "status": "DRAFT",
+      "jurisdiction": "US",
+      "requirements": []
+    }
+  ]
+}

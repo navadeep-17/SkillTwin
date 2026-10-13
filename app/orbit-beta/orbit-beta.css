@@ -19,3 +19,11 @@
 }
 @media(max-width:365px){.orbit-live-node-list{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.orbit-live-node-option{transition:none!important}}
+
+/* Next-action hierarchy: the actual saved plan task precedes gap analytics. */
+.orbit-live-featured-task{margin:17px 0 18px;padding:17px;border:1px solid rgba(168,153,255,.24);border-radius:13px;background:linear-gradient(135deg,rgba(110,93,216,.22),rgba(44,40,93,.18))}
+.orbit-live-featured-meta{display:flex;align-items:center;justify-content:space-between;gap:9px;color:#cfc6ff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.orbit-live-featured-task h2{font-size:19px;letter-spacing:-.45px;line-height:1.4;margin:15px 0 9px}
+.orbit-live-featured-task p{font-size:11px;color:#adb9d2;line-height:1.7;margin:0 0 18px}
+.orbit-live-priority-heading{padding-top:9px;font-weight:750;color:#dce3f5;font-size:11px;letter-spacing:.4px}
+.orbit-live-priority-heading+.orbit-live-priorities{margin-top:9px}

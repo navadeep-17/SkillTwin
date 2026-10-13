@@ -14,7 +14,7 @@ const catalog = JSON.parse(readFileSync(new URL("../data/occupation-mappings/can
 const manifest = JSON.parse(readFileSync(new URL("../data/occupation-mappings/review-decisions-v2.json", import.meta.url)));
 const decision = (overrides = {}) => ({
   sourceSkillKey: reviewKey("Active Listening", "ESSENTIAL"),
-  decision: "APPROVED", canonicalSkillSlug: "user-research",
+  decision: "APPROVED", canonicalSkillSlug: "active-listening",
   reviewer: "@test-reviewer", reviewedAt: "2026-10-13T10:00:00.000Z",
   rationale: "The reviewer compared the documented source concept against the canonical definition before making this manual decision.",
   ...overrides
@@ -32,7 +32,7 @@ test("mapping queue preserves O*NET source provenance and starts unapproved", ()
 
 test("lexical candidates do not imply approved semantic equivalence", () => {
   assert.equal(suggestCanonicalSkills("Python", catalog.skills)[0]?.slug, "python");
-  assert.deepEqual(suggestCanonicalSkills("Active Listening", catalog.skills), []);
+  assert.equal(suggestCanonicalSkills("Active Listening", catalog.skills)[0]?.slug, "active-listening");
   assert.ok(buildMappingReviewQueue(source,catalog,manifest).every(x => x.status !== "APPROVED"));
 });
 
@@ -68,6 +68,6 @@ test("a valid human decision changes mapping status without creating readiness",
   assert.deepEqual(validateMappingReviewManifest(source,catalog,reviewed),[]);
   const item=buildMappingReviewQueue(source,catalog,reviewed).find(x=>x.sourceSkillKey===reviewKey("Active Listening","ESSENTIAL"));
   assert.equal(item?.status,"APPROVED");
-  assert.equal(item?.review?.canonicalSkillSlug,"user-research");
+  assert.equal(item?.review?.canonicalSkillSlug,"active-listening");
   assert.equal(Object.hasOwn(item??{},"readiness"),false);
 });

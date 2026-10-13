@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
-const script = new URL("../scripts/scoring-a2-staging-auth-qa.mjs",import.meta.url);
+const script = fileURLToPath(new URL("../scripts/scoring-a2-staging-auth-qa.mjs",import.meta.url));
 const base={
   ...process.env,
   BASE_URL:"http://127.0.0.1:3000",
@@ -16,7 +17,7 @@ const base={
 };
 
 function preflight(overrides={}){
-  const r=spawnSync(process.execPath,[script.pathname],{
+  const r=spawnSync(process.execPath,[script],{
     env:{...base,...overrides},
     encoding:"utf8",
     timeout:10000

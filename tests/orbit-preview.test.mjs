@@ -414,3 +414,33 @@ test("Native Orbit Settings uses current persisted preferences and original secu
   assert.ok(demo.includes("orbit demoOnly"));
   assert.ok(qa.includes('"/orbit-lab/settings-demo"'));
 });
+
+test("Orbit secondary module interiors use native dark surfaces and preserve trusted semantics",()=>{
+ const bridge=read("components/orbit/orbit-secondary-workspace.tsx");
+ const css=read("components/orbit/orbit-native-content.css");
+ const certification=read("components/certifications/certification-explorer.tsx");
+ const journey=read("components/certifications/certification-journey-tracker.tsx");
+ const defense=read("components/projects/project-defense-workbench.tsx");
+ const projects=read("app/projects/page.tsx");
+ const qa=read("scripts/orbit-visual-qa.mjs");
+ assert.ok(bridge.includes('import "./orbit-native-content.css"'));
+ assert.ok(bridge.includes('className="osw-content osw-native-content"'));
+ assert.ok(bridge.includes("data-workspace={workspace.path}"));
+ for (const name of ["/certifications","/certifications/journey","/projects","/project-defense","/passport","/progress","/journey","/occupations"]){
+   assert.ok(css.includes('data-workspace="'+name+'"')||css.includes('data-workspace^="/certifications"'),
+     "missing native content coverage for "+name);
+ }
+ assert.ok(css.includes("prefers-reduced-motion"));
+ assert.ok(css.includes('background:#101a2e'),"native form inputs must remain readable");
+ assert.ok(css.includes('bg-amber-50')&&css.includes('bg-rose-50')&&css.includes('bg-emerald-50'),
+   "preserve attention, error and validation semantics");
+ assert.ok(certification.includes("officialUrl"),"issuer destinations must remain official");
+ assert.ok(journey.includes("EARNED_SELF_REPORTED") && journey.includes("expectedVersion"),
+   "certification claims and concurrency checks must remain unchanged");
+ assert.ok(defense.includes('"/api/project-defense/inspect"') && defense.includes('"/api/project-defense/evaluate"'),
+   "retain bounded actual Github inspection and evaluation actions");
+ assert.ok(defense.includes("not a\n              verified assessment") || defense.includes("not saved to your evidence passport"),
+   "do not misrepresent provisional defense as verified evidence");
+ assert.ok(projects.includes('.eq("user_id", auth.user.id)'),"project records must remain tenant scoped");
+ assert.ok(qa.includes("osw-native-content"),"browser fixture must inspect actual native interior");
+});

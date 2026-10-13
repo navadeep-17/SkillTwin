@@ -46,7 +46,6 @@ const classicPrimaryLinks: NavLink[] = [
     ];
 
 const secondaryLinks: NavLink[] = [
-  { href: "/orbit-beta", label: "Try SkillTwin Orbit", icon: Sparkles },
   { href: "/challenge-my-twin", label: "Challenge My Twin", icon: Fingerprint },
   { href: "/discover", label: "Explore Careers", icon: Compass },
   { href: "/occupations", label: "Occupation Atlas", icon: BookOpenText },

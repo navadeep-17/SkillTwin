@@ -1,6 +1,6 @@
 # SkillTwin Agent V2 — evidence-grounded autonomous learning coach
 
-Status: Phases 1-2 deployed; Phase 3 read-tool orchestration awaiting CI and browser verification.
+Status: Phases 1-3 deployed. Phase 4 conversation continuity and evaluation implemented in PR, awaiting CI and authenticated browser verification.
 
 ## What is implemented today (code audit)
 - Journey Chat persists conversations and retrieves the signed-in learner's skills, gap snapshot, tasks, plans, last assessment and latest applied PlanDiff.
@@ -46,10 +46,17 @@ The learner can ask an open question, the system selects narrow read-only tools,
 - Return a concise answer with exact source entity refs and an "unknown" path when there is no proof. Deterministic fallback when Gemini fails/disabled.
 - Measure usefully different behavior from simple keyword routing; do not describe a single prompt as a multi-agent system.
 
-## Phase 4: Agent memory and UX (P1)
-- Restore existing conversation threads on browser reload and enable switching/history; persisted threads are already in Postgres.
-- Show retrieved evidence, proposed action, why it was selected and state-change result in one conversation; Activity stays an audit log, not private chain-of-thought.
-- Mobile-first agent entry, loading/error/timeout handling, keyboard support, accessible focus and reduced-motion support.
+## Phase 4: Persistent conversations and agent evaluation (P1)
+- [x] Load recent signed-in learner threads from existing `GET /api/chat`; select saved threads, start new ones, and restore messages on refresh/drawer reopen.
+- [x] Safely decode JSON/JSONB message metadata into bounded evidence labels and allowlisted read-tool names; no raw reasoning traces.
+- [x] Restore only live PROPOSED and unexpired actions; persist dismissed approvals with a user-scoped reject endpoint.
+- [x] Persist an executed-action message alongside the proposal status and activity event inside one transaction.
+- [x] Record response duration and planning mode in assistant message metadata for future latency/coverage analytics.
+- [x] Add a 41-prompt deterministic routing corpus, adversarial tool-name checks, hydration and confirmation-restoration tests.
+- [ ] Browser acceptance: desktop/mobile, dashboard drawer and journey page, new thread and switching, reload, sign-out/sign-in, expired approvals, Gemini-on/off.
+- [ ] Run signed-in production actions and collect actual p50/p95 timings and routed tool modes; never present fixed-fixture test counts as real usage.
+- [ ] Full conversation context for Gemini (multi-turn reasoning) is not implemented: history is persisted, but the planner currently receives the latest message only.
+- [ ] Evaluate resilience to latency and page navigation, including failure after optimistic user-message persistence and no unintended duplication.
 
 ## Evaluation gates
 - Benchmark at least 30 learner questions including incomplete profile, multiple similar skill names, correct NO_OP, conflicting evidence, missing assessment, stale plan, absent target role, and adversarial instructions in resume and project text.

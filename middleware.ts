@@ -13,6 +13,7 @@ const PROTECTED_PREFIXES = [
   "/passport",
   "/challenge-my-twin",
   "/discover",
+  "/certifications",
   "/occupations",
   "/occupations/mappings",
   "/skills",

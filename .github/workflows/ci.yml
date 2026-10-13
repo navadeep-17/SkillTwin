@@ -22,6 +22,13 @@ jobs:
       - run: node --test tests/journey-agent.test.mjs
       - run: node --test tests/agent-action-guard.test.mjs
       - run: node --test tests/agent-read-tools.test.mjs
+      - run: node --test tests/agent-thread-history.test.mjs
+      - run: node --test tests/agent-phase4-evaluation.test.mjs
+      - run: node --test tests/agent-release-readiness.test.mjs
+      - run: node --test tests/certification-recommendations.test.mjs
+      - run: node --test tests/certification-journey.test.mjs
+      - run: node --test tests/certification-preparation.test.mjs
+      - run: node --test tests/orbit-preview.test.mjs
       - run: node --test tests/project-defense.test.mjs
       - run: node --test tests/judge-demo-integrity.test.mjs
       - run: node --test tests/assessment-bank-boundary.test.mjs
@@ -33,7 +40,12 @@ jobs:
       - run: node scripts/export-reviewed-occupation-crosswalk.mjs > /dev/null
       - run: npm run qa:contracts
       - run: node --test tests/occupation-snapshot.test.mjs
-      - run: node --test tests/orbit-preview.test.mjs
       - run: npm run typecheck
       - run: npm run build
       - run: node scripts/career-auth-guard-smoke.mjs
+      - name: Verify standalone runtime and Docker image
+        run: |
+          test -f .next/standalone/server.js
+          docker build --progress plain -t skilltwin-standalone-qa .
+          docker image inspect skilltwin-standalone-qa --format '{{.Size}}'
+

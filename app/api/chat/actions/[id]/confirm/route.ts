@@ -162,6 +162,17 @@ export async function POST(
           [user.id,id,"Learner confirmed and executed "+actionType+".",
             JSON.stringify({actionType,proposalId:id})]
         );
+        const resultMessage=actionType==="START_ASSESSMENT"
+          ? "Your confirmed skill challenge is ready. Open Practice to continue."
+          :actionType==="GENERATE_PLAN"
+            ? "Your confirmed roadmap generation completed. Open Roadmap to inspect the active plan."
+            : "Your confirmed roadmap undo completed. Open Roadmap to review the updated plan.";
+        await tx.unsafe(
+          "insert into public.journey_chat_messages(thread_id,user_id,role,content,intent,metadata) select p.thread_id,$2::uuid,'ASSISTANT',$3,'JOURNEY_SUMMARY',$4::jsonb from public.chat_action_proposals p where p.id=$1::uuid and p.user_id=$2::uuid",
+          [id,user.id,resultMessage,JSON.stringify({
+            grounded:true,actionProposalId:id,generator:"confirmed-action-event-v1"
+          })]
+        );
       });
     } catch(recordError) {
       console.error("chat.action.result.persist.failed",{

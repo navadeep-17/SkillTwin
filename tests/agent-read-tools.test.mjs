@@ -8,7 +8,7 @@ import {
 test("read tools are explicit and never include mutation or arbitrary execution",()=>{
   assert.deepEqual(AGENT_READ_TOOLS,[
     "get_skill_state","get_assessment_proof","get_role_gap","get_active_plan",
-    "get_next_tasks","get_replan_reason","get_activity"
+    "get_next_tasks","get_replan_reason","get_activity","get_certification_preparation"
   ]);
   for(const dangerous of ["RUN_SQL","START_ASSESSMENT","GENERATE_PLAN","UNDO_PLAN_DIFF",
     "fetch","delete_evidence","curl","http://evil.example"]) {
@@ -36,11 +36,12 @@ test("all read-only intents have deterministic fallback and mutation intents are
   assert.deepEqual(fallbackReadTools("READINESS"),["get_role_gap"]);
   assert.deepEqual(fallbackReadTools("SKILL_STATUS"),["get_skill_state","get_role_gap"]);
   assert.deepEqual(fallbackReadTools("JOURNEY_SUMMARY"),["get_role_gap","get_next_tasks"]);
+  assert.deepEqual(fallbackReadTools("CERTIFICATION_PREP"),["get_certification_preparation"]);
   for(const action of ["START_ASSESSMENT","UNDO_ROADMAP_CHANGE","GENERATE_PLAN"]) {
     assert.equal(isMutatingJourneyIntent(action),true);
   }
   for(const read of ["EXPLAIN_ASSESSMENT","WHY_ROADMAP_CHANGED","WHAT_NEXT",
-    "READINESS","SKILL_STATUS","JOURNEY_SUMMARY"]) {
+    "READINESS","SKILL_STATUS","CERTIFICATION_PREP","JOURNEY_SUMMARY"]) {
     assert.equal(isMutatingJourneyIntent(read),false);
   }
 });

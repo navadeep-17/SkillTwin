@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUp, CheckCircle2, LoaderCircle, Sparkles } from "lucide-react";
+import { ArrowUp, CheckCircle2, History, LoaderCircle, Plus, Sparkles } from "lucide-react";
 
 type Ref = { type: string; id: string; label: string };
 
@@ -14,6 +14,8 @@ type Message = {
   agentMode?: string;
   readTools?: string[];
 };
+
+type ChatThread = { id:string;title:string;updatedAt:string };
 
 type Proposal = {
   id: string;
@@ -36,6 +38,9 @@ const starters = [
 export function JourneyChat({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const [threadId, setThreadId] = useState<string | null>(null);
+  const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const historyTicket = useRef(0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [input, setInput] = useState("");
@@ -43,9 +48,81 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState("");
 
+  const openThread = useCallback(async (id:string) => {
+    const ticket=++historyTicket.current;
+    setLoadingHistory(true);
+    setError("");
+    setProposal(null);
+    try {
+      const response=await fetch("/api/chat?threadId="+encodeURIComponent(id),{
+        cache:"no-store"
+      });
+      const payload=await response.json();
+      if(ticket!==historyTicket.current)return;
+      if(!response.ok||!payload.ok)throw new Error("Couldn't restore this conversation.");
+      setThreadId(id);
+      setMessages(payload.data.hydratedMessages ?? []);
+      setProposal(payload.data.pendingAction ?? null);
+    } catch {
+      if(ticket===historyTicket.current)setError("Unable to restore this conversation. Try again.");
+    } finally {
+      if(ticket===historyTicket.current)setLoadingHistory(false);
+    }
+  },[]);
+
+  useEffect(()=>{
+    let mounted=true;
+    const load=async()=>{
+      try {
+        const response=await fetch("/api/chat",{cache:"no-store"});
+        const payload=await response.json();
+        if(!mounted)return;
+        if(!response.ok||!payload.ok)throw new Error("Unable to load conversations.");
+        const saved:ChatThread[]=payload.data.threads ?? [];
+        setThreads(saved);
+        if(saved.length)await openThread(saved[0].id);
+        else setLoadingHistory(false);
+      } catch {
+        if(mounted){
+          setError("Conversation history couldn't be loaded. You can start a new chat.");
+          setLoadingHistory(false);
+        }
+      }
+    };
+    void load();
+    return ()=>{mounted=false;historyTicket.current+=1};
+  },[openThread]);
+
+  function startNewThread(){
+    if(pending||confirming||loadingHistory)return;
+    historyTicket.current+=1;
+    setThreadId(null);
+    setMessages([]);
+    setProposal(null);
+    setInput("");
+    setError("");
+  }
+
+  async function dismissProposal() {
+    if(!proposal||pending||confirming)return;
+    const id=proposal.id;
+    setConfirming(true);
+    setError("");
+    try {
+      const response=await fetch("/api/chat/actions/"+id+"/reject",{method:"POST"});
+      const payload=await response.json();
+      if(!response.ok||!payload.ok)throw new Error("Could not dismiss this action.");
+      setProposal(null);
+    } catch {
+      setError("Could not dismiss this action. Please retry.");
+    } finally {
+      setConfirming(false);
+    }
+  }
+
   async function sendText(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || pending) return;
+    if (!trimmed || pending || confirming || loadingHistory) return;
 
     const userMessage: Message = {
       id: "local-" + Date.now(),
@@ -58,6 +135,7 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
     setProposal(null);
     setError("");
     setPending(true);
+    let responseSaved = false;
 
     try {
       const response = await fetch("/api/chat", {
@@ -76,6 +154,12 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
       }
 
       setThreadId(payload.data.threadId);
+      setThreads(current=>{
+        const title=trimmed.length>60?trimmed.slice(0,57)+"...":trimmed;
+        const existing=current.find(t=>t.id===payload.data.threadId);
+        const updated={id:payload.data.threadId,title:existing?.title??title,updatedAt:new Date().toISOString()};
+        return [updated,...current.filter(t=>t.id!==updated.id)].slice(0,20);
+      });
       setMessages(current => [
         ...current,
         {
@@ -88,9 +172,19 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
         }
       ]);
       setProposal(payload.data.actionProposal ?? null);
+      responseSaved = true;
     } catch {
-      setError("Journey Chat could not answer.");
+      setError("Journey Chat could not confirm the response.");
     } finally {
+      if (!responseSaved) {
+        // The server might have saved the user message before an LLM/tool
+        // failure or network timeout. Reconcile existing threads; never leave
+        // an optimistic bubble masquerading as a confirmed stored message.
+        setMessages(current => current.filter(message => message.id !== userMessage.id));
+        setInput(current => current.trim() ? current : trimmed);
+        if (threadId) await openThread(threadId);
+        setError("The response was not confirmed. Your question may already be in history. Check the conversation before resending.");
+      }
       setPending(false);
     }
   }
@@ -145,7 +239,39 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
   return (
     <section className={compact ? "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" : "surface-card overflow-hidden"}>
       <div className={compact ? "min-h-[460px] space-y-4 p-4" : "min-h-[460px] space-y-4 p-5 sm:p-6"}>
-        {!messages.length ? (
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3">
+          <History className="size-4 shrink-0 text-brand-500" aria-hidden="true"/>
+          <label htmlFor={compact ? "agent-history-compact" : "agent-history-full"}
+            className="sr-only">Select a saved conversation</label>
+          <select
+            id={compact ? "agent-history-compact" : "agent-history-full"}
+            value={threadId ?? ""}
+            disabled={pending||confirming||loadingHistory}
+            onChange={event=>{
+              if(event.target.value)void openThread(event.target.value);
+              else startNewThread();
+            }}
+            className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+            aria-label="Saved conversations"
+          >
+            <option value="">New conversation</option>
+            {threads.map(thread=>(
+              <option key={thread.id} value={thread.id}>{thread.title}</option>
+            ))}
+          </select>
+          <button type="button" onClick={startNewThread}
+            disabled={pending||confirming||loadingHistory}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+            aria-label="Start new conversation">
+            <Plus className="size-3.5"/> New
+          </button>
+        </div>
+        {loadingHistory ? (
+          <div role="status" className="flex items-center gap-2 py-5 text-sm text-slate-500">
+            <LoaderCircle className="size-4 animate-spin"/> Restoring conversation…
+          </div>
+        ) : null}
+        {!loadingHistory && !messages.length ? (
           <div className="flex min-h-[360px] flex-col items-center justify-center py-8 text-center">
             <span className="flex size-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
               <Sparkles className="size-5" />
@@ -235,7 +361,8 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
               </button>
               <button
                 type="button"
-                onClick={() => setProposal(null)}
+                onClick={() => void dismissProposal()}
+                disabled={confirming}
                 className="rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900"
               >
                 Keep current state
@@ -250,6 +377,8 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
       <form onSubmit={submit} className="border-t border-slate-100 bg-white p-3.5">
         <div className="flex items-end gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-1.5 transition focus-within:border-brand-200 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-50">
           <textarea
+            disabled={loadingHistory || pending || confirming}
+            aria-label="Message SkillTwin"
             value={input}
             onChange={event => setInput(event.target.value)}
             onKeyDown={event => {
@@ -264,7 +393,7 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
           />
           <button
             type="submit"
-            disabled={!input.trim() || pending}
+            disabled={!input.trim() || pending || confirming || loadingHistory}
             className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-500 text-white transition hover:bg-brand-600 disabled:opacity-40"
             aria-label="Send message"
           >

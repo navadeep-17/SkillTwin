@@ -1,6 +1,6 @@
 import "server-only";
 import { getSql } from "@/lib/db/postgres";
-import { classifyJourneyIntent, type JourneyIntent } from "@/lib/domain/journey-intent";
+import { classifyJourneyIntent, findMentionedSkill, type JourneyIntent } from "@/lib/domain/journey-intent";
 import { buildTwinProofTrail } from "@/lib/domain/twin-challenge";
 
 type Row = Record<string, unknown>;
@@ -228,12 +228,7 @@ export class JourneyChatService {
     ]);
 
     const skills = rows(skillResult);
-    const normalizedMessage = normalize(message);
-    const mentionedSkill = skills.find(skill => {
-      const name = normalize(String(skill.canonical_name));
-      const slug = normalize(String(skill.slug));
-      return (name && normalizedMessage.includes(name)) || (slug && normalizedMessage.includes(slug));
-    }) ?? null;
+    const mentionedSkill = findMentionedSkill(message, skills);
 
     return {
       snapshot: rows(snapshotResult)[0] ?? null,

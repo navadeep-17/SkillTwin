@@ -31,3 +31,20 @@
 @media(max-width:900px){.orbit-onboarding-hero{padding:37px 32px}.orbit-onboarding-hero-decoration{right:-205px;opacity:.3}.orbit-onboarding-frame{padding:18px}}
 @media(max-width:600px){.orbit-onboarding{padding:0 13px 42px}.orbit-onboarding-back{padding:19px 4px;align-items:flex-start}.orbit-onboarding-back>span{display:none}.orbit-onboarding-hero{padding:35px 22px;border-radius:19px;min-height:0}.orbit-onboarding-hero h1{font-size:41px}.orbit-onboarding-hero-content>p:not(.orbit-kicker){font-size:13px}.orbit-onboarding-hero-decoration{display:none}.orbit-onboarding-steps-intro{gap:8px}.orbit-onboarding-steps-intro span{font-size:10px}.orbit-onboarding-steps-intro>svg{display:none}.orbit-onboarding-frame{border-radius:17px;padding:10px 7px}.orbit-onboarding-frame>div>section{border-radius:14px}.orbit-onboarding-usage{padding:12px 13px}.orbit-onboarding-footer{flex-direction:column;align-items:flex-start}}
 @media(prefers-reduced-motion:reduce){.orbit-onboarding-orbit-outer{animation:none}}
+
+/* The existing four-step flow uses a 620px horizontal rail. In Orbit, make
+   setup progress visible as a 2×2 grid at phone widths without side scrolling. */
+@media(max-width:640px){
+  .orbit-onboarding-frame [aria-label="SkillTwin setup progress"] .relative.grid{
+    min-width:0;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 10px
+  }
+  .orbit-onboarding-frame [aria-label="SkillTwin setup progress"] .relative.grid>div:first-child{
+    display:none
+  }
+  .orbit-onboarding-frame [aria-label="SkillTwin setup progress"] .relative.grid p{
+    overflow-wrap:anywhere
+  }
+  .orbit-onboarding-frame [aria-label="SkillTwin setup progress"] .overflow-x-auto{
+    overflow:visible
+  }
+}

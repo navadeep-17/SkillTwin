@@ -64,7 +64,7 @@ export async function checkDatabaseSecurity() {
       "select tablename,policyname,cmd,roles::text as roles from pg_policies where schemaname='storage' and tablename='objects'"
     ),
     sql.unsafe(
-      "select has_table_privilege('authenticated','public.assessment_question_bank','SELECT') as authenticated_can_read, has_table_privilege('anon','public.assessment_question_bank','SELECT') as anonymous_can_read"
+      "select has_table_privilege('authenticated','public.assessment_question_bank','SELECT') as authenticated_can_read, has_table_privilege('anon','public.assessment_question_bank','SELECT') as anonymous_can_read, has_table_privilege('authenticated','public.skill_assessment_questions','SELECT') as staged_authenticated_can_read, has_table_privilege('anon','public.skill_assessment_questions','SELECT') as staged_anonymous_can_read"
     )
   ]);
 
@@ -112,8 +112,10 @@ export async function checkDatabaseSecurity() {
   const answerBankProtected =
     bankPrivileges?.authenticated_can_read === false
     && bankPrivileges?.anonymous_can_read === false
+    && bankPrivileges?.staged_authenticated_can_read === false
+    && bankPrivileges?.staged_anonymous_can_read === false
     && !policies.some(policy =>
-      String(policy.tablename) === "assessment_question_bank"
+      ["assessment_question_bank","skill_assessment_questions"].includes(String(policy.tablename))
       && ["SELECT","ALL"].includes(String(policy.cmd))
       && String(policy.roles).includes("authenticated")
     );

@@ -133,6 +133,16 @@ CI validates TypeScript, Next.js build, static read-only/auth invariants and tes
 - CI includes a contract test for the real-task projection and the protected functional onboarding route; public browser QA checks that anonymous access redirects.
 - Signed-in browser QA still requires a dedicated authenticated test account and a reviewed environment. No secret-bearing browser logs or private learner screenshots should be published in pull-request artifacts.
 
+## My Twin constellation implementation (Phase 3 preview)
+
+- `/orbit-skills` is an authenticated, read-only implementation backed by the active goal's versioned skill requirements, dependency graph, latest matching gap snapshot, canonical `user_skills` projections, and a bounded recent evidence ledger. User-scoped queries and existing Supabase RLS are preserved.
+- Search, Priority gaps, Has evidence, Graph/List modes, stage layout, dependency focus, capability/target/confidence/gap inspector, and explicit Accepted vs Non-aggregating evidence labels are implemented.
+- On phones, list mode is selected initially; users can still inspect the network. The React Flow graph starts with a readable 0.85× spatial exploration viewport; the control panel offers fit-to-network and zooming.
+- Bounded recent evidence previews cannot be assumed to contain the entire ledger; authoritative evidence counts remain separate.
+- Public `/orbit-lab/skill-demo` uses **fictional data only** to run a safe interactive Playwright selection/filtering/screenshot suite at four viewports.
+- The new route is linked from Today and Orbit navigation. Existing `/skills` remains unchanged as the production fallback.
+- Authenticated branch-preview testing is still required. See `docs/ORBIT_AUTHENTICATED_QA.md`; do not claim that CI with fictional data validates real user records.
+
 ## Route/data integration approach
 
 Do **not** replace existing domain components or database logic. Extract a reusable OrbitShell and Orbit tokens. Integrate route by route behind an environment/feature gate, preserving old screens as a fallback until verified.

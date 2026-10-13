@@ -4,8 +4,7 @@ import { getGeminiStructuredClient } from "@/lib/ai/gemini-interactions";
 import type { RagHit } from "@/lib/domain/agent-rag";
 import { getSql } from "@/lib/db/postgres";
 import { inspectPublicRepository } from "@/lib/services/projects/project-defense-service";
-import { parsePublicGitHubRepo } from "@/lib/domain/project-defense";
-import { retrieveProjectPassages, renderProjectRagResult, codeQuestionWithoutProjectName, selectSavedCodeProject } from "@/lib/domain/agent-rag";
+import {runProjectCodeRag} from "@/lib/domain/agent-rag-flow";
 
 /**
  * This intentionally reuses Project Defense's vetted public GitHub reader:
@@ -58,45 +57,8 @@ export async function readSavedProjectCode(input:{userId:string;question:string}
     "select id,title,artifact_url from public.profile_projects where user_id=$1::uuid and artifact_url is not null order by created_at desc limit 20",
     [input.userId]
   ) as Array<{id:string;title:string;artifact_url:string}>;
-  const eligible=projects.flatMap(project=>{
-    const parsed=parsePublicGitHubRepo(project.artifact_url);
-    return parsed?[{...project,repository:parsed.owner+"/"+parsed.repo}]:[];
-  });
-  const selection=selectSavedCodeProject(input.question,eligible);
-  if(selection.status==="NONE")return {
-    content:"I could not find a saved public GitHub repository for your learner account. Add a project with a public github.com/owner/repository URL in Projects first.",
-    refs:[] as Array<{type:"profile_project";id:string;label:string}>,
-    meta:{generator:"source-rag-fallback-v1" as const,readTools:["get_project_code"] as string[]}
-  };
-  if(selection.status==="UNSAVED")return {
-    content:"The specific GitHub repository named in your question is not one of your saved public projects. Save that repository in Projects before asking me to inspect its code.",
-    refs:[] as Array<{type:"profile_project";id:string;label:string}>,
-    meta:{generator:"source-rag-fallback-v1" as const,readTools:["get_project_code"] as string[]}
-  };
-  if(selection.status==="AMBIGUOUS")return {
-    content:"You have multiple saved public GitHub projects. Mention the repository name or exact saved project title so I don't inspect the wrong code. Options: "+
-      selection.titles.join(", ")+".",
-    refs:[] as Array<{type:"profile_project";id:string;label:string}>,
-    meta:{generator:"source-rag-fallback-v1" as const,readTools:["get_project_code"] as string[]}
-  };
-  const selected=eligible.find(p=>p.id===selection.project.id);
-  if(!selected)throw new Error("INVALID_PROJECT_SELECTION");
-  try {
-    const snapshot=await inspectPublicRepository(selected.artifact_url);
-    const technicalQuestion=codeQuestionWithoutProjectName(input.question,selected.title,snapshot.repository);
-    const hits=retrieveProjectPassages(technicalQuestion,snapshot.sources,2);
-    const summary=await synthesizeCodeAnswer(technicalQuestion,hits);
-    return {
-      content:renderProjectRagResult(snapshot.repository,snapshot.commitSha,hits,summary),
-      refs:[{type:"profile_project" as const,id:selected.id,label:selected.title}],
-      meta:{generator:summary?"source-rag-gemini-v1" as const:"source-rag-fallback-v1" as const,readTools:["get_project_code"] as string[]}
-    };
-  }catch {
-    // Do not expose repository contents, internal network exceptions or credentials.
-    return {
-      content:"I could not safely retrieve verified public code for this saved project right now. GitHub may be unavailable, rate-limited, or the repository may not have enough supported source files. Try again later or open Project Defense.",
-      refs:[{type:"profile_project" as const,id:selected.id,label:selected.title}],
-      meta:{generator:"source-rag-fallback-v1",readTools:["get_project_code"] as string[]}
-    };
-  }
+  return runProjectCodeRag(
+    {question:input.question,projects},
+    {inspect:inspectPublicRepository,synthesize:synthesizeCodeAnswer}
+  );
 }

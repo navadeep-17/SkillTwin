@@ -38,7 +38,7 @@ export function rankCertifications(
   const bySkill=new Map(context.skills.map(s=>[s.slug,s]));
   const gaps=new Map(context.gaps.filter(isActionableGap).map(g=>[g.slug,g]));
   const hasGoal=Boolean(role);
-  return catalog.map(certification=>{
+  return catalog.map((certification):CertificationMatch=>{
     const roleMatch=hasGoal&&certification.roleKeywords.some(keyword=>role.includes(norm(keyword)));
     const matchedGaps=certification.skills.filter(slug=>gaps.has(slug));
     const known=certification.skills.filter(slug=>{

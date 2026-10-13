@@ -297,6 +297,7 @@ test("Orbit default activation is opt-in, reversible and preserves classic sign-
     assert.ok(source.includes(flag), name + " should respect the single rollout flag");
   }
   assert.ok(links.includes('href: "/orbit-beta"') && links.includes('href: "/overview"'));
+  assert.ok(links.includes('label: "Try SkillTwin Orbit"'), "Classic product must offer explicit opt-in before the default switch is enabled");
   assert.ok(links.includes('href: "/orbit-prove"') && links.includes('href: "/practice"'));
   assert.ok(login.includes('orbitDefault ? "/orbit-beta" : "/onboarding"'));
   assert.ok(form.includes('"/orbit-onboarding" : "/onboarding"'));

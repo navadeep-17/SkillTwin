@@ -3,7 +3,6 @@ import {redirect} from "next/navigation";
 import {createClient} from "@/lib/supabase/server";
 import {CertificationJourneyTracker} from "@/components/certifications/certification-journey-tracker";
 import type {CertificationJourney} from "@/lib/domain/certification-journey";
-import {buildCertificationPreparationPlan,type PreparationPlan} from "@/lib/domain/certification-preparation";
 import {getCertificationRecommendations} from "@/lib/services/certifications/certification-service";
 
 export const metadata:Metadata={
@@ -22,11 +21,6 @@ export default async function MyCertificationJourneyPage(){
   if(error)throw error;
   const goals=(data??[]) as CertificationJourney[];
   const recommendations=await getCertificationRecommendations(supabase,auth.user.id);
-  const byId=new Map(recommendations.matches.map(match=>[match.certification.id,match]));
-  const preparationPlans:Record<string,PreparationPlan>={};
-  for(const goal of goals){
-    const plan=buildCertificationPreparationPlan(goal,byId.get(goal.certification_id));
-    if(plan)preparationPlans[goal.certification_id]=plan;
-  }
-  return <CertificationJourneyTracker initialGoals={goals} preparationPlans={preparationPlans}/>;
+  return <CertificationJourneyTracker initialGoals={goals}
+    certificationMatches={recommendations.matches}/>;
 }

@@ -3,7 +3,7 @@
 Status: prepared, **not executed against a signed-in account**. Never treat passing anonymous browser tests as proof that private SkillTwin screens work.
 
 ## Purpose
-Confirm that the isolated `/orbit-beta`, `/orbit-skills`, `/orbit-journey`, and `/orbit-onboarding` routes work for a real test learner, without modifying existing production pages, creating records, or revealing screenshots of private evidence.
+Confirm that the isolated `/orbit-beta`, `/orbit-skills`, `/orbit-journey`, `/orbit-prove`, and `/orbit-onboarding` routes work for a real test learner, without modifying existing production pages, creating records, or revealing screenshots of private evidence.
 
 ## Safe setup
 1. Use a dedicated, nonpersonal SkillTwin test account with its own seeded profile and career goal. Do **not** reuse a personal account.

@@ -2,7 +2,8 @@ import {z} from "zod";
 import {getRequestId} from "@/lib/api/request-context";
 import {ok,fail} from "@/lib/api/responses";
 import {requireUser,UnauthenticatedError} from "@/lib/auth/require-user";
-import {arenaApiError,arenaTopicSchema,parseArenaState} from "@/lib/domain/arena";
+import {arenaApiError,arenaTopicSchema} from "@/lib/domain/arena";
+import {getArenaState} from "@/lib/services/arena/arena-ai-service";
 
 const requestSchema=z.discriminatedUnion("action",[
   z.object({action:z.literal("find"),topic:arenaTopicSchema}).strict(),
@@ -14,7 +15,7 @@ export const dynamic="force-dynamic";
 export async function POST(request:Request){
   const requestId=await getRequestId();
   try{
-    const {supabase}=await requireUser();
+    const {user,supabase}=await requireUser();
     let body:unknown;
     try{body=await request.json()}catch{
       return fail(requestId,400,"ARENA_INVALID_INPUT","Supply a valid Arena request.");
@@ -28,9 +29,8 @@ export async function POST(request:Request){
       :await supabase.rpc("arena_cancel_wait");
     if(called.error)throw called.error;
     // The authenticated database function exclusively owns pairing state.
-    const state=await supabase.rpc("arena_get_state");
-    if(state.error)throw state.error;
-    const response=ok(requestId,{arena:parseArenaState(state.data)});
+    const arena=await getArenaState(user.id);
+    const response=ok(requestId,{arena});
     response.headers.set("Cache-Control","no-store");
     return response;
   }catch(error){

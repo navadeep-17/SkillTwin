@@ -39,3 +39,9 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: node scripts/career-auth-guard-smoke.mjs
+      - name: Verify standalone runtime and Docker image
+        run: |
+          test -f .next/standalone/server.js
+          docker build --progress plain -t skilltwin-standalone-qa .
+          docker image inspect skilltwin-standalone-qa --format '{{.Size}}'
+

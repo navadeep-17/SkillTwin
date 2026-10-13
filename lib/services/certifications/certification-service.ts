@@ -36,7 +36,7 @@ export async function getCertificationRecommendations(supabase:SupabaseClient,us
     snapshotId=snapshot?.id??null;
     if(snapshotId){
       const {data:gaps,error:gapsError}=await supabase.from("skill_gap_results")
-        .select("skill_id,priority_band,gap_severity,skills!inner(slug)")
+        .select("skill_id,status,priority_band,gap_severity,skills!inner(slug)")
         .eq("snapshot_id",snapshotId).eq("user_id",userId)
         .order("priority_score",{ascending:false}).limit(100);
       if(gapsError)throw gapsError;
@@ -53,7 +53,8 @@ export async function getCertificationRecommendations(supabase:SupabaseClient,us
   const learnerGaps:LearnerGapSignal[]=gapRows.flatMap(row=>{
     const skill=one(row.skills as SkillRecord|SkillRecord[]|null);
     return skill?.slug?[{
-      slug:skill.slug,priorityBand:row.priority_band==null?null:String(row.priority_band),
+      slug:skill.slug,status:row.status==null?null:String(row.status),
+      priorityBand:row.priority_band==null?null:String(row.priority_band),
       severity:numeric(row.gap_severity)
     }]:[];
   });

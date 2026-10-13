@@ -82,3 +82,36 @@ test("Orbit Today retrieves an actionable task from the current active plan", ()
   assert.ok(ui.includes('href="/roadmap"'));
   assert.ok(!ui.includes('fetch("/api/tasks/'));
 });
+
+
+test("Orbit My Twin is authenticated, reads user-scoped evidence and never mutates learner state", () => {
+  const page = read("app/orbit-skills/page.tsx");
+  const middleware = read("middleware.ts");
+  const view = read("app/orbit-skills/orbit-skill-experience.tsx");
+  const css = read("app/orbit-skills/orbit-skills.css");
+  assert.ok(middleware.includes('"/orbit-skills"'));
+  assert.ok(page.includes("supabase.auth.getUser()"));
+  assert.ok(page.includes('redirect("/login'));
+  for (const table of ["career_goals", "user_skills", "role_skill_requirements", "role_dependency_edges", "gap_snapshots", "skill_gap_results", "skill_evidence"]) {
+    assert.ok(page.includes('"' + table + '"'), "Missing canonical source "+table);
+  }
+  assert.ok(page.includes('.eq("goal_id", goal!.id)'));
+  assert.ok(page.includes('.eq("role_version_id", roleVersionId)'));
+  assert.ok(page.includes('.eq("user_id", auth.user.id)'));
+  assert.ok(page.includes('"NON_AGGREGATING"'));
+  assert.ok(view.includes('ReactFlow'));
+  assert.ok(view.includes("formatScore(selected.capability)"));
+  assert.ok(view.includes("formatPercent(selected.confidence)"));
+  assert.ok(view.includes("aria-pressed"));
+  assert.ok(view.includes('href="/challenge-my-twin"'));
+  assert.ok(css.includes("prefers-reduced-motion"));
+  assert.ok(!page.includes(".insert(") && !page.includes(".update(") && !page.includes(".delete("));
+  assert.ok(!view.includes('fetch("/api/tasks/'));
+});
+
+test("Orbit My Twin navigation and anonymous access are explicit", () => {
+  const nav = read("components/orbit/orbit-preview-nav.tsx");
+  const visual = read("scripts/orbit-visual-qa.mjs");
+  assert.ok(nav.includes('href: "/orbit-skills"'));
+  assert.ok(visual.includes('"/orbit-skills"'));
+});

@@ -136,14 +136,9 @@ export async function POST(
       } else {
         result=await getInitialPlanService().generate(user.id);
       }
-
-      await sql.unsafe(
-        "update public.chat_action_proposals set status='EXECUTED',executed_at=now() where id=$1::uuid and user_id=$2::uuid and status='CONFIRMED'",
-        [id,user.id]
-      );
     } catch(dispatchError) {
-      // A failed or uncertain dispatch is never replayed automatically. The
-      // domain result must be reconciled before proposing a new mutation.
+      // Never dispatch this proposal again, even if the domain operation
+      // reported an error after partially completing.
       await sql.unsafe(
         "update public.chat_action_proposals set status='FAILED' where id=$1::uuid and user_id=$2::uuid and status='CONFIRMED'",
         [id,user.id]
@@ -152,6 +147,29 @@ export async function POST(
     }
 
     const actionType=approval.action.type;
+    try {
+      // The status and visible agent audit event either commit together or
+      // neither commits. If recording fails after the domain action, keep
+      // CONFIRMED for manual reconciliation; never execute a second time.
+      await sql.begin(async tx=>{
+        const executed=rows(await tx.unsafe(
+          "update public.chat_action_proposals set status='EXECUTED',executed_at=now() where id=$1::uuid and user_id=$2::uuid and status='CONFIRMED' returning id",
+          [id,user.id]
+        ));
+        if(!executed[0]) throw new Error("ACTION_STATUS_CHANGED_DURING_DISPATCH");
+        await tx.unsafe(
+          "insert into public.agent_events(user_id,event_type,trigger_type,trigger_ref,summary,metadata) values ($1::uuid,'chat.action.executed','CHAT_ACTION',$2,$3,$4::jsonb)",
+          [user.id,id,"Learner confirmed and executed "+actionType+".",
+            JSON.stringify({actionType,proposalId:id})]
+        );
+      });
+    } catch(recordError) {
+      console.error("chat.action.result.persist.failed",{
+        requestId,actionType,error:recordError instanceof Error ? recordError.message : "Unknown error"
+      });
+      return fail(requestId,503,"ACTION_RESULT_NOT_RECORDED",
+        "The action may have succeeded but its confirmation record was interrupted. Check your current plan or practice before requesting a new action.");
+    }
     return ok(requestId,{actionType,result},{
       notifications:[{
         title:"Action completed",

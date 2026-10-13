@@ -36,6 +36,7 @@ try {
         {path:"/orbit-skills",marker:".orbit-skills-inner"},
         {path:"/orbit-journey",marker:".oj-main"},
         {path:"/orbit-prove",marker:".op-main"},
+        {path:"/orbit-activity",marker:".oa-page"},
         {path:"/orbit-explore",marker:".oe-main"},
         {path:"/orbit-onboarding",marker:".orbit-onboarding-frame"}
       ];

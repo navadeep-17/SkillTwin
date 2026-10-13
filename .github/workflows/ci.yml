@@ -19,6 +19,7 @@ jobs:
       - run: npm run test:core
       - run: node --test tests/assessment-replay.test.mjs
       - run: node --test tests/twin-challenge.test.mjs
+      - run: node --test tests/journey-agent.test.mjs
       - run: node --test tests/project-defense.test.mjs
       - run: node --test tests/judge-demo-integrity.test.mjs
       - run: node --test tests/assessment-bank-boundary.test.mjs

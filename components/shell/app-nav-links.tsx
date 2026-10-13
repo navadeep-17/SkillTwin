@@ -27,13 +27,23 @@ type NavLink = {
   icon: LucideIcon;
 };
 
-const primaryLinks: NavLink[] = [
-  { href: "/overview", label: "Home", icon: Home },
-  { href: "/skills", label: "Skills", icon: Network },
-  { href: "/roadmap", label: "Plan", icon: Map },
-  { href: "/practice", label: "Practice", icon: Sparkles },
-  { href: "/progress", label: "Progress", icon: TrendingUp }
-];
+// Build-time activation switch. Disabled by default so merging the UI does
+// not silently move learners away from the tested classic experience.
+const primaryLinks: NavLink[] = process.env.NEXT_PUBLIC_SKILLTWIN_ORBIT_DEFAULT === "true"
+  ? [
+      { href: "/orbit-beta", label: "Today", icon: Home },
+      { href: "/orbit-skills", label: "My Twin", icon: Network },
+      { href: "/orbit-journey", label: "Journey", icon: Map },
+      { href: "/orbit-prove", label: "Prove", icon: Sparkles },
+      { href: "/orbit-explore", label: "Explore", icon: Compass }
+    ]
+  : [
+      { href: "/overview", label: "Home", icon: Home },
+      { href: "/skills", label: "Skills", icon: Network },
+      { href: "/roadmap", label: "Plan", icon: Map },
+      { href: "/practice", label: "Practice", icon: Sparkles },
+      { href: "/progress", label: "Progress", icon: TrendingUp }
+    ];
 
 const secondaryLinks: NavLink[] = [
   { href: "/challenge-my-twin", label: "Challenge My Twin", icon: Fingerprint },

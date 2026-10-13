@@ -57,10 +57,10 @@ try {
   for(const m of links)assert.ok(m[0].includes("github.com/"+repo+"/blob/"),"Citation points outside the selected repository");
 
   // This request must abstain on a concept absent from the bounded fixture.
-  const absent=await send("Find the quantum teleportation controller implementation in the "+project+" GitHub repository code.");
+  const absent=await send("Find the zzqvvindigoops function in my "+project+" GitHub repository code.");
   assert.match(absent.agentMode??"",/^source-rag-(gemini|fallback)-v1$/);
-  assert.ok(!/https:\/\/github\.com\/.test(absent.content)||/Source \d+:/.test(absent.content),
-    "No unsupported detached citation");
+  assert.match(absent.content,/could not find a passage matching your question/i);
+  assert.ok(!absent.content.includes("https://github.com/"),"Absent concept must never receive a code citation");
   assert.equal(absent.actionProposal??null,null);
 
   // Prior normal skill explanations must not be routed into the code retriever.

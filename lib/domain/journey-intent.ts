@@ -19,8 +19,8 @@ export function classifyJourneyIntent(message: string): JourneyIntent {
   // Preparation guidance is read-only; it must not accidentally trigger the
   // general "generate roadmap" mutation proposal. Actual roadmap edits still
   // require their separate approval and versioned audit path.
-  if (/\\b(certification|certified|credential|ccna|az 900|pl 300|cloud practitioner|github foundations|exam)\\b/.test(text)
-    && /\\b(prepare|preparation|study|learn|resource|guide|topic|syllabus|plan|next|progress|practice|exam)\\b/.test(text)) {
+  if (/\b(certification|certified|credential|ccna|az 900|pl 300|cloud practitioner|github foundations|exam)\b/.test(text)
+    && /\b(prepare|preparation|study|learn|resource|guide|topic|syllabus|plan|next|progress|practice|exam)\b/.test(text)) {
     return "CERTIFICATION_PREP";
   }
 

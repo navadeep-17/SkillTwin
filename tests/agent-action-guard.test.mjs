@@ -76,5 +76,8 @@ test("route enforces ownership, expiry and a single atomic claim before dispatch
   assert.match(source,/status='PROPOSED' and expires_at>now\(\) returning id/);
   assert.match(source,/status='REJECTED'/);
   assert.match(source,/status='CONFIRMED'/);
+  assert.match(source,/sql.begin\(async tx=>/);
+  assert.match(source,/chat.action.executed/);
+  assert.match(source,/ACTION_RESULT_NOT_RECORDED/);
   assert.doesNotMatch(source,/getAssessmentService\(\)\.create\(\{[\s\S]*targetSkillId: payload/);
 });

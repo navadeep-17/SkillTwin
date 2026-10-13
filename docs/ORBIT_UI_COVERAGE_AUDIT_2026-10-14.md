@@ -53,7 +53,7 @@ These pages continue to use their **functional existing React components** and s
 
 ## Recommended delivery order
 
-- **Phase 1 (this branch):** no feature stranded outside Orbit navigation; ship shared feature shell, global More menu, native Agent Activity and safe fixture tests. Avoid a large backend/schema rewrite.
+- **Phase 1 (this branch):** no feature stranded outside Orbit navigation; ship shared feature shell, global More menu, native Agent Activity, native four-preference Settings, and safe fixture tests. Avoid a large backend/schema rewrite.
 - **Phase 2:** fully redesign Certifications + Project Defense + Projects; keep source-specific trust status and account writes intact.
 - **Phase 3:** redesign Evidence Passport + Progress/weekly report + Occupation Atlas, adding responsive charts only from persisted history.
 - **Phase 4:** unify chat and assistant dock, settings, practice/task flows, error/auth states and cross-feature animations.

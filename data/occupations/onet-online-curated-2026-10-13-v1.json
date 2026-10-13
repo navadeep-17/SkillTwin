@@ -1,0 +1,798 @@
+{
+  "snapshotId": "onet-online-curated-2026-10-13-v1",
+  "publisher": "U.S. Department of Labor, Employment and Training Administration (USDOL/ETA)",
+  "sourceProduct": "O*NET OnLine",
+  "sourceReleaseContext": "O*NET OnLine occupational profiles updated 2026; O*NET Database release 31.0",
+  "accessedDate": "2026-10-13",
+  "sourceIndex": "https://www.onetonline.org/",
+  "license": "CC BY 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "attributionUrl": "https://www.onetonline.org/help/license",
+  "selectionNote": "Selected subset of occupation descriptions, seven Essential Skills and five Transferable Skills per O*NET OnLine detailed profile; lists are not complete, and importance values are O*NET profile rankings, not SkillTwin proficiency scores.",
+  "modificationNote": "SkillTwin has selected and restructured source information into a subset for exploratory browsing. USDOL/ETA has not approved, endorsed, or tested these modifications.",
+  "occupations": [
+    {
+      "occupationId": "onet:29-1141.00",
+      "onetSocCode": "29-1141.00",
+      "name": "Registered Nurses",
+      "family": "Healthcare",
+      "description": "Assess patient health problems and needs, develop and implement nursing care plans, and maintain medical records. Administer nursing care to ill, injured, convalescent, or disabled patients. May advise patients on health maintenance and disease prevention or provide case management. Licensing or registration required.",
+      "sourceUrl": "https://www.onetonline.org/link/details/29-1141.00",
+      "sourceUpdatedYear": 2026,
+      "countryContext": "US",
+      "status": "EXPLORATORY",
+      "essentialSkills": [
+        {
+          "name": "Active Listening",
+          "importance": 75,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Critical Thinking",
+          "importance": 75,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Speaking",
+          "importance": 75,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Reading Comprehension",
+          "importance": 72,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Monitoring",
+          "importance": 69,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Writing",
+          "importance": 69,
+          "sourceOrder": 6,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Active Learning",
+          "importance": 63,
+          "sourceOrder": 7,
+          "mappingStatus": "UNMAPPED"
+        }
+      ],
+      "transferableSkills": [
+        {
+          "name": "Social Perceptiveness",
+          "importance": 78,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Coordination",
+          "importance": 75,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Service Orientation",
+          "importance": 75,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Judgment and Decision Making",
+          "importance": 72,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Complex Problem Solving",
+          "importance": 63,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        }
+      ]
+    },
+    {
+      "occupationId": "onet:25-2021.00",
+      "onetSocCode": "25-2021.00",
+      "name": "Elementary School Teachers, Except Special Education",
+      "family": "Education",
+      "description": "Teach academic and social skills to students at the elementary school level.",
+      "sourceUrl": "https://www.onetonline.org/link/details/25-2021.00",
+      "sourceUpdatedYear": 2026,
+      "countryContext": "US",
+      "status": "EXPLORATORY",
+      "essentialSkills": [
+        {
+          "name": "Learning Strategies",
+          "importance": 81,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Speaking",
+          "importance": 78,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Active Listening",
+          "importance": 75,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Critical Thinking",
+          "importance": 75,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Monitoring",
+          "importance": 75,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Reading Comprehension",
+          "importance": 72,
+          "sourceOrder": 6,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Writing",
+          "importance": 72,
+          "sourceOrder": 7,
+          "mappingStatus": "UNMAPPED"
+        }
+      ],
+      "transferableSkills": [
+        {
+          "name": "Instructing",
+          "importance": 81,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Social Perceptiveness",
+          "importance": 75,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Coordination",
+          "importance": 72,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Service Orientation",
+          "importance": 72,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Judgment and Decision Making",
+          "importance": 69,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        }
+      ]
+    },
+    {
+      "occupationId": "onet:27-1024.00",
+      "onetSocCode": "27-1024.00",
+      "name": "Graphic Designers",
+      "family": "Design",
+      "description": "Design or create graphics to meet specific commercial or promotional needs, such as packaging, displays, or logos. May use a variety of mediums to achieve artistic or decorative effects.",
+      "sourceUrl": "https://www.onetonline.org/link/details/27-1024.00",
+      "sourceUpdatedYear": 2026,
+      "countryContext": "US",
+      "status": "EXPLORATORY",
+      "essentialSkills": [
+        {
+          "name": "Active Listening",
+          "importance": 69,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Speaking",
+          "importance": 60,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Active Learning",
+          "importance": 56,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Critical Thinking",
+          "importance": 56,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Writing",
+          "importance": 56,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Reading Comprehension",
+          "importance": 53,
+          "sourceOrder": 6,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Monitoring",
+          "importance": 50,
+          "sourceOrder": 7,
+          "mappingStatus": "UNMAPPED"
+        }
+      ],
+      "transferableSkills": [
+        {
+          "name": "Complex Problem Solving",
+          "importance": 53,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Coordination",
+          "importance": 53,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Judgment and Decision Making",
+          "importance": 53,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Social Perceptiveness",
+          "importance": 53,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Time Management",
+          "importance": 53,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        }
+      ]
+    },
+    {
+      "occupationId": "onet:13-2011.00",
+      "onetSocCode": "13-2011.00",
+      "name": "Accountants and Auditors",
+      "family": "Finance",
+      "description": "Examine, analyze, and interpret accounting records to prepare financial statements, give advice, or audit and evaluate statements prepared by others. Install or advise on systems of recording costs or other financial and budgetary data.",
+      "sourceUrl": "https://www.onetonline.org/link/details/13-2011.00",
+      "sourceUpdatedYear": 2026,
+      "countryContext": "US",
+      "status": "EXPLORATORY",
+      "essentialSkills": [
+        {
+          "name": "Reading Comprehension",
+          "importance": 72,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Active Listening",
+          "importance": 63,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Critical Thinking",
+          "importance": 63,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Writing",
+          "importance": 63,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Mathematics",
+          "importance": 60,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Speaking",
+          "importance": 60,
+          "sourceOrder": 6,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Active Learning",
+          "importance": 56,
+          "sourceOrder": 7,
+          "mappingStatus": "UNMAPPED"
+        }
+      ],
+      "transferableSkills": [
+        {
+          "name": "Complex Problem Solving",
+          "importance": 63,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Judgment and Decision Making",
+          "importance": 63,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Social Perceptiveness",
+          "importance": 56,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Persuasion",
+          "importance": 53,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Service Orientation",
+          "importance": 53,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        }
+      ]
+    },
+    {
+      "occupationId": "onet:13-1071.00",
+      "onetSocCode": "13-1071.00",
+      "name": "Human Resources Specialists",
+      "family": "Human Resources",
+      "description": "Recruit, screen, interview, or place individuals within an organization. May perform other activities in multiple human resources areas.",
+      "sourceUrl": "https://www.onetonline.org/link/details/13-1071.00",
+      "sourceUpdatedYear": 2026,
+      "countryContext": "US",
+      "status": "EXPLORATORY",
+      "essentialSkills": [
+        {
+          "name": "Speaking",
+          "importance": 78,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Active Listening",
+          "importance": 75,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Reading Comprehension",
+          "importance": 75,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Critical Thinking",
+          "importance": 72,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Writing",
+          "importance": 72,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Active Learning",
+          "importance": 56,
+          "sourceOrder": 6,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Learning Strategies",
+          "importance": 50,
+          "sourceOrder": 7,
+          "mappingStatus": "UNMAPPED"
+        }
+      ],
+      "transferableSkills": [
+        {
+          "name": "Service Orientation",
+          "importance": 60,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Social Perceptiveness",
+          "importance": 60,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Judgment and Decision Making",
+          "importance": 56,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Complex Problem Solving",
+          "importance": 53,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Instructing",
+          "importance": 53,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        }
+      ]
+    },
+    {
+      "occupationId": "onet:35-1011.00",
+      "onetSocCode": "35-1011.00",
+      "name": "Chefs and Head Cooks",
+      "family": "Hospitality",
+      "description": "Direct and may participate in the preparation, seasoning, and cooking of salads, soups, fish, meats, vegetables, desserts, or other foods. May plan and price menu items, order supplies, and keep records and accounts.",
+      "sourceUrl": "https://www.onetonline.org/link/details/35-1011.00",
+      "sourceUpdatedYear": 2026,
+      "countryContext": "US",
+      "status": "EXPLORATORY",
+      "essentialSkills": [
+        {
+          "name": "Monitoring",
+          "importance": 75,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Speaking",
+          "importance": 72,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Critical Thinking",
+          "importance": 69,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Active Listening",
+          "importance": 66,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Reading Comprehension",
+          "importance": 63,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Active Learning",
+          "importance": 60,
+          "sourceOrder": 6,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Learning Strategies",
+          "importance": 56,
+          "sourceOrder": 7,
+          "mappingStatus": "UNMAPPED"
+        }
+      ],
+      "transferableSkills": [
+        {
+          "name": "Coordination",
+          "importance": 78,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Management of Personnel Resources",
+          "importance": 72,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Social Perceptiveness",
+          "importance": 72,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Time Management",
+          "importance": 72,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Service Orientation",
+          "importance": 69,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        }
+      ]
+    },
+    {
+      "occupationId": "onet:17-2051.00",
+      "onetSocCode": "17-2051.00",
+      "name": "Civil Engineers",
+      "family": "Engineering",
+      "description": "Perform engineering duties in planning, designing, and overseeing construction and maintenance of building structures and facilities, such as roads, railroads, airports, bridges, harbors, channels, dams, irrigation projects, pipelines, power plants, and water and sewage systems.",
+      "sourceUrl": "https://www.onetonline.org/link/details/17-2051.00",
+      "sourceUpdatedYear": 2026,
+      "countryContext": "US",
+      "status": "EXPLORATORY",
+      "essentialSkills": [
+        {
+          "name": "Active Listening",
+          "importance": 75,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Critical Thinking",
+          "importance": 72,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Mathematics",
+          "importance": 72,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Reading Comprehension",
+          "importance": 72,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Speaking",
+          "importance": 72,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Science",
+          "importance": 69,
+          "sourceOrder": 6,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Active Learning",
+          "importance": 56,
+          "sourceOrder": 7,
+          "mappingStatus": "UNMAPPED"
+        }
+      ],
+      "transferableSkills": [
+        {
+          "name": "Complex Problem Solving",
+          "importance": 72,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Systems Analysis",
+          "importance": 69,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Time Management",
+          "importance": 69,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Operations Analysis",
+          "importance": 66,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Judgment and Decision Making",
+          "importance": 60,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        }
+      ]
+    },
+    {
+      "occupationId": "onet:19-2041.00",
+      "onetSocCode": "19-2041.00",
+      "name": "Environmental Scientists and Specialists, Including Health",
+      "family": "Environment",
+      "description": "Conduct research or perform investigation for the purpose of identifying, abating, or eliminating sources of pollutants or hazards that affect either the environment or public health. Using knowledge of various scientific disciplines, may collect, synthesize, study, report, and recommend action based on data derived from measurements or observations of air, food, soil, water, and other sources.",
+      "sourceUrl": "https://www.onetonline.org/link/details/19-2041.00",
+      "sourceUpdatedYear": 2026,
+      "countryContext": "US",
+      "status": "EXPLORATORY",
+      "essentialSkills": [
+        {
+          "name": "Active Listening",
+          "importance": 75,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Reading Comprehension",
+          "importance": 75,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Science",
+          "importance": 75,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Speaking",
+          "importance": 75,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Writing",
+          "importance": 75,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Critical Thinking",
+          "importance": 72,
+          "sourceOrder": 6,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Active Learning",
+          "importance": 69,
+          "sourceOrder": 7,
+          "mappingStatus": "UNMAPPED"
+        }
+      ],
+      "transferableSkills": [
+        {
+          "name": "Complex Problem Solving",
+          "importance": 75,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Coordination",
+          "importance": 66,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Judgment and Decision Making",
+          "importance": 56,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Time Management",
+          "importance": 56,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Instructing",
+          "importance": 53,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        }
+      ]
+    },
+    {
+      "occupationId": "onet:21-1022.00",
+      "onetSocCode": "21-1022.00",
+      "name": "Healthcare Social Workers",
+      "family": "Social Work",
+      "description": "Provide individuals, families, and groups with the psychosocial support needed to cope with chronic, acute, or terminal illnesses. Services include advising family caregivers. Provide patients with information and counseling, and make referrals for other services. May also provide case and care management or interventions designed to promote health, prevent disease, and address barriers to access to healthcare.",
+      "sourceUrl": "https://www.onetonline.org/link/details/21-1022.00",
+      "sourceUpdatedYear": 2026,
+      "countryContext": "US",
+      "status": "EXPLORATORY",
+      "essentialSkills": [
+        {
+          "name": "Speaking",
+          "importance": 78,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Active Listening",
+          "importance": 75,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Critical Thinking",
+          "importance": 75,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Reading Comprehension",
+          "importance": 75,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Writing",
+          "importance": 72,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Active Learning",
+          "importance": 69,
+          "sourceOrder": 6,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Monitoring",
+          "importance": 56,
+          "sourceOrder": 7,
+          "mappingStatus": "UNMAPPED"
+        }
+      ],
+      "transferableSkills": [
+        {
+          "name": "Social Perceptiveness",
+          "importance": 81,
+          "sourceOrder": 1,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Service Orientation",
+          "importance": 78,
+          "sourceOrder": 2,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Coordination",
+          "importance": 75,
+          "sourceOrder": 3,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Complex Problem Solving",
+          "importance": 72,
+          "sourceOrder": 4,
+          "mappingStatus": "UNMAPPED"
+        },
+        {
+          "name": "Judgment and Decision Making",
+          "importance": 66,
+          "sourceOrder": 5,
+          "mappingStatus": "UNMAPPED"
+        }
+      ]
+    }
+  ]
+}

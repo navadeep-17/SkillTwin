@@ -32,7 +32,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body className="min-h-screen text-slate-950 antialiased">
         <RouteProgress />
         {user ? <ProductRealtimeSync userId={user.id} /> : null}
-        <OrbitAwareChrome signedIn={Boolean(user)} legacyNavigation={user ? <AppNav userId={user.id} email={user.email} orbitDefault={orbitDefault} /> : null}>
+        <OrbitAwareChrome signedIn={Boolean(user)} orbitDefault={orbitDefault} legacyNavigation={user ? <AppNav userId={user.id} email={user.email} orbitDefault={orbitDefault} /> : null}>
           <PageTransition>{children}</PageTransition>
         </OrbitAwareChrome>
         {user ? <GlobalAssistantDock /> : null}

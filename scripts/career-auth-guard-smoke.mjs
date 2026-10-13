@@ -40,7 +40,7 @@ try {
     await delay(500);
   }
   if (!ready) throw new Error("Next did not become ready. " + output);
-  for (const route of ["/passport", "/challenge-my-twin", "/discover", "/occupations", "/occupations/mappings", "/occupations/models"]) {
+  for (const route of ["/passport", "/challenge-my-twin", "/project-defense", "/discover", "/occupations", "/occupations/mappings", "/occupations/models"]) {
     const response = await get(route);
     const location = response.headers.get("location") ?? "";
     if (![301, 302, 303, 307, 308].includes(response.status) ||

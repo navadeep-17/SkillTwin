@@ -13,6 +13,7 @@ const PROTECTED_PREFIXES = [
   "/roadmap",
   "/practice",
   "/projects",
+  "/project-defense",
   "/progress",
   "/journey",
   "/activity",

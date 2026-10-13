@@ -11,7 +11,9 @@ update public.arena_lobby set queued_at=clock_timestamp()
 create or replace function public.arena_lobby_queue_reset()
 returns trigger language plpgsql set search_path='' as $$
 begin
-  if TG_OP='INSERT' or new.status='WAITING' and
+  if TG_OP='INSERT' then
+    new.queued_at:=clock_timestamp();
+  elsif new.status='WAITING' and
     (old.status is distinct from 'WAITING' or old.topic is distinct from new.topic) then
     new.queued_at:=clock_timestamp();
   end if;

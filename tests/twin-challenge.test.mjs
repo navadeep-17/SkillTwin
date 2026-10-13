@@ -91,3 +91,18 @@ test("legacy snake_case snapshots are safely supported",()=>{
   const proof=buildTwinProofTrail(exampleOutcome,[history],[],[]);
   assert.deepEqual(proof.after,{level:"ADVANCED",confidencePercent:83,capability:3.1});
 });
+
+test("PlanDiff reference matching decodes JSONB-encoded arrays without substring matches",()=>{
+  assert.equal(containsExactReference(JSON.stringify(["assess-one"]), "assess-one"),true);
+  assert.equal(containsExactReference(JSON.stringify(JSON.stringify(["assess-one"])), "assess-one"),true);
+  assert.equal(containsExactReference(JSON.stringify([{ref:"assess-one-other"}]),"assess-one"),false);
+  assert.equal(containsExactReference(JSON.stringify({ref:"assess-one"}),"assess-one"),true);
+  assert.equal(containsExactReference("malformed JSON", "assess-one"),false);
+});
+test("unrelated assessment NO_OP never counts as a successful proof adaptation",()=>{
+  const outcome={assessment_id:"assessment-verified",skill_id:"skill-x",normalized_score:.7,coverage:.8,created_at:"2026-10-13T15:00:00.000Z"};
+  const priorDecision={trigger_ref:"some-other-assessment",decision:"NO_OP",reason_code:"NO_SAFE_FUTURE_PATCH",reason:"Not linked to this proof"};
+  const proof=buildTwinProofTrail(outcome,[],[priorDecision],[]);
+  assert.equal(proof.planStatus,"NOT_RECORDED");
+  assert.equal(proof.planDiffId,null);
+});

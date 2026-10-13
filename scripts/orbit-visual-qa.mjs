@@ -64,6 +64,25 @@ try {
     const activityOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     assert.ok(activityOverflow<=2,v.name+" Agent Activity overflows horizontally: "+activityOverflow);
 
+    const settingsCalls=[];
+    page.on("request",req=>{
+      if(req.method()==="PUT" && new URL(req.url()).pathname==="/api/settings")settingsCalls.push("WRITE_ATTEMPT");
+    });
+    const settingsResponse=await page.goto(base+"/orbit-lab/settings-demo",{waitUntil:"networkidle",timeout:45000});
+    assert.equal(settingsResponse?.status(),200,"Fictional Settings page must render");
+    await page.getByRole("heading",{name:/Settings that fit/}).waitFor();
+    const toggles=page.getByRole("checkbox");
+    assert.equal(await toggles.count(),4,"All existing settings toggles must remain visible");
+    await toggles.first().uncheck();
+    assert.equal(await toggles.first().isChecked(),false,"Preference preview must respond to change");
+    const save=page.getByRole("button",{name:/Demo only — no writes/});
+    assert.equal(await save.isDisabled(),true,"Public preference demo cannot save");
+    assert.deepEqual(settingsCalls,[],"Public preferences demo must never call PUT /api/settings");
+    await page.screenshot({path:out+"/"+v.name+"-settings.png",fullPage:true,animations:"disabled"});
+    const settingsOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    assert.ok(settingsOverflow<=2,v.name+" Settings overflows horizontally: "+settingsOverflow);
+
+
     const response = await page.goto(base + "/orbit-lab", { waitUntil: "networkidle", timeout: 45000 });
     assert.equal(response?.status(), 200, v.name + " prototype route must load");
     await page.getByRole("heading", { name: /Meet the AI that/i }).waitFor();

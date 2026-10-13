@@ -244,6 +244,15 @@ assert(
   "Chat action dismissal and confirmation must persist across sessions"
 );
 
+const chatRecovery=read("components/journey/journey-chat.tsx");
+const anonAgentSmoke=read("scripts/career-auth-guard-smoke.mjs");
+assert(
+  chatRecovery.includes("if (!responseSaved)")
+  && chatRecovery.includes("if (threadId) await openThread(threadId)")
+  && anonAgentSmoke.includes("ANONYMOUS_AGENT_API_GUARD=PASS"),
+  "Agent API release must reconcile optimistic send failures and enforce anonymous action safety"
+);
+
 const releaseSmoke = read("scripts/release-smoke.mjs");
 for (const marker of [
   "PUBLIC_SMOKE=PASS",

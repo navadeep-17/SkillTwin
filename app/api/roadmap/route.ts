@@ -1,4 +1,5 @@
 import { getSql } from "@/lib/db/postgres";
+import { recommendCuratedResources, type LearnerLevel, type LearningTaskType } from "@/lib/domain/curated-learning-resources";
 import { getRequestId } from "@/lib/api/request-context";
 import { fail, ok } from "@/lib/api/responses";
 import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
@@ -100,7 +101,13 @@ export async function GET() {
             .map(task => ({
               ...task,
               validation_available: task.type !== "VALIDATE" || (validationCounts.get(String(task.skill_id)) ?? 0) >= 4,
-              resource: assignmentMap.get(task.id) ?? null
+              resource: assignmentMap.get(task.id) ?? null,
+              recommended_resources: recommendCuratedResources({
+                skillSlug: String((objective.skills as {slug?:string} | null)?.slug ?? ""),
+                taskType: task.type as LearningTaskType,
+                difficulty: task.difficulty as LearnerLevel,
+                durationMinutes: Number(task.duration_minutes)
+              })
             }))
         }))
     }));

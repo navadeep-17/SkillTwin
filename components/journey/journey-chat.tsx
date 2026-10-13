@@ -111,7 +111,8 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
         setError(payload.error?.message ?? "The proposed action could not be safely executed.");
         // Invalid, expired or stale proposals must not remain confirmable.
         if (["INVALID_PROPOSAL","STALE_PROPOSAL","INELIGIBLE_SKILL","ACTION_EXPIRED",
-          "ACTION_ALREADY_CLAIMED","ACTION_NOT_PROPOSED"].includes(payload.error?.code)) {
+          "ACTION_ALREADY_CLAIMED","ACTION_NOT_PROPOSED","ACTION_RESULT_NOT_RECORDED",
+          "CHAT_ACTION_FAILED"].includes(payload.error?.code)) {
           setProposal(null);
         }
         return;

@@ -1,0 +1,92 @@
+.orbit-skills-page{min-height:100vh;background:radial-gradient(700px 420px at 67% 0%,rgba(119,99,233,.13),transparent),#0b1020}
+.orbit-skills-inner{max-width:1370px;margin:0 auto;padding:36px 34px 65px}
+.orbit-skills-heading{display:flex;align-items:end;justify-content:space-between;gap:30px;margin:16px 0 31px}
+.orbit-skills-heading h1{font-size:clamp(36px,5vw,64px);line-height:1.1;letter-spacing:-.065em;margin:12px 0 16px;font-weight:780}
+.orbit-skills-heading p:not(.orbit-kicker){max-width:675px;color:#A8B6D2;font-size:14px;line-height:1.8}
+.orbit-skills-target{display:flex;align-items:center;gap:13px;padding:15px 18px;border:1px solid rgba(167,151,255,.28);background:linear-gradient(115deg,#222044,#171c34);border-radius:14px;min-width:220px}
+.orbit-skills-target svg{color:#AA9BFF}.orbit-skills-target span{display:flex;flex-direction:column;gap:5px}.orbit-skills-target small{font-size:10px;color:#97A7C8}.orbit-skills-target strong{font-size:13px}
+.orbit-skills-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:22px}
+.orbit-skills-overview>div{display:flex;flex-direction:column;gap:11px;padding:19px;border-radius:15px;background:linear-gradient(145deg,#1D2742,#151B30);border:1px solid rgba(168,179,239,.13)}
+.orbit-skills-overview svg{color:#AA9BFF}.orbit-skills-overview span{font-size:11px;color:#A9B6D0}.orbit-skills-overview strong{font-size:28px;line-height:1;font-weight:760;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.orbit-skills-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:20px 0 15px}
+.orbit-skills-search{display:flex;align-items:center;gap:9px;border:1px solid #39435F;border-radius:11px;background:#191F35;padding:12px 13px;color:#A6B0CC;min-width:210px;flex:1;max-width:360px}
+.orbit-skills-search:focus-within{border-color:#B4A7FF;box-shadow:0 0 0 3px rgba(153,133,255,.1)}
+.orbit-skills-search input{width:100%;border:none;outline:none;background:transparent;color:#EEF1FF;font-size:12px;min-width:0}
+.orbit-skills-search input::placeholder{color:#909CB8}.orbit-skills-filters,.orbit-skills-view{display:flex;align-items:center;gap:5px;padding:5px;border-radius:12px;background:#192137;border:1px solid rgba(168,179,239,.13)}
+.orbit-skills-filters button,.orbit-skills-view button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 12px;border:0;background:transparent;color:#A2B0CF;border-radius:9px;font-size:11px;font-weight:700;white-space:nowrap;transition:background .18s,color .18s}
+.orbit-skills-filters button.active,.orbit-skills-view button.active{color:#F5F2FF;background:#403668}.orbit-skills-filters button:hover,.orbit-skills-view button:hover{color:#fff;background:#343252}
+.orbit-skills-workspace{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(320px,.7fr);gap:15px;align-items:stretch}
+.orbit-skills-canvas,.orbit-skills-inspector{overflow:hidden;border:1px solid rgba(177,190,241,.16);border-radius:18px;background:linear-gradient(145deg,rgba(27,36,61,.98),rgba(16,23,42,.98))}
+.orbit-skills-canvas{min-height:675px;display:flex;flex-direction:column}
+.orbit-skills-canvas-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 20px;border-bottom:1px solid rgba(177,190,241,.13)}
+.orbit-skills-canvas-header>span{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:740}
+.orbit-skills-canvas-header svg{color:#AE9DFF}.orbit-skills-canvas-header small{font-size:10px;color:#8E9FBD}
+.orbit-skills-flow{min-height:570px;flex:1;background:radial-gradient(circle at 50% 45%,rgba(104,82,213,.09),transparent 55%),#131A2D}
+.orbit-skills-flow .react-flow__pane{cursor:grab}.orbit-skills-flow .react-flow__node{cursor:pointer}
+.orbit-skills-flow .react-flow__node:focus-visible{outline:3px solid #52E7C7;outline-offset:5px}
+.orbit-skills-flow .react-flow__controls{background:#242D48;border:1px solid #454A76;box-shadow:0 8px 30px #0003;border-radius:10px;overflow:hidden}
+.orbit-skills-flow .react-flow__controls-button{border-bottom:1px solid #434B69;background:#212B45;color:#DCE3FF}
+.orbit-skills-flow .react-flow__controls-button svg{fill:#DCE3FF}
+.orbit-skills-node-content{text-align:left;line-height:1.4;font-family:inherit}
+.orbit-skills-node-top{display:flex;align-items:center;gap:9px}
+.orbit-skills-node-top strong{font-size:12px;font-weight:750;max-width:208px;overflow-wrap:anywhere}
+.orbit-skills-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0;box-shadow:0 0 9px rgba(160,147,238,.26)}
+.orbit-skills-node-content>small{display:block;font-size:10px;color:#A7B4D0;margin:9px 0 12px}
+.orbit-skills-node-bars{border-top:1px solid rgba(182,194,239,.15);padding-top:10px;display:grid;gap:5px}
+.orbit-skills-node-bars>div{display:flex;justify-content:space-between;gap:10px;color:#A6B6D2;font-size:10px}
+.orbit-skills-node-bars b{color:#E4E9FF}
+.orbit-skills-list{display:flex;flex-direction:column;gap:8px;padding:14px;max-height:650px;overflow:auto}
+.orbit-skills-list-item{display:flex;align-items:center;gap:10px;text-align:left;width:100%;min-height:68px;border:1px solid rgba(167,181,233,.15);border-radius:11px;background:#1C2640;color:#DCE6FD;padding:12px 13px;transition:background .17s,border-color .17s}
+.orbit-skills-list-item:hover,.orbit-skills-list-item.active{background:#2B2C50;border-color:#A99AFF}
+.orbit-skills-list-text{display:flex;flex-direction:column;min-width:0;flex:1;gap:6px}
+.orbit-skills-list-text strong{font-size:12px}.orbit-skills-list-text small{font-size:10px;line-height:1.5;color:#9FACCC}
+.orbit-skills-list-score{font-size:11px;white-space:nowrap;font-weight:750;color:#C5BBFF}.orbit-skills-list-item>svg{color:#A3AECA}
+.orbit-skills-inspector{min-height:675px;max-height:1000px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#49516e transparent}
+.orbit-skills-placeholder{min-height:600px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:30px}
+.orbit-skills-placeholder-icon{width:62px;height:62px;display:grid;place-items:center;border:1px solid #5C518A;color:#C5B7FF;background:#2B284F;border-radius:18px}
+.orbit-skills-placeholder h3{font-size:21px;letter-spacing:-.5px;margin:20px 0 9px}
+.orbit-skills-placeholder p{max-width:310px;font-size:12px;line-height:1.7;color:#A1B0D1}
+.orbit-skills-detail{padding:24px 22px;animation:orbit-skill-reveal .26s cubic-bezier(.2,.75,.1,1) both}
+.orbit-skills-kicker{display:flex;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;font-weight:780;color:#D4C9FF}
+.orbit-skills-detail-header h2{font-size:25px;line-height:1.25;letter-spacing:-.7px;margin:14px 0}
+.orbit-skills-detail-header>p{font-size:12px;line-height:1.7;color:#A8B5D1}
+.orbit-skills-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:22px 0}
+.orbit-skills-values>div{display:flex;flex-direction:column;gap:7px;padding:13px;border:1px solid rgba(180,190,235,.14);background:#222B45;border-radius:12px}
+.orbit-skills-values span{color:#A4B1CC;font-size:10px}.orbit-skills-values strong{font-size:13px;font-weight:780;line-height:1.4;font-variant-numeric:tabular-nums}
+.orbit-skills-insight{display:flex;gap:10px;align-items:flex-start;padding:14px;border:1px solid rgba(82,231,199,.25);background:rgba(82,231,199,.06);border-radius:12px}
+.orbit-skills-insight svg{flex-shrink:0;color:#52E7C7}.orbit-skills-insight p{font-size:11px;line-height:1.7;color:#ACCAC7}.orbit-skills-insight strong{color:#D4FBEF}
+.orbit-skills-inspector-group{margin-top:25px}.orbit-skills-inspector-group h3{font-size:12px;font-weight:800;color:#EEF1FF;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(180,190,235,.13);padding-bottom:12px;margin-bottom:13px}
+.orbit-skills-inspector-group h3 span{margin-left:auto;color:#ACB6D0}
+.orbit-skills-inspector-group dl{margin:0;display:grid;gap:11px}
+.orbit-skills-inspector-group dl>div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:11px}
+.orbit-skills-inspector-group dt{color:#8E9DBB}.orbit-skills-inspector-group dd{margin:0;color:#E3EAFE;font-weight:750;text-align:right}
+.orbit-skills-relations{display:grid;gap:9px}
+.orbit-skills-relations>div{display:flex;flex-direction:column;gap:5px;padding:10px 12px;border:1px solid rgba(165,181,232,.15);border-radius:10px;background:#222A43}
+.orbit-skills-relations span{font-size:10px;color:#BEAFFE}.orbit-skills-relations strong{font-size:12px}.orbit-skills-relations small{color:#90A0C0;font-size:10px}
+.orbit-skills-muted{font-size:11px;color:#A0AEC9;line-height:1.65;margin:9px 0}
+.orbit-skills-evidence-list{display:grid;gap:10px}.orbit-skills-evidence-row{padding:12px;background:#212B45;border:1px solid rgba(167,183,231,.15);border-radius:10px}
+.orbit-skills-evidence-top{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.orbit-skills-source,.orbit-skills-evidence-type{font-size:9px;font-weight:750;color:#C9C2F7;border:1px solid rgba(193,184,255,.16);padding:4px 6px;border-radius:6px}
+.orbit-skills-evidence-type{color:#FFC97C}.orbit-skills-evidence-type.accepted{color:#6DE9C9}
+.orbit-skills-evidence-top time{font-size:9px;color:#9AA8C5;margin-left:auto}
+.orbit-skills-evidence-row p{font-size:11px;color:#DAE1F2;line-height:1.65;overflow-wrap:anywhere;margin:9px 0}
+.orbit-skills-evidence-row small{font-size:10px;color:#A3B1CA}
+.orbit-skills-detail-actions{display:grid;gap:9px;margin-top:23px}
+.orbit-skills-detail-actions a{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;font-size:12px;font-weight:780;text-decoration:none;border-radius:11px;color:#F5F2FF;background:linear-gradient(110deg,#6F5DD5,#5545AB)}
+.orbit-skills-detail-actions a+a{background:#2D3151;color:#D7D0FF;border:1px solid #525076}
+.orbit-skills-note{display:flex;align-items:flex-start;gap:11px;margin:16px 0;padding:15px 18px;border:1px solid rgba(82,231,199,.18);background:rgba(82,231,199,.055);border-radius:12px;color:#B1CDCF;font-size:11px;line-height:1.7}
+.orbit-skills-note svg{color:#52E7C7;flex-shrink:0}
+.orbit-skills-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:20px 0;font-size:12px}
+.orbit-skills-footer a{display:flex;align-items:center;gap:7px;text-decoration:none;color:#C4B8FF;font-weight:740}
+.orbit-skills-zero{display:flex;min-height:430px;flex-direction:column;gap:14px;align-items:center;justify-content:center;color:#AAB6D4}
+.orbit-skills-zero strong{font-size:16px;color:#F4F7FF}.orbit-skills-zero p{font-size:12px}
+.orbit-skills-zero button{padding:11px 17px;border-radius:9px;border:1px solid #8B79DF;color:#F4F1FF;background:#423870}
+.orbit-skills-empty{margin:25px auto;padding:80px 28px;display:flex;align-items:center;text-align:center;flex-direction:column;gap:18px;border-radius:18px;border:1px solid rgba(171,165,247,.2);background:#151D34}
+.orbit-skills-empty>span{width:66px;height:66px;border-radius:20px;display:grid;place-items:center;background:#302756;color:#B7A7FF}
+.orbit-skills-empty h2{font-size:24px;letter-spacing:-.5px}.orbit-skills-empty p{max-width:470px;font-size:13px;color:#AAB5CE;line-height:1.7}
+.orbit-skills-empty a{display:flex;align-items:center;gap:8px;text-decoration:none;border-radius:11px;background:#7966DF;color:#fff;font-size:12px;font-weight:740;padding:14px 18px}
+@keyframes orbit-skill-reveal{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:1180px){.orbit-skills-workspace{grid-template-columns:minmax(0,1fr) 340px}.orbit-skills-inner{padding-left:22px;padding-right:22px}.orbit-skills-toolbar{justify-content:flex-start}}
+@media(max-width:940px){.orbit-skills-workspace{grid-template-columns:1fr}.orbit-skills-canvas{min-height:480px}.orbit-skills-flow{min-height:450px}.orbit-skills-inspector{min-height:300px;max-height:none}.orbit-skills-placeholder{min-height:240px}.orbit-skills-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.orbit-skills-inner{padding:27px 15px 55px}.orbit-skills-heading{align-items:flex-start;flex-direction:column}.orbit-skills-heading h1{font-size:39px}.orbit-skills-target{width:100%}.orbit-skills-overview{gap:8px}.orbit-skills-overview>div{padding:14px}.orbit-skills-overview strong{font-size:23px}.orbit-skills-toolbar{gap:9px}.orbit-skills-search{max-width:none;width:100%;flex:auto}.orbit-skills-filters{flex:1;justify-content:space-between}.orbit-skills-filters button{flex:1;padding:10px 6px;font-size:10px}.orbit-skills-view{width:100%}.orbit-skills-view button{flex:1}.orbit-skills-canvas-header{flex-wrap:wrap}.orbit-skills-inspector{border-radius:14px}.orbit-skills-list-item{padding:12px 10px}.orbit-skills-list-score{font-size:10px}.orbit-skills-values{gap:7px}.orbit-skills-detail{padding:19px 15px}.orbit-skills-footer{align-items:flex-start;flex-direction:column}}
+@media(prefers-reduced-motion:reduce){.orbit-skills-detail{animation:none}.orbit-skills-filters button,.orbit-skills-view button,.orbit-skills-list-item{transition:none!important}}

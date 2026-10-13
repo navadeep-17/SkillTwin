@@ -26,7 +26,7 @@ export default async function OccupationMappingStatusPage() {
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Occupational skill mapping review</h1>
         <p className="mt-3 text-sm leading-7 text-slate-600">
           Every O*NET skill must be reviewed before SkillTwin may link it to its own canonical skill taxonomy.
-          Similar wording is not proof of equal competency. This page reports the reviewed ledger; it does not grant review permissions.
+          Similar wording is not proof of equal competency. The catalog now includes {canonicalSnapshot.skills.length} skills across software and other career domains; no new mappings are automatically approved. This page reports the reviewed ledger; it does not grant review permissions.
         </p>
       </header>
       <MappingReviewQueue queue={queue} catalogSkills={canonicalSnapshot.skills} />

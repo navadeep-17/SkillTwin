@@ -1,0 +1,38 @@
+name: Career Features — Authenticated QA
+
+# Manual only: this workflow handles smoke-user credentials.
+# Keep it off pull_request events to prevent untrusted PR code from using secrets.
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Trusted staging or branch-preview HTTPS origin (must be in repository variable QA_ALLOWED_ORIGINS)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  career-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - name: Install Chromium Playwright
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify authenticated private feature routes
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+          QA_ALLOWED_ORIGINS: ${{ vars.QA_ALLOWED_ORIGINS }}
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          SMOKE_SECOND_EMAIL: ${{ secrets.SMOKE_SECOND_EMAIL }}
+          SMOKE_SECOND_PASSWORD: ${{ secrets.SMOKE_SECOND_PASSWORD }}
+        run: node scripts/career-feature-qa.mjs

@@ -11,6 +11,7 @@
  * and evaluator reliability, rather than being close to 1.0 by default.
  */
 export const ASSESSMENT_SCORING_VERSION = "assessment-aggregator-e2";
+export const LEGACY_ASSESSMENT_SCORING_VERSION = "assessment-aggregator-e1";
 
 export interface AssessmentScoringAttempt {
   score:number;
@@ -26,7 +27,7 @@ export interface AssessmentScoringResult {
   meanEvaluatorConfidence:number;
   questionCount:number;
   distinctConceptCount:number;
-  scoringVersion:typeof ASSESSMENT_SCORING_VERSION;
+  scoringVersion:typeof ASSESSMENT_SCORING_VERSION | typeof LEGACY_ASSESSMENT_SCORING_VERSION;
 }
 
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
@@ -97,4 +98,39 @@ export function calculateAssessmentSignals(input:{
     distinctConceptCount:concepts.size,
     scoringVersion:ASSESSMENT_SCORING_VERSION
   };
+}
+
+
+/**
+ * Preserve the production e1 estimator for instant rollback and deterministic
+ * A/B comparisons. This does not recompute historical evidence.
+ */
+export function calculateLegacyAssessmentSignals(input:{
+  attempts:readonly AssessmentScoringAttempt[];
+  coverage:number;
+}):AssessmentScoringResult {
+  const next=calculateAssessmentSignals(input); // shared input validation and metrics
+  let weightedScore=0;
+  let totalWeight=0;
+  for(const attempt of input.attempts){
+    const weight=0.8+0.1*attempt.difficulty;
+    weightedScore+=attempt.score*weight;
+    totalWeight+=weight;
+  }
+  const normalizedScore=weightedScore/totalWeight;
+  return {
+    ...next,
+    normalizedScore:round(normalizedScore,4),
+    levelSignal:round(clamp(0.4+normalizedScore*2.5,0.4,3.5),3),
+    assessmentConfidence:round(Math.min(0.95,
+      0.58+0.22*input.coverage+0.15*Math.min(input.attempts.length/6,1)),4),
+    scoringVersion:LEGACY_ASSESSMENT_SCORING_VERSION
+  };
+}
+
+export function selectAssessmentSignals(input:{
+  attempts:readonly AssessmentScoringAttempt[];
+  coverage:number;
+},enableA2:boolean):AssessmentScoringResult {
+  return enableA2?calculateAssessmentSignals(input):calculateLegacyAssessmentSignals(input);
 }

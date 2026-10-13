@@ -3,6 +3,7 @@ import Link from "next/link";
 import {ArrowRight, Bell, Gauge, ShieldCheck, Sparkles} from "lucide-react";
 import {createClient} from "@/lib/supabase/server";
 import {LearningSettingsForm} from "@/components/settings/learning-settings-form";
+import {ThemeSwitcher} from "@/components/theme/theme-switcher";
 import {OrbitPreviewNav} from "@/components/orbit/orbit-preview-nav";
 import "../orbit-lab/orbit-lab.css";
 import "./orbit-settings.css";
@@ -36,6 +37,7 @@ export default async function OrbitSettingsPage(){
       </header>
       <div className="os-columns">
         <div className="os-settings-form-wrapper">
+          <ThemeSwitcher/>
           <LearningSettingsForm initial={preferences} orbit/>
           <div className="os-warning"><ShieldCheck size={18}/><p>These are actual account preferences. Selecting <strong>Save settings</strong> writes to your saved profile; opening this page alone does not.</p></div>
         </div>

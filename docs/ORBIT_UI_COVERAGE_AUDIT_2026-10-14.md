@@ -46,7 +46,7 @@ These pages continue to use their **functional existing React components** and s
 4. **Journey Chat / Agent Activity global drawer**: unify chat bubbles, thread history, source references, guarded actions and the assistant dock with Orbit's dark language.
 5. **Progress / weekly reports**: native responsive charts driven only by recorded trends and real saved reports.
 6. **Occupation Atlas**: fully integrated comparison and research views with preserved source status, release/year, country context and licensing.
-7. **Settings**: Orbit-native controls for notification, weekly report, reduced motion and density with existing save API.
+7. **Settings**: Native Orbit controls for the four persisted presentation preferences are implemented. Goal, learning-calendar, adaptation-mode and broader privacy controls in Component G require a separate verified persistence/API contract before UI design.
 8. **Practice Hub / legacy assessment alternate flows**: native task states and transitions while keeping current scoring and evidence services.
 9. **Errors, not-found, sign-in and password recovery**: continue visual alignment and accessible fallback design.
 10. **Authenticated end-to-end QA** of real learner routes remains outstanding; fixture browser screenshots only prove presentation and interaction in fictional previews.

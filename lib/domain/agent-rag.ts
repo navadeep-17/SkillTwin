@@ -139,3 +139,50 @@ export function shouldRetrieveProjectCode(question:string):boolean {
   if(/\b(readiness|career|confidence|score|assessment|roadmap|learning plan|skill gap|progress)\b/.test(text))return false;
   return /\b(code|source|file|files|function|functions|implement|implemented|implementation|algorithm|logic|pipeline|architecture|auth|authentication|design|security|bug|review)\b/.test(text);
 }
+
+
+/** Tenant filtering happens in SQL first. This helper selects ONLY among those saved rows. */
+export type SavedCodeProject={
+  id:string;title:string;repository:string;
+};
+export type SavedCodeProjectSelection=
+  | {status:"NONE"}
+  | {status:"AMBIGUOUS";titles:string[]}
+  | {status:"SELECTED";project:SavedCodeProject};
+
+function hasWholeProjectLabel(question:string,label:string):boolean {
+  const needle=label.trim().toLowerCase();
+  if(needle.length<3)return false;
+  const hay=question.toLowerCase();
+  let from=0;
+  while(from<hay.length){
+    const at=hay.indexOf(needle,from);
+    if(at<0)return false;
+    const after=at+needle.length;
+    const isNameChar=(character:string)=>/[a-z0-9_.-]/.test(character);
+    if((at===0||!isNameChar(hay[at-1]))&&
+       (after===hay.length||!isNameChar(hay[after])))return true;
+    from=after;
+  }
+  return false;
+}
+
+/** Never guess a project when multiple account-owned candidates remain. */
+export function selectSavedCodeProject(
+  question:string,projects:readonly SavedCodeProject[]
+):SavedCodeProjectSelection {
+  if(!projects.length)return {status:"NONE"};
+  if(projects.length===1)return {status:"SELECTED",project:projects[0]};
+  const exact=projects.filter(project=>{
+    const [owner,name]=project.repository.split("/");
+    return Boolean(owner && name &&
+      (hasWholeProjectLabel(question,owner+"/"+name) ||
+       hasWholeProjectLabel(question,name) ||
+       hasWholeProjectLabel(question,project.title)));
+  });
+  if(exact.length===1)return {status:"SELECTED",project:exact[0]};
+  return {
+    status:"AMBIGUOUS",
+    titles:projects.slice(0,8).map(project=>project.title)
+  };
+}

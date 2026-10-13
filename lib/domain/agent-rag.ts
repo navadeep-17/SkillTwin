@@ -119,7 +119,8 @@ export function renderProjectRagResult(
   if(!hits.length)return "I inspected the available bounded code excerpts but could not find a passage matching your question. The current pilot reads up to three source files, not the entire repository. I cannot infer unseen implementation.";
   const verified=hits.filter(hit=>matchesSourceClaim(repository,commitSha,hit.source));
   if(!verified.length)return "I cannot verify that the retrieved excerpts belong to the specified repository, commit and line range. No source-backed conclusion can be made.";
-  const summary=generatedSummary?.trim().slice(0,850);
+  // Model-generated text may summarize evidence, but may not introduce URLs.
+  const summary=generatedSummary?.trim().replace(/https?:\/\/\S+/gi,"[unverified link omitted]").slice(0,850);
   const intro=summary
     ? "Based on the retrieved public code (not verified authorship): "+summary+"\n\n"
     : "I found relevant code passages, but cannot conclusively explain behavior beyond these excerpts:\n\n";

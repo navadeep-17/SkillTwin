@@ -18,8 +18,8 @@ import {
 const base=process.cwd();
 const files={
   source:resolve(base,"data/occupations/onet-online-curated-2026-10-13-v1.json"),
-  catalog:resolve(base,"data/occupation-mappings/canonical-skill-snapshot-v1.json"),
-  ledger:resolve(base,"data/occupation-mappings/review-decisions-v1.json")
+  catalog:resolve(base,"data/occupation-mappings/canonical-skill-snapshot-v2.json"),
+  ledger:resolve(base,"data/occupation-mappings/review-decisions-v2.json")
 };
 const source=JSON.parse(readFileSync(files.source,"utf8"));
 const catalog=JSON.parse(readFileSync(files.catalog,"utf8"));

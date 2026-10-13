@@ -63,7 +63,23 @@ try {
     const sampleOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(sampleOverflow <= 1, v.name + " graph page must not overflow horizontally: " + sampleOverflow);
 
-    for (const route of ["/orbit-beta", "/orbit-onboarding", "/orbit-skills"]) {
+    const journeyResponse = await page.goto(base + "/orbit-lab/journey-demo", { waitUntil: "networkidle", timeout: 45000 });
+    assert.equal(journeyResponse?.status(), 200, "Public Journey demo must render");
+    await page.getByRole("heading", { name: /A roadmap that moves with you/i }).waitFor();
+    await page.getByRole("button", { name: /Week 2/i }).click();
+    await page.getByRole("heading", { name: /Week 2: /i }).waitFor();
+    await page.getByText("Study probability distributions").waitFor();
+    await page.screenshot({ path: out + "/" + v.name + "-journey-milestones.png", fullPage: true, animations: "disabled" });
+    await page.getByRole("button", { name: /Moved Python validation earlier/i }).click();
+    await page.getByRole("heading", { name: "Moved Python validation earlier" }).waitFor();
+    await page.getByText(/2 recorded operations/).waitFor();
+    await page.screenshot({ path: out + "/" + v.name + "-journey-plandiff.png", fullPage: true, animations: "disabled" });
+    await page.getByRole("button", { name: /Plan preserved · Not Material/i }).click();
+    await page.getByRole("heading", { name: "Plan preserved intentionally" }).waitFor();
+    const journeyOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(journeyOverflow <= 1, v.name + " Journey overflows horizontally: " + journeyOverflow);
+    
+    for (const route of ["/orbit-beta", "/orbit-onboarding", "/orbit-skills", "/orbit-journey"]) {
       const noSession = await page.request.get(base + route, { maxRedirects: 0 });
       assert.ok([302, 303, 307, 308].includes(noSession.status()), route + " must redirect anonymous visitors");
     }

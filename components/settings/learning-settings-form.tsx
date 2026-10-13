@@ -10,7 +10,7 @@ type InitialSettings = {
   compact_density: boolean;
 };
 
-export function LearningSettingsForm({ initial }: { initial: InitialSettings }) {
+export function LearningSettingsForm({ initial, orbit = false }: { initial: InitialSettings; orbit?: boolean }) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(initial.notifications_enabled);
   const [weeklyReportEnabled, setWeeklyReportEnabled] = useState(initial.weekly_report_enabled);
   const [reducedMotion, setReducedMotion] = useState(initial.reduced_motion);
@@ -52,7 +52,7 @@ export function LearningSettingsForm({ initial }: { initial: InitialSettings }) 
   }
 
   return (
-    <div className="surface-card overflow-hidden">
+    <div className={orbit ? "os-native-settings overflow-hidden" : "surface-card overflow-hidden"}>
       <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
         <p className="eyebrow">Preferences</p>
         <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">Learning experience</h2>

@@ -123,6 +123,16 @@ A separate authenticated `/orbit-beta` route now shows the real active target, r
 
 CI validates TypeScript, Next.js build, static read-only/auth invariants and test suites, but cannot establish actual visual layout quality. An authenticated browser walkthrough is still required to verify Supabase join behavior and visually inspect screen widths, focus handling, graph legibility, contrast and performance before offering this as a live beta.
 
+## Next milestone: functional onboarding and next-action dashboard
+
+- **`/orbit-onboarding`** is a new authenticated, functional wrapper around the existing `OnboardingFlow` component. It preserves career selection, learning constraints, evidence analysis, and plan creation. Saving or analyzing changes the signed-in learner's actual data; use only a dedicated test account during review.
+- Mobile onboarding progress becomes a readable two-column stage grid instead of requiring horizontal scrolling.
+- **`/orbit-beta`** now selects the latest gap snapshot specifically for the active goal *and* role version. This prevents an unrelated prior goal snapshot from masking valid information.
+- Today retrieves a noncompleted task from the active plan belonging to that goal; it prefers an in-progress task before the next planned task, and links into the current roadmap. The Orbit screen does not complete or update tasks itself.
+- These routes are still design-branch previews. Existing `/overview`, `/onboarding` and `/roadmap` remain the production experiences.
+- CI includes a contract test for the real-task projection and the protected functional onboarding route; public browser QA checks that anonymous access redirects.
+- Signed-in browser QA still requires a dedicated authenticated test account and a reviewed environment. No secret-bearing browser logs or private learner screenshots should be published in pull-request artifacts.
+
 ## Route/data integration approach
 
 Do **not** replace existing domain components or database logic. Extract a reusable OrbitShell and Orbit tokens. Integrate route by route behind an environment/feature gate, preserving old screens as a fallback until verified.

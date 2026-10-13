@@ -43,7 +43,7 @@ const officialResources:Readonly<Record<string,readonly Omit<OfficialStudyResour
     {kind:"TRAINING",title:"Cisco CCNA official guided training and practice",url:"https://www.cisco.com/site/us/en/learn/training-certifications/training/courses/ccna.html",access:"Issuer page — check pricing"}
   ],
   "power-bi-data-analyst":[
-    {kind:"EXAM_GUIDE",title:"Microsoft PL-300 exam objectives and learning resources",url:"https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/pl-300",access:"Official online learning"}
+    {kind:"EXAM_GUIDE",title:"Microsoft PL-300 exam objectives and learning resources",url:"https://learn.microsoft.com/en-us/certifications/resources/study-guides/PL-300",access:"Official online learning"}
   ],
   "databricks-data-engineer-associate":[
     {kind:"EXAM_GUIDE",title:"Databricks Data Engineer Associate exam guide",url:"https://www.databricks.com/learn/certification/data-engineer-associate",access:"Issuer page — check pricing"}

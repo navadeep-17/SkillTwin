@@ -52,6 +52,12 @@ function matchesSourceClaim(repository:string,commitSha:string,source:RagCodeSou
     "#L"+source.startLine+"-L"+source.endLine;
 }
 
+/** Reject a forged/mis-stated citation before the excerpt reaches synthesis. */
+function hasCanonicalPinnedCitation(source:RagCodeSource):boolean {
+  const match=/^https:\/\/github\.com\/([A-Za-z0-9-]+)\/([A-Za-z0-9_.-]+)\/blob\/([a-f0-9]{40})\//i.exec(source.sourceUrl);
+  return Boolean(match && matchesSourceClaim(match[1]+"/"+match[2],match[3],source));
+}
+
 /** Rank ONLY existing inspected, pinned, public source snippets. No speculative retrieval. */
 export function retrieveProjectPassages(
   question:string,sources:readonly RagCodeSource[],limit=2
@@ -60,7 +66,7 @@ export function retrieveProjectPassages(
   if(!terms.length)return [];
   const bounded=Math.max(1,Math.min(3,Math.trunc(limit)||2));
   return sources.flatMap(source=>{
-    if(!source.path || !source.sourceUrl.startsWith("https://github.com/")
+    if(!source.path || !hasCanonicalPinnedCitation(source)
       || !/^[a-f0-9]{40}$/i.test(source.blobSha)
       || !Number.isInteger(source.startLine) || !Number.isInteger(source.endLine)
       || source.endLine<source.startLine || source.excerpt.length>5000)return [];

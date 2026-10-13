@@ -86,5 +86,6 @@ test("recommendations use owner-scoped read-only inputs and link out to issuers"
   assert.match(ui,/Official exam and preparation/);
   assert.match(ui,/No evidence-backed shortlist yet/);
   assert.match(nav, /href: "\/certifications"/);
+  assert.match(middleware, /"\\/certifications"/);
   assert.doesNotMatch(api,/export async function POST|insert\s+into|update public/i);
 });

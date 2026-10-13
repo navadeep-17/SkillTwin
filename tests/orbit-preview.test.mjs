@@ -203,3 +203,36 @@ test("Public Proof demo uses fictional data and cannot write assessments", () =>
   assert.ok(qa.includes("proofCalls"));
   assert.ok(qa.includes('"/orbit-prove"'));
 });
+
+
+test("Orbit Explore preserves existing role-model semantics and is auth protected", () => {
+  const page=read("app/orbit-explore/page.tsx");
+  const client=read("app/orbit-explore/orbit-explore.tsx");
+  const middleware=read("middleware.ts");
+  const nav=read("components/orbit/orbit-preview-nav.tsx");
+  assert.ok(middleware.includes('"/orbit-explore"'));
+  assert.ok(nav.includes('href: "/orbit-explore"'));
+  assert.ok(page.includes("supabase.auth.getUser()"));
+  assert.ok(page.includes('from("role_versions")'));
+  assert.ok(page.includes('from("role_skill_requirements")'));
+  assert.ok(page.includes('from("user_skills")'));
+  assert.ok(page.includes('.eq("user_id",auth.user.id)'));
+  assert.ok(page.includes("role_versions") && page.includes("requirement_groups"));
+  assert.ok(!page.includes(".insert(") && !page.includes(".update(") && !page.includes(".delete("));
+  assert.ok(client.includes("compareCareerRequirements"));
+  assert.ok(client.includes('groupType==="ANY_OF"'));
+  assert.ok(client.includes('sampleOnly'));
+  assert.ok(client.includes("not a career-fit or readiness percentage"));
+  assert.ok(!client.includes('fetch("/api/'));
+});
+
+test("Explore fixture never touches live profile and browser QA covers comparison", () => {
+  const demo=read("app/orbit-lab/explore-demo/page.tsx");
+  const qa=read("scripts/orbit-visual-qa.mjs");
+  assert.ok(demo.includes("Fictional careers"));
+  assert.ok(demo.includes("sampleOnly"));
+  assert.ok(!demo.includes("createClient") && !demo.includes("supabase"));
+  assert.ok(qa.includes("/orbit-lab/explore-demo"));
+  assert.ok(qa.includes("Shared skill comparison must use canonical IDs"));
+  assert.ok(qa.includes('"/orbit-explore"'));
+});

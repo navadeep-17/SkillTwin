@@ -78,7 +78,7 @@ export default function OrbitLab() {
     <div className="orbit-ambient orbit-ambient-a" /><div className="orbit-ambient orbit-ambient-b" />
     <header className="orbit-header">
       <a className="orbit-logo" href="#orbit" onClick={(e) => { e.preventDefault(); go("landing"); }}><TwinMark /><span>SkillTwin<span className="orbit-logo-period">.</span></span><span className="orbit-logo-tag">ORBIT</span></a>
-      <nav aria-label="Prototype screens" className="orbit-nav">{([{ id:"landing",label:"Landing" },{ id:"today",label:"Today" },{ id:"challenge",label:"Challenge" }] as const).map((x) => <button key={x.id} className={screen === x.id ? "active" : ""} aria-current={screen === x.id ? "page" : undefined} onClick={() => go(x.id)}>{x.label}</button>)}<a href="/orbit-lab/skill-demo">My Twin</a><a href="/orbit-lab/journey-demo">Journey</a></nav>
+      <nav aria-label="Prototype screens" className="orbit-nav">{([{ id:"landing",label:"Landing" },{ id:"today",label:"Today" },{ id:"challenge",label:"Challenge" }] as const).map((x) => <button key={x.id} className={screen === x.id ? "active" : ""} aria-current={screen === x.id ? "page" : undefined} onClick={() => go(x.id)}>{x.label}</button>)}<a href="/orbit-lab/skill-demo">My Twin</a><a href="/orbit-lab/journey-demo">Journey</a><a href="/orbit-lab/proof-demo">Prove</a></nav>
       <span className="orbit-preview-pill"><span className="orbit-live-dot" /> Concept prototype</span>
     </header>
     <main key={screen} className="orbit-content orbit-enter">

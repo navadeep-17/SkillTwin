@@ -313,7 +313,7 @@ test("Orbit default navigation and authentication follow SERVER rollout state, n
   assert.ok(links.includes("orbitDefault ? orbitPrimaryLinks : classicPrimaryLinks"));
   assert.ok(!links.includes("process.env."), "client navigation must not read a build-frozen flag");
   assert.ok(links.includes('href: "/orbit-beta"') && links.includes('href: "/overview"'));
-  assert.ok(links.includes('label: "Try SkillTwin Orbit"'));
+  assert.ok(!links.includes('label: "Try SkillTwin Orbit"'), "Classic navigation should not promote alternate Orbit UI");
   assert.ok(nav.includes("<AppNavLinks orbitDefault={orbitDefault} />"));
   assert.ok(nav.includes("<MobileNavLinks orbitDefault={orbitDefault} />"));
   assert.ok(nav.includes('href="/journey"'), "Ask SkillTwin must remain available");

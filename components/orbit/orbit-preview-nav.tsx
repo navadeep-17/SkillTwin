@@ -5,7 +5,6 @@ import "./orbit-preview-nav-extra.css";
 import { usePathname } from "next/navigation";
 import { BrainCircuit, Compass, Fingerprint, House, Route, Sparkles, ChevronDown, Award, MessageSquareText, Settings2, ArrowLeft, FolderKanban, FileCode2, ScrollText, Activity, TrendingUp, BookOpenText, Beaker } from "lucide-react";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 
 const items = [
   { href: "/orbit-beta", label: "Today", icon: House, orbit: true },
@@ -39,7 +38,6 @@ export function OrbitPreviewNav() {
         })}
       </nav>
       <div className="orbit-preview-actions">
-        <ThemeSwitcher compact/>
         <details className="orbit-preview-more">
           <summary>More <ChevronDown size={14} aria-hidden="true"/></summary>
           <div className="orbit-preview-menu">

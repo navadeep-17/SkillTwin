@@ -18,7 +18,3 @@
 .orbit-preview-menu a[aria-current="page"]{color:#fff;background:#403767}
 .orbit-preview-menu a:focus-visible,.orbit-preview-menu button:focus-visible{outline:2px solid #65e7ce;outline-offset:2px}
 @media(max-width:460px){.orbit-preview-menu{min-width:min(255px,86vw);right:0}}
-
-/* Keep theme selection compact beside the More menu at every viewport. */
-.orbit-preview-actions{display:flex;align-items:center;gap:8px}
-@media(max-width:560px){.orbit-preview-actions{gap:5px}}

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 import { AppNavLinks, MobileNavLinks } from "@/components/shell/app-nav-links";
 
 export async function AppNav({ userId, email, orbitDefault = false }: { userId: string; email?: string | null; orbitDefault?: boolean }) {
@@ -51,7 +50,6 @@ export async function AppNav({ userId, email, orbitDefault = false }: { userId: 
         </div>
 
         <div className="shrink-0 space-y-3 border-t border-slate-200/80 pt-3">
-          <ThemeSwitcher compact/>
           <Link
             href="/onboarding"
             className="block rounded-2xl border border-slate-200 bg-slate-50/80 p-3 transition hover:border-brand-200 hover:bg-brand-50/50"
@@ -84,9 +82,6 @@ export async function AppNav({ userId, email, orbitDefault = false }: { userId: 
           <span className="font-semibold tracking-tight">SkillTwin</span>
         </Link>
         <div className="flex items-center gap-2">
-          <Link href="/orbit-beta" className="rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-700">
-            Try Orbit
-          </Link>
           <Link href="/journey" className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600">
             Ask SkillTwin
           </Link>

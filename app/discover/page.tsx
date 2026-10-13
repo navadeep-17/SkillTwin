@@ -94,22 +94,25 @@ export default async function DiscoverCareersPage() {
     const uniqueIds = new Set(reqs.map(item => item.skill_id));
     const demonstratedCount = [...uniqueIds].filter(id => documentedSkillIds.has(id)).length;
 
+    const source: DiscoverableRole["source"] = version.source === "AI_GENERATED" ? "AI_GENERATED" : "SEEDED";
     return {
       id: String(version.id),
       roleId: String(version.role_id),
       name: String(meta?.name ?? "Career role"),
       family: String(meta?.family ?? "Other careers"),
       version: Number(version.version),
-      source: version.source === "AI_GENERATED" ? "AI_GENERATED" : "SEEDED",
+      source,
       personal: Boolean(meta?.owner_user_id),
       requirementCount: uniqueIds.size,
       documentedCount: demonstratedCount,
       requirements: reqs.map(item => {
         const skill = one(item.skills);
         const group = one(item.requirement_groups);
+        const groupType: DiscoverableRole["requirements"][number]["groupType"] =
+          group?.group_type === "ANY_OF" ? "ANY_OF" : group?.group_type === "ALL_OF" ? "ALL_OF" : "SINGLE";
         return {
           groupName: group?.name ?? "Competency",
-          groupType: group?.group_type === "ANY_OF" ? "ANY_OF" : group?.group_type === "ALL_OF" ? "ALL_OF" : "SINGLE",
+          groupType,
           skillId: item.skill_id,
           name: skill?.canonical_name ?? "Competency",
           category: skill?.category ?? "",

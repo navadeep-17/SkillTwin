@@ -8,6 +8,15 @@ import {
 } from "lucide-react";
 
 export type OrbitTodayModel = {
+  planVersion: number | null;
+  nextTask: null | {
+    id: string;
+    title: string;
+    type: string;
+    durationMinutes: number;
+    status: string;
+    dueAt: string | null;
+  };
   roleName: string | null;
   readiness: number | null;
   coverage: number | null;
@@ -164,15 +173,31 @@ export function OrbitTodayLive({ model }: { model: OrbitTodayModel }) {
               <p>Role-relative estimate, not a guarantee of employment or actual proficiency.</p>
             </section>
             <section className="orbit-panel orbit-live-next">
-              <div className="orbit-panel-overline"><Lightbulb size={15}/> HIGHEST PRIORITIES</div>
-              <h2>Your next areas of focus</h2>
+              <div className="orbit-panel-overline"><Lightbulb size={15}/> YOUR NEXT MOVE {model.planVersion!=null && <span>PLAN v{model.planVersion}</span>}</div>
+              {model.nextTask ? (
+                <div className="orbit-live-featured-task">
+                  <div className="orbit-live-featured-meta">
+                    <span>{friendly(model.nextTask.type)} · {model.nextTask.durationMinutes} min</span>
+                    <span>{friendly(model.nextTask.status)}</span>
+                  </div>
+                  <h2>{model.nextTask.title}</h2>
+                  <p>Continue the next task in your active, versioned learning plan. Your progress is saved in the existing SkillTwin journey.</p>
+                  <Link className="orbit-live-cta" href="/roadmap">Open my next task <ArrowRight size={16}/></Link>
+                </div>
+              ) : (
+                <div className="orbit-live-featured-task">
+                  <h2>{model.roleName?"Your next step is to build a plan":"Choose your first career goal"}</h2>
+                  <p>{model.roleName?"Add evidence and generate an adaptive roadmap to unlock personalized tasks.":"Start with a career goal and supporting evidence to make SkillTwin useful."}</p>
+                  <Link className="orbit-live-cta" href={model.roleName?"/roadmap":"/orbit-onboarding"}>{model.roleName?"View the roadmap":"Build my SkillTwin"} <ArrowRight size={16}/></Link>
+                </div>
+              )}
+              <div className="orbit-live-priority-heading">Areas to focus on next</div>
               {model.priorities.length? <div className="orbit-live-priorities">
                 {model.priorities.map(item=><div key={item.skillId} className="orbit-live-priority">
                   <span className="orbit-live-priority-dot"/>
                   <div><strong>{item.name}</strong><small>{friendly(item.action)} · {friendly(item.band)}</small></div>
                 </div>)}
               </div> : <p>{model.readiness==null?"Build your SkillTwin to discover role-relative gaps.":"No outstanding priority gaps in the latest snapshot."}</p>}
-              <Link className="orbit-live-cta" href="/roadmap">Continue my learning plan <ArrowRight size={16}/></Link>
             </section>
             <section className="orbit-live-explain"><ShieldCheck size={20}/><div><strong>The numbers come from SkillTwin.</strong><p>Graph relationships, confidence, readiness and priorities are read from your saved learner state. Selecting a node never changes it.</p></div></section>
           </aside>

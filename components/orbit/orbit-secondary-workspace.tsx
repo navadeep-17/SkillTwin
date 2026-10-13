@@ -41,9 +41,9 @@ const quickLinks=[
   {path:"/project-defense",label:"Project Defense",icon:FileCode2},
   {path:"/passport",label:"Passport",icon:ScrollText},
   {path:"/journey",label:"Ask SkillTwin",icon:MessageCircle},
-  {path:"/activity",label:"Activity",icon:Activity},
+  {path:"/orbit-activity",label:"Activity",icon:Activity},
   {path:"/progress",label:"Progress",icon:TrendingUp},
-  {path:"/settings",label:"Settings",icon:Settings2}
+  {path:"/orbit-settings",label:"Settings",icon:Settings2}
 ];
 
 export function OrbitSecondaryWorkspace({pathname,children}:{

@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { getSql } from "@/lib/db/postgres";
-import { calculateAssessmentSignals, ASSESSMENT_SCORING_VERSION } from "@/lib/domain/assessment-scoring-guardrails";
+import { selectAssessmentSignals, LEGACY_ASSESSMENT_SCORING_VERSION } from "@/lib/domain/assessment-scoring-guardrails";
 import { getGeminiStructuredClient } from "@/lib/ai/gemini-interactions";
 import { evaluateConstructedWithFallback } from "@/lib/domain/constructed-assessment";
 import { assessmentAnswerReplay } from "@/lib/domain/assessment-replay";
@@ -18,7 +18,7 @@ import { getAdaptiveReplannerService } from "@/lib/services/replanner/adaptive-r
 
 export const ASSESSMENT_BLUEPRINT_VERSION = "adaptive-blueprint-e3";
 export const ASSESSMENT_EVALUATION_VERSION = "hybrid-rubric-evaluator-e2";
-export const ASSESSMENT_AGGREGATOR_VERSION = ASSESSMENT_SCORING_VERSION;
+export const ASSESSMENT_AGGREGATOR_VERSION = LEGACY_ASSESSMENT_SCORING_VERSION;
 export const ASSESSMENT_QUESTION_VERSION = "mixed-bank-g1";
 
 type Row = Record<string, unknown>;
@@ -743,7 +743,8 @@ export class AssessmentService {
       else weaknesses.push(conceptId);
     }
 
-    const scoring = calculateAssessmentSignals({
+    // Default OFF: enable only after staging assessment acceptance.
+    const scoring = selectAssessmentSignals({
       coverage,
       attempts: attemptRows.map(row => ({
         score: Number(row.score),
@@ -751,7 +752,7 @@ export class AssessmentService {
         evaluatorConfidence: Number(row.evaluator_confidence ?? 0.5),
         conceptId: jsonArray(row.concept_ids)[0] ?? "unknown"
       }))
-    });
+    }, process.env.SKILLTWIN_SCORING_A2_ENABLED === "true");
     const { normalizedScore, assessmentConfidence, levelSignal } = scoring;
 
     const outcomeRows = rows(await sql.unsafe(
@@ -767,7 +768,7 @@ export class AssessmentService {
         JSON.stringify(strengths),
         JSON.stringify(weaknesses),
         JSON.stringify(conceptSummary),
-        ASSESSMENT_AGGREGATOR_VERSION
+        scoring.scoringVersion
       ]
     ));
     let outcome = outcomeRows[0];
@@ -775,7 +776,7 @@ export class AssessmentService {
     const evidenceResult = await getEvidenceEngine().ingestBatch({
       userId,
       trigger: { type: "ASSESSMENT_COMPLETED", ref: assessmentId },
-      producerVersion: ASSESSMENT_AGGREGATOR_VERSION,
+      producerVersion: scoring.scoringVersion,
       candidates: [{
         skillId: String(assessment.skill_id),
         sourceType: "ASSESSMENT_SUMMARY",

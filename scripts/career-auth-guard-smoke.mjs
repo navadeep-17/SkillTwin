@@ -40,6 +40,33 @@ try {
     await delay(500);
   }
   if (!ready) throw new Error("Next did not become ready. " + output);
+  // The agent's stored chats and mutating confirmation paths must remain
+  // invisible to anonymous visitors, even after thread-history additions.
+  const unknownId="00000000-0000-0000-0000-000000000001";
+  const privateApi=[
+    {method:"GET",path:"/api/chat"},
+    {method:"GET",path:"/api/chat?threadId="+unknownId},
+    {method:"POST",path:"/api/chat",body:JSON.stringify({message:"Hello"})},
+    {method:"POST",path:"/api/chat/actions/"+unknownId+"/confirm"},
+    {method:"POST",path:"/api/chat/actions/"+unknownId+"/reject"}
+  ];
+  for (const endpoint of privateApi) {
+    const response=await fetch(base+endpoint.path,{
+      method:endpoint.method,
+      headers:endpoint.body?{"Content-Type":"application/json"}:{},
+      body:endpoint.body,
+      redirect:"manual",signal:AbortSignal.timeout(6000)
+    });
+    if(response.status!==401)
+      throw new Error(endpoint.method+" "+endpoint.path+
+        " must reject anonymous agent access with 401, got "+response.status);
+    console.log("ANONYMOUS_AGENT_API_GUARD=PASS "+endpoint.method+" "+endpoint.path);
+  }
+  const journey=await get("/journey");
+  const location=journey.headers.get("location")??"";
+  if(![301,302,303,307,308].includes(journey.status)||!location.includes("/login"))
+    throw new Error("Journey page must redirect anonymous users to login.");
+
   for (const route of ["/passport", "/challenge-my-twin", "/project-defense", "/discover", "/occupations", "/occupations/mappings", "/occupations/models"]) {
     const response = await get(route);
     const location = response.headers.get("location") ?? "";

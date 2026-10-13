@@ -1,0 +1,53 @@
+import "server-only";
+import { getSql } from "@/lib/db/postgres";
+import { inspectPublicRepository } from "@/lib/services/projects/project-defense-service";
+import { parsePublicGitHubRepo } from "@/lib/domain/project-defense";
+import { retrieveProjectPassages, renderProjectRagResult } from "@/lib/domain/agent-rag";
+
+/**
+ * This intentionally reuses Project Defense's vetted public GitHub reader:
+ * no model-supplied URL, no private repository credentials, no arbitrary fetch.
+ * Repository selection and ownership are verified server-side before retrieval.
+ */
+export async function readSavedProjectCode(input:{userId:string;question:string}) {
+  const projects=await getSql().unsafe(
+    "select id,title,artifact_url from public.profile_projects where user_id=$1::uuid and artifact_url is not null order by created_at desc limit 20",
+    [input.userId]
+  ) as Array<{id:string;title:string;artifact_url:string}>;
+  const eligible=projects.filter(p=>parsePublicGitHubRepo(p.artifact_url)!==null);
+  if(!eligible.length)return {
+    content:"I could not find a saved public GitHub repository for your learner account. Add a project with a public github.com/owner/repository URL in Projects first.",
+    refs:[] as Array<{type:"profile_project";id:string;label:string}>,
+    meta:{generator:"source-rag-fallback-v1",readTools:["get_project_code"] as string[]}
+  };
+  const question=input.question.toLowerCase();
+  const matched=eligible.filter(p=>{
+    const repo=parsePublicGitHubRepo(p.artifact_url);
+    return repo && (question.includes(repo.repo.toLowerCase()) ||
+      question.includes((repo.owner+"/"+repo.repo).toLowerCase()) ||
+      (p.title.trim().length>=4 && question.includes(p.title.toLowerCase())));
+  });
+  if(matched.length>1 || (matched.length===0 && eligible.length>1))return {
+    content:"You have multiple saved public GitHub projects. Mention the repository name or exact saved project title so I don't inspect the wrong code. Options: "+
+      eligible.slice(0,8).map(p=>p.title).join(", ")+".",
+    refs:[] as Array<{type:"profile_project";id:string;label:string}>,
+    meta:{generator:"source-rag-fallback-v1",readTools:["get_project_code"] as string[]}
+  };
+  const selected=matched[0]??eligible[0];
+  try {
+    const snapshot=await inspectPublicRepository(selected.artifact_url);
+    const hits=retrieveProjectPassages(input.question,snapshot.sources,2);
+    return {
+      content:renderProjectRagResult(snapshot.repository,snapshot.commitSha,hits),
+      refs:[{type:"profile_project" as const,id:selected.id,label:selected.title}],
+      meta:{generator:"source-rag-fallback-v1",readTools:["get_project_code"] as string[]}
+    };
+  }catch {
+    // Do not expose repository contents, internal network exceptions or credentials.
+    return {
+      content:"I could not safely retrieve verified public code for this saved project right now. GitHub may be unavailable, rate-limited, or the repository may not have enough supported source files. Try again later or open Project Defense.",
+      refs:[{type:"profile_project" as const,id:selected.id,label:selected.title}],
+      meta:{generator:"source-rag-fallback-v1",readTools:["get_project_code"] as string[]}
+    };
+  }
+}

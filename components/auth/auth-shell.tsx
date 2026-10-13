@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { BrainCircuit, ShieldCheck, Sparkles, Workflow } from "lucide-react";
 import { isOrbitDefaultEnabled } from "@/lib/runtime/orbit-default";
 import "./orbit-auth-shell.css";
+import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 
 export function AuthShell({
   eyebrow,
@@ -54,6 +55,7 @@ export function AuthShell({
 
         <section className="flex items-center justify-center px-5 py-10 sm:px-10 lg:px-12">
           <div className="w-full max-w-md">
+            <div className="mb-6 flex justify-end"><ThemeSwitcher compact/></div>
             <div className="flex items-center gap-2 lg:hidden">
               <span className="flex size-9 items-center justify-center rounded-xl bg-brand-500 text-xs font-bold text-white">S</span>
               <span className="font-semibold tracking-tight text-slate-950">SkillTwin</span>

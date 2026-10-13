@@ -4,7 +4,7 @@
  * an unrelated attempt as if it were a successful submission.
  */
 export function assessmentAnswerReplay(
-  prior: { assessment_id: unknown; question_id: unknown } | null,
+  prior: Record<string, unknown> | null,
   assessmentId: string,
   questionId: string
 ): "NEW" | "REPLAY" | "CONFLICT" {

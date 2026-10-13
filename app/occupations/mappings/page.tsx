@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import occupationSnapshot from "@/data/occupations/onet-online-curated-2026-10-13-v1.json";
-import canonicalSnapshot from "@/data/occupation-mappings/canonical-skill-snapshot-v1.json";
-import reviewManifest from "@/data/occupation-mappings/review-decisions-v1.json";
+import canonicalSnapshot from "@/data/occupation-mappings/canonical-skill-snapshot-v2.json";
+import reviewManifest from "@/data/occupation-mappings/review-decisions-v2.json";
 import { buildMappingReviewQueue, validateMappingReviewManifest } from "@/lib/domain/occupation-mapping";
 import { MappingReviewQueue } from "@/components/occupations/mapping-review-queue";
 

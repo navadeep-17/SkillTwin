@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getSql } from "@/lib/db/postgres";
 import { getGeminiStructuredClient } from "@/lib/ai/gemini-interactions";
 import { evaluateConstructedWithFallback } from "@/lib/domain/constructed-assessment";
+import { assessmentAnswerReplay } from "@/lib/domain/assessment-replay";
 import {
   adaptiveAssessmentState,
   selectAdaptiveCandidate,
@@ -433,13 +434,8 @@ export class AssessmentService {
     const question = questionRows[0];
     if (!question) throw new Error("QUESTION_NOT_FOUND");
 
-    const answeredRows = rows(await sql.unsafe(
-      "select count(*)::int answered from public.skill_assessment_attempts where assessment_id=$1::uuid and user_id=$2::uuid",
-      [input.assessmentId, input.userId]
-    ));
-    const expectedOrdinal = Number(answeredRows[0]?.answered ?? 0) + 1;
-    if (Number(question.ordinal) !== expectedOrdinal) throw new Error("STALE_QUESTION");
-
+    // Resolve a committed answer before checking the next expected question.
+    // Otherwise a lost HTTP response converts a safe retry into STALE_QUESTION.
     const idempotencyKey = input.idempotencyKey?.trim()
       || createHash("sha256")
         .update([
@@ -454,9 +450,20 @@ export class AssessmentService {
       "select * from public.skill_assessment_attempts where user_id=$1::uuid and idempotency_key=$2 limit 1",
       [input.userId, idempotencyKey]
     ));
-    if (existingRows[0]) {
+    const replay = assessmentAnswerReplay(
+      existingRows[0] ?? null, input.assessmentId, input.questionId
+    );
+    if (replay === "CONFLICT") throw new Error("ASSESSMENT_ATTEMPT_CONFLICT");
+    if (replay === "REPLAY") {
       return this.afterAttempt(input.userId, input.assessmentId, existingRows[0]);
     }
+
+    const answeredRows = rows(await sql.unsafe(
+      "select count(*)::int answered from public.skill_assessment_attempts where assessment_id=$1::uuid and user_id=$2::uuid",
+      [input.assessmentId, input.userId]
+    ));
+    const expectedOrdinal = Number(answeredRows[0]?.answered ?? 0) + 1;
+    if (Number(question.ordinal) !== expectedOrdinal) throw new Error("STALE_QUESTION");
 
     const questionType = String(question.type);
     let evaluation;

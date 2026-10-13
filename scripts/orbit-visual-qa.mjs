@@ -49,6 +49,21 @@ try {
     const bridgedOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     assert.ok(bridgedOverflow<=2,v.name+" feature workspace overflows horizontally: "+bridgedOverflow);
 
+    const activityResponse=await page.goto(base+"/orbit-lab/activity-demo",{waitUntil:"networkidle",timeout:45000});
+    assert.equal(activityResponse?.status(),200,"Fictional Agent Activity page must render");
+    await page.getByRole("heading",{name:/Every meaningful action/}).waitFor();
+    await page.locator(".oa-event").first().waitFor();
+    assert.equal(await page.locator(".oa-event").count(),4,"Four fictional events should appear");
+    await page.getByRole("button",{name:"Adaptation",exact:true}).click();
+    assert.equal(await page.locator(".oa-event").count(),1,"Adaptation filter should isolate a single event");
+    await page.getByRole("button",{name:"All events",exact:true}).click();
+    await page.getByPlaceholder("Search events…").fill("Python challenge");
+    assert.equal(await page.locator(".oa-event").count(),1,"Keyword search must be interactive");
+    await page.getByPlaceholder("Search events…").fill("");
+    await page.screenshot({path:out+"/"+v.name+"-agent-activity.png",fullPage:true,animations:"disabled"});
+    const activityOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    assert.ok(activityOverflow<=2,v.name+" Agent Activity overflows horizontally: "+activityOverflow);
+
     const response = await page.goto(base + "/orbit-lab", { waitUntil: "networkidle", timeout: 45000 });
     assert.equal(response?.status(), 200, v.name + " prototype route must load");
     await page.getByRole("heading", { name: /Meet the AI that/i }).waitFor();

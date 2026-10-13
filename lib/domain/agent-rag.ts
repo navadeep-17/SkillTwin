@@ -147,6 +147,7 @@ export type SavedCodeProject={
 };
 export type SavedCodeProjectSelection=
   | {status:"NONE"}
+  | {status:"UNSAVED"}
   | {status:"AMBIGUOUS";titles:string[]}
   | {status:"SELECTED";project:SavedCodeProject};
 
@@ -172,6 +173,16 @@ export function selectSavedCodeProject(
   question:string,projects:readonly SavedCodeProject[]
 ):SavedCodeProjectSelection {
   if(!projects.length)return {status:"NONE"};
+  // A named external GitHub URL must never be silently replaced with the
+  // learner's only saved repository, even when exactly one project exists.
+  const explicit=[...question.matchAll(/(?:https?:\\/\\/)?github\\.com\\/([a-z0-9-]+)\\/([a-z0-9_.-]+)/gi)]
+    .map(match=>(match[1]+"/"+match[2]).replace(/\\.git$/i,"").toLowerCase());
+  if(explicit.length){
+    const explicitlySaved=projects.filter(p=>explicit.includes(p.repository.toLowerCase()));
+    if(explicitlySaved.length===1 && explicit.every(name=>name===explicitlySaved[0].repository.toLowerCase()))
+      return {status:"SELECTED",project:explicitlySaved[0]};
+    return {status:explicitlySaved.length?"AMBIGUOUS":"UNSAVED",titles:projects.slice(0,8).map(p=>p.title)};
+  }
   if(projects.length===1)return {status:"SELECTED",project:projects[0]};
   const exact=projects.filter(project=>{
     const [owner,name]=project.repository.split("/");

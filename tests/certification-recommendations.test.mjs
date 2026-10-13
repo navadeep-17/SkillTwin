@@ -75,6 +75,7 @@ test("recommendations use owner-scoped read-only inputs and link out to issuers"
   const page=read("app/certifications/page.tsx");
   const ui=read("components/certifications/certification-explorer.tsx");
   const nav=read("components/shell/app-nav-links.tsx");
+  const middleware=read("middleware.ts");
   assert.match(service,/\.eq\("user_id",userId\)/);
   assert.match(service,/\.eq\("goal_id",goal\.id\)/);
   assert.match(service,/\.select\("skill_id,status,priority_band,gap_severity/);

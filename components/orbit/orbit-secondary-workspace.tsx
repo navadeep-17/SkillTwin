@@ -11,6 +11,7 @@ import type {LucideIcon} from "lucide-react";
 import {OrbitPreviewNav} from "@/components/orbit/orbit-preview-nav";
 import "@/app/orbit-lab/orbit-lab.css";
 import "./orbit-secondary-workspace.css";
+import "./orbit-native-content.css";
 
 type Workspace={
   path:string;name:string;eyebrow:string;description:string;icon:LucideIcon;
@@ -82,7 +83,7 @@ export function OrbitSecondaryWorkspace({pathname,children}:{
         <span><ShieldCheck size={16}/> Connected to your saved SkillTwin data</span>
         <Link href="/orbit-beta">Back to Today <ArrowRight size={15}/></Link>
       </div>
-      <section className="osw-content" aria-label={workspace.name+" workspace"}>
+      <section className="osw-content osw-native-content" data-workspace={workspace.path} aria-label={workspace.name+" workspace"}>
         {children}
       </section>
       <footer className="osw-footer">

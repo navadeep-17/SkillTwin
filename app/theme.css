@@ -176,3 +176,26 @@ html[data-theme="light"] .orbit-dock-toolbar button:first-child{background:#fff!
 html[data-theme="light"] .oh-site :is(.oh-hero-copy h1 em,.oh-section-top h2 em,.oh-proof-copy h2 em,.oh-bottom-cta h2 em,.oh-eyebrow,.oh-section-kicker,.oh-mini-eyebrow){color:#5846b6!important}
 html[data-theme="light"] .oh-site .oh-showcase-after{background:#eefbf6!important;border-color:#9bdac4!important}
 html[data-theme="light"] .oh-site .oh-showcase-after :is(span,small){color:#286a58!important}
+
+/* Today is a separate wrapper rather than .orbit-lab: apply real light cards there too. */
+html[data-theme="light"] .orbit-beta-shell :is(.orbit-panel,.orbit-live-twin-panel,.orbit-live-metric,.orbit-live-next,.orbit-live-priorities,.orbit-live-inspector,.orbit-live-role,.orbit-live-explain,.orbit-live-node-list){
+ color:#1b2944!important;background:#fff!important;border-color:#d9dfed!important;
+}
+html[data-theme="light"] .orbit-beta-shell :is(h1,h2,h3,h4,.orbit-live-role strong,.orbit-live-priority strong,.orbit-live-number){color:#1c2a44!important}
+html[data-theme="light"] .orbit-beta-shell :is(p,small,.orbit-live-priority small,.orbit-live-legend span){color:#52637f!important}
+html[data-theme="light"] .orbit-beta-shell .orbit-live-graph{
+ background:radial-gradient(circle at 50% 45%,#29335b,#131b32 78%)!important;color:#eff3ff!important;border-radius:14px;
+}
+html[data-theme="light"] .orbit-beta-shell .orbit-live-graph :is(p,small,span,.orbit-live-legend span){color:#d9e1f5!important}
+html[data-theme="light"] .orbit-beta-shell .orbit-live-node-option{
+ background:#25304e!important;color:#eef2ff!important;border-color:#536080!important;
+}
+html[data-theme="light"] .orbit-beta-shell .orbit-live-node-option strong{color:#fff!important}
+
+/* The legacy authentication page must also obey user-selected dark mode. */
+html[data-theme="dark"] .st-auth-shell:not(.orbit-auth-root){background:#0b1426!important;color:#eaf0ff!important}
+html[data-theme="dark"] .st-auth-shell:not(.orbit-auth-root)>div{background:#17243b!important;border-color:#3c4c68!important}
+html[data-theme="dark"] .st-auth-shell:not(.orbit-auth-root)>div>section:last-child{background:#17243b!important}
+html[data-theme="dark"] .st-auth-shell:not(.orbit-auth-root) :is([class~="text-slate-950"],[class~="text-slate-900"],[class~="text-slate-800"]){color:#f2f5ff!important}
+html[data-theme="dark"] .st-auth-shell:not(.orbit-auth-root) :is([class~="text-slate-700"],[class~="text-slate-600"],[class~="text-slate-500"]){color:#b3c0d9!important}
+html[data-theme="dark"] .st-auth-shell:not(.orbit-auth-root) :is(input,textarea,select){color:#eef3ff!important;background:#111a2b!important;border-color:#52617d!important}

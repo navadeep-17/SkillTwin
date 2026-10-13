@@ -190,6 +190,20 @@ assert(
   "production readiness is not gated on database security invariants"
 );
 
+// Report slow runtime operations without exposing question text or learner data.
+assert(
+  readinessRoute.includes("readiness.diagnostics")
+    && readinessRoute.includes("databasePingMs")
+    && readinessRoute.includes("securityChecksMs"),
+  "readiness is missing safe per-stage latency diagnostics"
+);
+const assessmentCreateRoute = read("app/api/assessments/route.ts");
+assert(
+  assessmentCreateRoute.includes("assessment.create.slow")
+    && assessmentCreateRoute.includes("durationMs"),
+  "assessment creation is missing safe slow-request diagnostics"
+);
+
 const releaseSmoke = read("scripts/release-smoke.mjs");
 for (const marker of [
   "PUBLIC_SMOKE=PASS",

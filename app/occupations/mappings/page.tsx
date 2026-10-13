@@ -20,7 +20,7 @@ export default async function OccupationMappingStatusPage() {
 
   return (
     <main className="mx-auto max-w-7xl px-5 py-8 sm:px-6 lg:px-8 lg:py-10">
-      <Link href="/occupations" className="quiet-link">← Back to Occupation Atlas</Link>
+      <div className="flex flex-wrap items-center justify-between gap-3"><Link href="/occupations" className="quiet-link">← Back to Occupation Atlas</Link><Link href="/occupations/models" className="btn-secondary">Career model review →</Link></div>
       <header className="mt-6 max-w-3xl">
         <p className="eyebrow">SkillTwin · Transparent data governance</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Occupational skill mapping review</h1>

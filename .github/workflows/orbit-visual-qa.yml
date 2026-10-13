@@ -4,6 +4,11 @@ on:
   pull_request:
     paths:
       - "app/orbit-lab/**"
+      - "app/page.tsx"
+      - "components/landing/**"
+      - "lib/runtime/orbit-default.ts"
+      - "components/shell/app-nav-links.tsx"
+      - "app/login/page.tsx"
       - "app/orbit-beta/**"
       - "app/orbit-skills/**"
       - "app/orbit-journey/**"
@@ -25,6 +30,7 @@ jobs:
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: orbit-visual-qa-placeholder
+      NEXT_PUBLIC_SKILLTWIN_ORBIT_DEFAULT: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

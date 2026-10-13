@@ -122,9 +122,17 @@ export async function GET() {
       return fail(requestId, 401, "UNAUTHENTICATED", "Sign in to view your roadmap.");
     }
 
+    // PostgREST errors are plain objects, not Error instances. Preserve
+    // sanitized diagnostic fields instead of logging "[object Object]".
+    const details = error && typeof error === "object"
+      ? error as Record<string, unknown>
+      : {};
     console.error("roadmap.read.failed", {
       requestId,
-      error: error instanceof Error ? error.message : String(error)
+      code: typeof details.code === "string" ? details.code : null,
+      message: error instanceof Error ? error.message
+        : typeof details.message === "string" ? details.message : "Unknown roadmap read error",
+      hint: typeof details.hint === "string" ? details.hint : null
     });
     return fail(requestId, 500, "INTERNAL_ERROR", "Could not load the active roadmap.");
   }

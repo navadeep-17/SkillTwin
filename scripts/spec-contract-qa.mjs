@@ -178,6 +178,11 @@ assert(
   "roadmap challenge availability must use server-only aggregate SQL, not client question-bank access"
 );
 
+assert(
+  roadmapRoute.includes("typeof details.code") && roadmapRoute.includes("typeof details.message"),
+  "roadmap must log structured PostgREST error code and message for integration diagnosis"
+);
+
 const readinessRoute = read("app/api/readiness/route.ts");
 assert(
   readinessRoute.includes("checkDatabaseSecurity")

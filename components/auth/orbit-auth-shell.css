@@ -1,0 +1,23 @@
+/* Orbit auth styling: optional runtime theme over unchanged Supabase auth logic. */
+.orbit-auth-root{background:radial-gradient(820px 450px at 75% 0,rgba(109,83,210,.19),transparent 72%),#0b1020;min-height:100vh;color:#f3f5ff}
+.orbit-auth-root>div{border:1px solid rgba(184,169,246,.26);background:#141f37;box-shadow:0 22px 65px rgba(0,0,0,.36)}
+.orbit-auth-root>div>section:first-child{background:radial-gradient(510px 360px at 90% 0,rgba(151,113,240,.23),transparent 72%),linear-gradient(135deg,#2b2752,#171d3a)}
+.orbit-auth-root>div>section:first-child [class~="bg-brand-500"]{background:linear-gradient(120deg,#a08df9,#6651ca)}
+.orbit-auth-root>div>section:first-child h2{font-weight:820;letter-spacing:-.065em;font-size:clamp(30px,3.6vw,51px);line-height:1.11}
+.orbit-auth-root>div>section:first-child [class~="text-slate-400"]{color:#b2bfda}
+.orbit-auth-root>div>section:first-child [class~="text-slate-500"]{color:#a3b3d0}
+.orbit-auth-root>div>section:last-child{background:radial-gradient(290px 200px at 100% 0,rgba(104,84,181,.12),transparent),#141e34;color:#eff2ff}
+.orbit-auth-root :is([class~="text-slate-950"],[class~="text-slate-900"],[class~="text-slate-800"]){color:#f7f5ff}
+.orbit-auth-root :is([class~="text-slate-500"],[class~="text-slate-600"],[class~="text-slate-700"]){color:#afbed7}
+.orbit-auth-root :is([class~="text-brand-700"],[class~="text-brand-600"]){color:#c9baff}
+.orbit-auth-root [class~="bg-brand-50"]{background:#35325d}
+.orbit-auth-root [class~="bg-white"],.orbit-auth-root [class~="bg-slate-50"]{background:#24314d;color:#f3f4ff}
+.orbit-auth-root :is([class~="border-slate-200"],[class~="border-slate-300"]){border-color:#52617d}
+.orbit-auth-root :is(input:not([type="checkbox"]),textarea,select){background:#111a2f;border:1px solid #53617c;color:#f5f7ff;box-shadow:none}
+.orbit-auth-root :is(input,textarea)::placeholder{color:#8f9eb6}
+.orbit-auth-root .btn-primary{background:linear-gradient(115deg,#947ff0,#6652c4);border:1px solid #a493f7;color:#fff}
+.orbit-auth-root .btn-secondary{background:#292f4c;border:1px solid #685e93;color:#f0edff}
+.orbit-auth-root .quiet-link{color:#cabdff}
+.orbit-auth-root :is(a,button,input):focus-visible{outline:2px solid #77ead0;outline-offset:3px}
+@media(max-width:640px){.orbit-auth-root{padding:8px}.orbit-auth-root>div{border-radius:17px;min-height:calc(100vh - 16px)}}
+@media(prefers-reduced-motion:reduce){.orbit-auth-root *, .orbit-auth-root *::before,.orbit-auth-root *::after{animation:none!important;transition:none!important}}

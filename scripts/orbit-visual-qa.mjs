@@ -45,6 +45,16 @@ try {
     await page.getByRole("link",{name:"Evidence Passport",exact:true}).waitFor();
     await page.getByRole("link",{name:"Agent Activity",exact:true}).waitFor();
     await page.getByRole("link",{name:"My Certification Journey",exact:true}).waitFor();
+    // Inspect the actual computed style, not only the dark page frame.
+    const nativeSurface=await page.locator(".osw-content").evaluate(el=>{
+      const content=window.getComputedStyle(el);
+      const card=el.querySelector(".bg-white");
+      return {native:el.classList.contains("osw-native-content"),
+        background:content.backgroundColor,card:card?window.getComputedStyle(card).backgroundColor:null};
+    });
+    assert.equal(nativeSurface.native,true,"Secondary feature must opt into native interior theme");
+    assert.ok(nativeSurface.card&&nativeSurface.card!=="rgb(255, 255, 255)",
+      "Legacy card interior must use Orbit colours, not a white island");
     await page.screenshot({path:out+"/"+v.name+"-connected-workspace.png",fullPage:true,animations:"disabled"});
     const bridgedOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     assert.ok(bridgedOverflow<=2,v.name+" feature workspace overflows horizontally: "+bridgedOverflow);
@@ -82,6 +92,15 @@ try {
     const settingsOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     assert.ok(settingsOverflow<=2,v.name+" Settings overflows horizontally: "+settingsOverflow);
 
+
+    const loginResponse = await page.goto(base+"/login",{waitUntil:"networkidle",timeout:45000});
+    assert.equal(loginResponse?.status(),200,"Public login screen must render");
+    await page.locator(".orbit-auth-root").waitFor();
+    const authSkin=await page.locator(".orbit-auth-root").evaluate(el=>getComputedStyle(el).backgroundColor);
+    assert.notEqual(authSkin,"rgb(247, 248, 250)","Auth skin must not remain classic gray");
+    await page.screenshot({path:out+"/"+v.name+"-orbit-login.png",fullPage:true,animations:"disabled"});
+    const loginOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    assert.ok(loginOverflow<=2,v.name+" login overflows horizontally: "+loginOverflow);
 
     const response = await page.goto(base + "/orbit-lab", { waitUntil: "networkidle", timeout: 45000 });
     assert.equal(response?.status(), 200, v.name + " prototype route must load");

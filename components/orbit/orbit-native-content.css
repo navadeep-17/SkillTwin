@@ -1,0 +1,156 @@
+/*
+ * Orbit native-content pass for functional secondary features.
+ *
+ * Important: this is a visual adapter only. Existing Supabase queries,
+ * certification status/version actions, issuer source URLs, GitHub inspection,
+ * evidence scoring and protected API writes remain unchanged.
+ *
+ * We preserve semantic alert colours and original form controls while moving
+ * the actual CONTENT (not merely its outside header) to Orbit's dark system.
+ */
+.osw-native-content{
+  --orbit-paper:#111b31;--orbit-panel:#1b2742;--orbit-raised:#222e4e;
+  --orbit-ink:#f1f4ff;--orbit-muted:#adbcd6;--orbit-border:rgba(174,187,238,.2);
+  background:
+    radial-gradient(600px 310px at 80% -230px,rgba(138,110,234,.2),transparent 80%),
+    var(--orbit-paper);
+  border:1px solid rgba(174,157,250,.27);color:var(--orbit-ink);
+  box-shadow:0 24px 62px rgba(0,0,0,.25);
+  overflow:visible;isolation:isolate;
+}
+.osw-native-content>main{width:100%;max-width:100%;color:var(--orbit-ink)}
+.osw-native-content :is(h1,h2,h3,h4){letter-spacing:-.025em}
+.osw-native-content [class~="surface-card"],
+.osw-native-content [class~="surface-muted"],
+.osw-native-content [class~="bg-white"],
+.osw-native-content [class~="bg-white/90"],
+.osw-native-content [class~="bg-white/80"],
+.osw-native-content [class~="bg-slate-50"],
+.osw-native-content [class~="bg-slate-50/60"],
+.osw-native-content [class~="bg-slate-50/80"],
+.osw-native-content [class~="bg-indigo-50/30"]{
+  background:linear-gradient(150deg,#202c4a,#172239);
+  border-color:var(--orbit-border);
+  box-shadow:0 8px 26px rgba(0,0,0,.085);
+}
+.osw-native-content [class~="surface-card"]{backdrop-filter:blur(8px)}
+.osw-native-content :is([class~="text-slate-950"],[class~="text-slate-900"],[class~="text-slate-800"]){color:#f1f3ff}
+.osw-native-content :is([class~="text-slate-700"],[class~="text-slate-600"]){color:#b7c6de}
+.osw-native-content :is([class~="text-slate-500"],[class~="text-slate-400"]){color:#9faec8}
+.osw-native-content :is([class~="text-indigo-700"],[class~="text-indigo-600"],[class~="text-brand-600"],[class~="text-brand-700"]){color:#c4b5ff}
+.osw-native-content :is([class~="border-slate-100"],[class~="border-slate-200"],[class~="border-slate-300"],[class~="border-indigo-100"]){border-color:var(--orbit-border)}
+.osw-native-content [class~="divide-slate-100"]>:not([hidden])~:not([hidden]){border-color:var(--orbit-border)}
+.osw-native-content :is([class~="bg-indigo-50"],[class~="bg-brand-50"],[class~="bg-brand-50/60"],[class~="bg-indigo-100"]){background:#39345f;color:#c7bafa}
+.osw-native-content :is([class~="bg-slate-100"],[class~="bg-slate-200"]){background:#293551;color:#becbe2}
+.osw-native-content :is([class~="bg-emerald-50"],[class~="bg-green-50"]){background:#183f3d;border-color:#3d776f}
+.osw-native-content :is([class~="text-emerald-700"],[class~="text-emerald-800"],[class~="text-green-700"]){color:#8bebcd}
+.osw-native-content [class~="bg-amber-50"]{background:#443722;border-color:#92734a}
+.osw-native-content :is([class~="text-amber-900"],[class~="text-amber-800"],[class~="text-amber-700"]){color:#ffda9e}
+.osw-native-content [class~="bg-red-50"],.osw-native-content [class~="bg-rose-50"]{background:#4a2638;border-color:#91546b}
+.osw-native-content :is([class~="text-red-800"],[class~="text-red-700"],[class~="text-rose-800"],[class~="text-rose-700"]){color:#ffb7c6}
+.osw-native-content .btn-primary{color:#fff;background:linear-gradient(110deg,#927bf0,#6853c9);border:1px solid #9f8cfa;box-shadow:0 9px 23px rgba(89,64,192,.18)}
+.osw-native-content .btn-primary:hover{background:linear-gradient(110deg,#a18ef6,#7660dc);transform:translateY(-1px)}
+.osw-native-content .btn-secondary{color:#e2ddff;background:#2b3150;border:1px solid #69638d}
+.osw-native-content .btn-secondary:hover{background:#3a365c;color:#fff}
+.osw-native-content .quiet-link{color:#c0b5f5}
+.osw-native-content .eyebrow{color:#beaaff}
+.osw-native-content :is(input:not([type="checkbox"]):not([type="radio"]),textarea,select){
+  background:#101a2e;border:1px solid #4a5878;color:#f5f6ff;
+  border-radius:11px;accent-color:#a99aff;box-shadow:none;
+}
+.osw-native-content :is(input,textarea,select)::placeholder{color:#8293b2;opacity:1}
+.osw-native-content :is(input,textarea,select):focus-visible{
+  outline:2px solid #80efcf;outline-offset:1px;border-color:#80efcf;
+}
+.osw-native-content :is(input[type="checkbox"],input[type="radio"]){accent-color:#a390ff}
+.osw-native-content :is(button,a):focus-visible{outline:2px solid #73e8c7;outline-offset:3px}
+.osw-native-content a:not(.btn-primary):not(.btn-secondary):hover{filter:brightness(1.15)}
+.osw-native-content .skeleton{background:#303958}
+.osw-native-content .skeleton::after{background:linear-gradient(90deg,transparent,rgba(191,182,255,.13),transparent)}
+.osw-native-content hr{border-color:var(--orbit-border)}
+.osw-native-content [role="alert"]{border-color:#a16a7b}
+/* Certificates: retain issuer verification and self-reported labels as-is. */
+.osw-native-content[data-workspace="/certifications"]>main,
+.osw-native-content[data-workspace="/certifications/journey"]>main{padding-top:30px}
+.osw-native-content[data-workspace="/certifications"]>main>section:first-of-type,
+.osw-native-content[data-workspace="/certifications/journey"]>main>header:first-of-type{
+  background:radial-gradient(540px 220px at 82% 2%,rgba(146,119,245,.3),transparent 80%),linear-gradient(120deg,#302b58,#1b2542);
+  border:1px solid rgba(190,174,255,.34);
+}
+.osw-native-content[data-workspace="/certifications"]>main>section:first-of-type h1,
+.osw-native-content[data-workspace="/certifications/journey"]>main>header:first-of-type h1{
+  font-size:clamp(27px,3.5vw,43px);letter-spacing:-.06em;line-height:1.13;
+}
+.osw-native-content[data-workspace^="/certifications"] :is([class~="bg-slate-950"],[class~="bg-slate-900"]){
+  background:linear-gradient(130deg,#322d5d,#1b2445)
+}
+.osw-native-content[data-workspace^="/certifications"] button[aria-pressed="true"],
+.osw-native-content[data-workspace^="/certifications"] button[aria-selected="true"]{
+  border-color:#bdadff;background:#3d3468;color:#f8f4ff
+}
+.osw-native-content[data-workspace^="/certifications"] [role="progressbar"]{
+  background:#253b42;border:1px solid #537f7b
+}
+.osw-native-content[data-workspace^="/certifications"] :is([class~="bg-indigo-600"],[class~="bg-brand-600"]){background:#8c78ed}
+.osw-native-content[data-workspace="/certifications/journey"] :is(input[type="date"],input[type="url"]){
+  color-scheme:dark
+}
+/* Project evidence, recommendations and GitHub-source defense. */
+.osw-native-content[data-workspace="/projects"] :is(article,[class~="surface-card"]){
+  border-color:rgba(159,174,236,.2);transition:border-color .2s,transform .2s
+}
+.osw-native-content[data-workspace="/projects"] :is(article,[class~="surface-card"]):hover{
+  border-color:rgba(161,140,247,.48)
+}
+.osw-native-content[data-workspace="/projects"] [class~="bg-brand-50/60"]{
+  background:linear-gradient(130deg,#33315b,#202947);
+}
+.osw-native-content[data-workspace="/project-defense"] .surface-card{
+  border:1px solid rgba(173,179,231,.24)
+}
+.osw-native-content[data-workspace="/project-defense"] .surface-card h2{
+  color:#f0edff
+}
+.osw-native-content[data-workspace="/project-defense"] textarea{min-height:112px;resize:vertical}
+.osw-native-content[data-workspace="/project-defense"] a[href*="github.com"]{
+  overflow-wrap:anywhere;color:#acddf9;text-decoration:underline;text-underline-offset:3px
+}
+.osw-native-content[data-workspace="/project-defense"] [class~="bg-rose-50"]{background:#462638}
+.osw-native-content[data-workspace="/project-defense"] [class~="bg-emerald-50"]{background:#1e4340}
+/* Source-readable Passport documents and plain data visualisations. */
+.osw-native-content[data-workspace="/passport"] .passport-document{
+  border-radius:0;color:#ecf0fa
+}
+.osw-native-content[data-workspace="/progress"] :is(svg text,.recharts-text){fill:#b9c9de}
+.osw-native-content[data-workspace="/progress"] .recharts-cartesian-grid line{
+  stroke:rgba(172,185,221,.21)
+}
+.osw-native-content[data-workspace="/progress"] .recharts-tooltip-wrapper>div{
+  background:#1f2d4b!important;color:#eff3ff!important;border-color:#665e96!important
+}
+.osw-native-content[data-workspace="/progress"] [class~="bg-slate-50"]{background:#202c48}
+.osw-native-content[data-workspace="/occupations"] :is([class~="bg-white"],[class~="bg-slate-50"]){
+  background:#1f2a46;color:#f1f4ff
+}
+/* Existing agent chat stays compatible with history, citations & consent. */
+.osw-native-content[data-workspace="/journey"] :is([class~="bg-white"],[class~="bg-slate-50"]){
+  background:#202a46
+}
+.osw-native-content[data-workspace="/journey"] [class~="bg-indigo-50"]{
+  background:#382f62
+}
+.osw-native-content[data-workspace="/journey"] :is(textarea,input){font-size:14px}
+.osw-native-content[data-workspace="/settings"] input[type="checkbox"]{width:21px;height:21px}
+.osw-native-content[data-workspace="/practice"] .surface-card{background:#1b2944}
+@media(max-width:680px){
+ .osw-native-content>main{padding:21px 15px}
+ .osw-native-content[data-workspace="/certifications"]>main,
+ .osw-native-content[data-workspace="/certifications/journey"]>main{padding:19px 13px}
+ .osw-native-content [class~="surface-card"]{border-radius:14px}
+ .osw-native-content :is(h1,h2,h3){overflow-wrap:anywhere}
+}
+@media(prefers-reduced-motion:reduce){
+ .osw-native-content *, .osw-native-content *::after,.osw-native-content *::before{
+   animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important;
+ }
+}

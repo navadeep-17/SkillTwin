@@ -61,3 +61,17 @@ These pages continue to use their **functional existing React components** and s
 - **Release gates:** CI, responsive snapshots, real authenticated click-through, keyboard/contrast/reduced-motion inspection, error/empty/loading states, and rollback via the existing flag.
 
 Avoid marking an interior 'Orbit-native' just because it receives the Orbit header. Native status requires its own component-level responsive, interaction and accessibility review.
+
+
+## 2026-10-14 follow-up — Native interior styling (second UI integration wave)
+
+The previous audit listed secondary features as **Orbit-framed light content islands**. The `design/orbit-certifications-projects-phase2-20261014` branch now enables **dark native surface styling** within those original interactive React components, not only their header. The change is exclusively CSS and navigation/layout presentation:
+
+- Certifications / personal certification preparation: responsive dark panels, issuer links, role-fit callouts, preserved meaningful warning and **self-reported** status labels, readable interactive inputs, keyboard focus.
+- Projects and provisional Project Defense: native cards, guided inspection/evaluation surfaces, code provenance emphasis, readable error/empty/loading states.
+- Evidence Passport, Progress/weekly reports, Occupation Atlas, Journey Chat and Practice: shared dark semantic surfaces, chart labels/grids, form controls, action buttons and preserved state-specific alert colors.
+- Login/password recovery and floating agent chat/activity drawer: dark Orbit material with safe focus, touch, and reduced-motion treatment.
+
+**What is *not* implied:** these features do **not** yet have bespoke redesigned interaction layouts, new charts or extra domain capability. Their original page/component markup and service contracts are retained. The shared native styling is intended to make the existing complete application visually coherent before feature-by-feature interaction redesign. Source trust, agent approvals, async state and scoring are not altered.
+
+**Risk controls:** all dark skins are opt-in behind `isOrbitDefaultEnabled()` (directly for authentication and the assistant, indirectly through the authenticated secondary-workspace shell), existing classic styles survive when the flag is off, and static tests cover canonical certification issuer links, self-reported status, concurrency version tokens, project inspection service routes and tenant-scoped project reads. Public browser fixtures inspect computed colors and responsive overflow; real signed-in acceptance remains pending.

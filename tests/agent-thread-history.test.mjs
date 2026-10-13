@@ -64,5 +64,5 @@ test("thread history and proposal dismissals are owner scoped",()=>{
   assert.match(reject,/user_id=\$2::uuid and status='PROPOSED'/);
   assert.doesNotMatch(reject,/getAssessmentService|getInitialPlanService|getAdaptiveReplannerService/);
   assert.match(ui,/fetch\("\/api\/chat\?threadId="/);
-  assert.match(ui,/fetch\("\/api\/chat\/actions\/"+id+"\/reject"/);
+  assert.ok(ui.includes('fetch("/api/chat/actions/"+id+"/reject"'));
 });

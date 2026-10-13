@@ -162,7 +162,7 @@ export class AgentReadOrchestrator {
     if(tool==="get_replan_reason") {
       // The assessment reader uses exact assessment-ID matching, including NO_OP.
       // An unrelated latest PlanDiff must never be used to explain an assessment.
-      if(c.latestAssessment)return input.readAssessmentProof();
+      if(!c.latestDiff && c.latestAssessment)return input.readAssessmentProof();
       if(!c.latestDiff)return {text:"There is no applied roadmap revision or assessment decision to explain.",refs:[]};
       return {
         text:"Latest recorded roadmap revision: "+labelOf(c.latestDiff,"summary")+". "+

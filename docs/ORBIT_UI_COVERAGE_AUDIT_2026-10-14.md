@@ -17,6 +17,7 @@ Reviewed the actual Next.js `app/` route tree on `main`, the component compositi
 | Prove / assessments | `/orbit-prove` and session subroute | Native proof inspector; existing evaluator retained |
 | Career exploration | `/orbit-explore` | Native requirement/transferability explorer |
 | Agent Activity | `/orbit-activity` | **New this branch**: native filtered read-only event timeline, owned event refs scoped to account |
+| Settings | `/orbit-settings` | **New this branch**: native form skin reusing the existing four secure preference controls |
 
 ### Shared Orbit shell applied to existing secondary modules on this branch
 
@@ -32,7 +33,7 @@ These pages continue to use their **functional existing React components** and s
 | `/journey` | Journey Chat and confirmed agent actions | Orbit-framed existing chat |
 | `/progress` | Progress and weekly reports | Orbit-framed existing analytics |
 | `/occupations` and nested routes | Occupation Atlas | Orbit-framed existing atlas |
-| `/settings` | Preferences and notification controls | Orbit-framed existing form |
+| `/settings` | Preferences and notification controls | Orbit-framed classic fallback; native `/orbit-settings` is now available |
 | `/practice` and nested routes | Practice launcher and existing assessments | Orbit-framed existing practice UI |
 | `/activity` | Existing classic Agent Activity | Orbit-framed fallback; native alternative `/orbit-activity` |
 

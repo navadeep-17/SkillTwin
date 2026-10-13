@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Activity, MessageSquareText, Sparkles, X } from "lucide-react";
 import { JourneyChat } from "@/components/journey/journey-chat";
+import "./orbit-assistant-dock.css";
 
 type EventRow = {
   id: string;
@@ -13,7 +14,7 @@ type EventRow = {
   created_at: string;
 };
 
-export function GlobalAssistantDock() {
+export function GlobalAssistantDock({ orbitDefault = false }: { orbitDefault?: boolean }) {
   const [open, setOpen] = useState<"chat" | "activity" | null>(null);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
@@ -52,7 +53,7 @@ export function GlobalAssistantDock() {
 
   return (
     <>
-      <div className="fixed bottom-5 right-5 z-40 hidden items-center gap-2 lg:flex">
+      <div className={"fixed bottom-5 right-5 z-40 hidden items-center gap-2 lg:flex" + (orbitDefault ? " orbit-dock-toolbar" : "")}>
         <button
           type="button"
           onClick={() => setOpen(open === "activity" ? null : "activity")}
@@ -75,7 +76,7 @@ export function GlobalAssistantDock() {
       </div>
 
       {open ? (
-        <div className="fixed inset-0 z-50 hidden lg:block">
+        <div className={"fixed inset-0 z-50 hidden lg:block" + (orbitDefault ? " orbit-dock-dialog" : "")}>
           <button
             type="button"
             aria-label="Close assistant panel"

@@ -8,8 +8,11 @@ import {
 } from "lucide-react";
 import {certificationById} from "@/lib/domain/certification-catalog";
 import {progressPercent,type CertificationJourney} from "@/lib/domain/certification-journey";
+import {buildCertificationPreparationPlan} from "@/lib/domain/certification-preparation";
+import type {CertificationMatch} from "@/lib/domain/certification-recommender";
+import {CertificationPreparationCard} from "./certification-preparation-card";
 
-type Props={initialGoals:CertificationJourney[]};
+type Props={initialGoals:CertificationJourney[];certificationMatches:CertificationMatch[]};
 const statusText:Record<CertificationJourney["status"],string>={
   SAVED:"Saved for later",PREPARING:"Preparing",EXAM_PLANNED:"Exam target planned",
   EARNED_SELF_REPORTED:"Earned · Self-reported"
@@ -19,7 +22,7 @@ type Edit={action:"START_PREPARATION"}|
   {action:"SET_EXAM_TARGET";targetExamDate:string}|
   {action:"REPORT_EARNED";earnedDate:string;credentialUrl:string};
 
-export function CertificationJourneyTracker({initialGoals}:Props){
+export function CertificationJourneyTracker({initialGoals,certificationMatches}:Props){
   const [goals,setGoals]=useState(initialGoals);
   const [busy,setBusy]=useState<string|null>(null);
   const [error,setError]=useState<string|null>(null);
@@ -107,6 +110,8 @@ export function CertificationJourneyTracker({initialGoals}:Props){
         const cert=certificationById(goal.certification_id);
         if(!cert)return null;
         const progress=progressPercent(goal);
+        const match=certificationMatches.find(m=>m.certification.id===goal.certification_id);
+        const preparation=buildCertificationPreparationPlan(goal,match);
         const saving=busy===goal.id;
         const earned=goal.status==="EARNED_SELF_REPORTED";
         return <section key={goal.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -127,6 +132,7 @@ export function CertificationJourneyTracker({initialGoals}:Props){
             </button>
           </div>
           <div className="space-y-5 p-5 sm:p-6">
+            {preparation?<CertificationPreparationCard plan={preparation}/>:null}
             <div>
               <div className="flex items-center justify-between text-sm">
                 <span className="font-semibold text-slate-800">Preparation topics</span>

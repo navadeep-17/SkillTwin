@@ -45,7 +45,7 @@ test("database match pairing is atomic and avoids stale or duplicate players",()
   assert.match(schema,/on conflict \(user_id\) do update/);
   assert.match(schema,/status='WAITING'/);
   assert.match(schema,/updated_at>clock_timestamp\(\)-interval '25 seconds'/);
-  assert.match(schema,/started_at \+ interval '150 seconds'/);
+  assert.match(schema,/v_started \+ interval '150 seconds'/);
   assert.match(schema,/constraint arena_distinct_players check \(player_a <> player_b\)/);
 });
 test("database answer keys and results are server-owned, not user-editable",()=>{

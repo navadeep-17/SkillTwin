@@ -15,7 +15,7 @@ Confirm that the isolated `/orbit-beta`, `/orbit-skills`, `/orbit-journey`, `/or
 
 ### What the automated browser script actually tests
 - Form sign-in redirects to the signed-in app.
-- Each of the four Orbit preview routes renders without redirects/errors.
+- Each of the five Orbit preview routes renders without redirects/errors.
 - Horizontal overflow is absent at both checked widths.
 - My Twin can switch to List, select a requirement and display the inspector if a role graph exists; otherwise the empty role state is visible.
 - Journey shows only the active goal's saved roadmap, milestone status, source-backed PlanDiffs and NO_OP explanations. It never mutates a task or approval.

@@ -228,7 +228,7 @@ export function OrbitSkillExperience({ roleName, skills, dependencies }: { roleN
       {!skills.length ? <section className="orbit-skills-empty"><span><Sparkles size={32}/></span><h2>Your skill constellation starts with a goal.</h2><p>Choose a target career and add evidence to unlock its requirement graph. Unknown skills are never treated as failures.</p><Link href="/orbit-onboarding">Build my SkillTwin <ArrowRight size={16}/></Link></section> :
       <>
         <div className="orbit-skills-toolbar">
-          <label className="orbit-skills-search"><Search size={17}/><span className="sr-only">Find a skill</span><input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search competencies" /></label>
+          <label className="orbit-skills-search"><Search size={17}/><span className="sr-only">Find a skill</span><input type="search" value={query} onChange={e=>{setQuery(e.target.value);setSelectedId(null);}} placeholder="Search competencies" /></label>
           <div className="orbit-skills-filters" role="group" aria-label="Filter competencies">
             {([{id:"all",label:"All skills"},{id:"focus",label:"Priority gaps"},{id:"evidence",label:"Has evidence"}] as const).map(v=><button type="button" key={v.id} aria-pressed={filter===v.id} className={filter===v.id?"active":""} onClick={()=>{setFilter(v.id);setSelectedId(null);}}>{v.label}</button>)}
           </div>

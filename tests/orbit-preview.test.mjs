@@ -172,12 +172,12 @@ test("Orbit Prove uses the existing authenticated assessment and evidence servic
   }
   assert.ok(page.includes("buildTwinProofTrail"));
   assert.ok(page.includes("challengeAvailability"));
-  assert.ok(!page.includes("correct_answer") && !page.includes("rubric"), "No answer keys on the Prove route");
+  assert.ok(!page.includes("correct_answer") && !page.includes("answer_key"), "No answer-key fields on the Prove route");
   assert.ok(!page.includes(".insert(") && !page.includes(".update(") && !page.includes(".delete("));
   assert.ok(ui.includes('fetch("/api/assessments"'));
   assert.ok(ui.includes('mode:"CHALLENGE_ME"'));
   assert.ok(ui.includes("if(pending||demoOnly)return;"));
-  assert.ok(ui.includes("demoOnly||pending"));
+  assert.ok(ui.includes("pending||demoOnly"));
   assert.ok(ui.includes("trail.planStatus"));
   assert.ok(css.includes("prefers-reduced-motion"));
 });

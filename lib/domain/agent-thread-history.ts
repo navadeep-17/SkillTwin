@@ -45,7 +45,7 @@ export function hydrateChatMessages(rawRows:Record<string,unknown>[]):ChatHistor
       ?metadata.readTools.filter((name):name is string=>
           typeof name==="string"&&AGENT_READ_TOOLS.includes(name as typeof AGENT_READ_TOOLS[number]))
           .slice(0,3):[];
-    const mode=["gemini-read-plan-v1","deterministic-read-fallback-v1","deterministic-grounded-i1"]
+    const mode=["gemini-read-plan-v1","deterministic-read-fallback-v1","deterministic-grounded-i1","confirmed-action-event-v1"]
       .includes(String(metadata.generator))?String(metadata.generator):null;
     return [{
       id:row.id,

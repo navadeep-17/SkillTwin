@@ -262,3 +262,26 @@ test("Writing E2E assessment test is gated to an isolated non-production databas
   assert.ok(script.includes("Recorded completed challenge"));
   assert.ok(!read(".github/workflows/ci.yml").includes("orbit-e2e-isolated"),"CI must never execute writing E2E automatically");
 });
+
+
+test("Orbit integration preserves newer main certifications and deployment setup", () => {
+  const mainCI = read(".github/workflows/ci.yml");
+  const middleware = read("middleware.ts");
+  const nav = read("components/orbit/orbit-preview-nav.tsx");
+  const chrome = read("components/shell/orbit-aware-chrome.tsx");
+  const layout = read("app/layout.tsx");
+  const orbitCSS = read("components/orbit/orbit-preview-nav-extra.css");
+  assert.ok(mainCI.includes("tests/certification-journey.test.mjs"));
+  assert.ok(mainCI.includes("tests/certification-preparation.test.mjs"));
+  assert.ok(mainCI.includes("tests/orbit-preview.test.mjs"));
+  assert.ok(mainCI.includes("docker build --progress plain"));
+  assert.ok(read("next.config.ts").includes('output: "standalone"'));
+  assert.ok(read("supabase/migrations/0026_user_certification_journey.sql").includes("user_certification_goals"));
+  assert.ok(middleware.includes('"/certifications"') && middleware.includes('"/orbit-skills"'));
+  assert.ok(nav.includes('href="/certifications"') && nav.includes('href="/certifications/journey"'));
+  assert.ok(nav.includes('href="/journey"') && nav.includes("<LogoutButton"));
+  assert.ok(orbitCSS.includes(".orbit-preview-menu"));
+  assert.ok(chrome.includes('pathname.startsWith("/orbit-")'));
+  assert.ok(chrome.includes("signedIn && !orbit"));
+  assert.ok(layout.includes("OrbitAwareChrome"));
+});

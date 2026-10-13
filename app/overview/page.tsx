@@ -2,12 +2,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, CheckCircle2, ChevronRight, Sparkles, Target, TrendingUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { isOrbitDefaultEnabled } from "@/lib/runtime/orbit-default";
 import { AnimatedReadinessRing } from "@/components/ui/animated-readiness-ring";
 
-export default async function OverviewPage() {
+export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ classic?: string }> }) {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
+  const query = await searchParams;
+  if (isOrbitDefaultEnabled() && query.classic !== "1") redirect("/orbit-beta");
 
   const [
     { data: skills, error: skillsError },

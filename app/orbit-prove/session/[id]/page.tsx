@@ -4,8 +4,8 @@ import { ArrowLeft, ShieldCheck, Fingerprint } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ChallengeSession } from "@/components/practice/challenge-session";
 import { OrbitPreviewNav } from "@/components/orbit/orbit-preview-nav";
-import "../../orbit-lab/orbit-lab.css";
-import "../orbit-prove.css";
+import "../../../orbit-lab/orbit-lab.css";
+import "../../orbit-prove.css";
 
 export const metadata = {
   title:"Verified Challenge — SkillTwin Orbit",

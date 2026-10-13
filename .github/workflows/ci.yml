@@ -17,6 +17,7 @@ jobs:
       - run: node --check scripts/career-feature-qa.mjs
       - run: npm run typecheck:core
       - run: npm run test:core
+      - run: node --test tests/occupation-mapping.test.mjs
       - run: npm run qa:contracts
       - run: node --test tests/occupation-snapshot.test.mjs
       - run: npm run typecheck

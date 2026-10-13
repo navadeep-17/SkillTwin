@@ -7,6 +7,7 @@ const PROTECTED_PREFIXES = [
   "/passport",
   "/discover",
   "/occupations",
+  "/occupations/mappings",
   "/skills",
   "/roadmap",
   "/practice",

@@ -57,3 +57,34 @@ test("only explicit code questions trigger project retrieval",()=>{
   assert.equal(shouldRetrieveProjectCode("How does my project affect ML Engineer career readiness?"),false);
   assert.equal(shouldRetrieveProjectCode("Build my project learning plan"),false);
 });
+
+
+test("forged source URL cannot enter retrieval or receive a citation",()=>{
+  const wrongPath=mk("src/auth/login.ts","function authenticateUser() { return true; }");
+  wrongPath.sourceUrl=wrongPath.sourceUrl.replace("src/auth/login.ts","src/auth/other.ts");
+  const wrongLines=mk("src/auth/login.ts","function authenticateUser() { return true; }");
+  wrongLines.sourceUrl=wrongLines.sourceUrl.replace("#L1-L30","#L1-L29");
+  const misleadingHost=mk("src/auth/login.ts","function authenticateUser() { return true; }");
+  misleadingHost.sourceUrl="https://github.com.attacker.invalid/sample/app/blob/"+sha+"/src/auth/login.ts#L1-L30";
+  for(const altered of [wrongPath,wrongLines,misleadingHost]){
+    assert.deepEqual(retrieveProjectPassages("authentication code", [altered]),[]);
+  }
+});
+
+test("cross-repository and cross-commit hits cannot be presented as verified proof",()=>{
+  const source=mk("src/auth/login.ts","function authenticateUser() { return true; }");
+  const hits=retrieveProjectPassages("How does authentication work in my repo?",[source]);
+  assert.equal(hits.length,1);
+  assert.match(renderProjectRagResult("another/repository",sha,hits,"An unverified claim."),/cannot verify/);
+  assert.match(renderProjectRagResult("sample/app","c".repeat(40),hits,"An unverified claim."),/cannot verify/);
+  assert.doesNotMatch(renderProjectRagResult("sample/app","c".repeat(40),hits,"An unverified claim."),/An unverified claim/);
+});
+
+test("encoded source filenames resolve to precisely pinned repository lines",()=>{
+  const path="src/security/token helper.ts";
+  const source=mk(path,"function authenticateUser(token) { return verify(token); }");
+  source.sourceUrl="https://github.com/sample/app/blob/"+sha+"/src/security/token%20helper.ts#L1-L30";
+  const hits=retrieveProjectPassages("How is authentication handled in project code?",[source]);
+  assert.equal(hits.length,1);
+  assert.match(renderProjectRagResult("sample/app",sha,hits),/token%20helper\.ts#L1-L30/);
+});

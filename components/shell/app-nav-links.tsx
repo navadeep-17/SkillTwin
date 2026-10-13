@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   Compass,
+  Fingerprint,
   BookOpenText,
   FolderKanban,
   ScrollText,
@@ -33,6 +34,7 @@ const primaryLinks: NavLink[] = [
 ];
 
 const secondaryLinks: NavLink[] = [
+  { href: "/challenge-my-twin", label: "Challenge My Twin", icon: Fingerprint },
   { href: "/discover", label: "Explore Careers", icon: Compass },
   { href: "/occupations", label: "Occupation Atlas", icon: BookOpenText },
   { href: "/projects", label: "Projects", icon: FolderKanban },

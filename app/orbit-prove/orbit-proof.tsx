@@ -54,7 +54,7 @@ function ProvenResult({trail}:{trail:TwinProofTrail}){
     </div>
   </section>;
 }
-export function OrbitProof({skills,initialSkillId}:{skills:OrbitProofSkill[];initialSkillId?:string}){
+export function OrbitProof({skills,initialSkillId,demoOnly=false}:{skills:OrbitProofSkill[];initialSkillId?:string;demoOnly?:boolean}){
   const router=useRouter();
   const initial=initialSkillId??skills.find(x=>x.proof)?.id??skills.find(x=>x.availability!=="NO_VALIDATED_BANK")?.id??skills[0]?.id??"";
   const [selectedId,setSelectedId]=useState(initial);
@@ -73,7 +73,7 @@ export function OrbitProof({skills,initialSkillId}:{skills:OrbitProofSkill[];ini
   const proofCount=skills.filter(s=>Boolean(s.proof)).length;
   const evidenceCount=skills.filter(s=>s.evidenceCount>0).length;
   async function start(item:OrbitProofSkill){
-    if(pending)return;
+    if(pending||demoOnly)return;
     setError("");
     if(item.activeAssessmentId){
       router.push("/orbit-prove/session/"+encodeURIComponent(item.activeAssessmentId));
@@ -110,6 +110,7 @@ export function OrbitProof({skills,initialSkillId}:{skills:OrbitProofSkill[];ini
       <div><Zap size={20}/><span>Challenge available</span><strong>{proofReady}</strong></div>
       <div><ShieldCheck size={20}/><span>Completed proof records</span><strong>{proofCount}</strong></div>
     </div>
+    {demoOnly&&<p className="op-demo-banner" role="status">Fictional data preview — this screen cannot start real assessments or change your SkillTwin.</p>}
     <div className="op-workspace">
       <aside className="op-picker" aria-label="Choose a skill to challenge">
         <label className="op-search"><Search size={17}/><span className="sr-only">Search for a skill</span>
@@ -148,9 +149,9 @@ export function OrbitProof({skills,initialSkillId}:{skills:OrbitProofSkill[];ini
               </button>)}
             </div>
             {selected.availability==="NO_VALIDATED_BANK"?<p className="op-locked"><LockKeyhole size={16}/> At least four validated questions are required. SkillTwin will not generate a fictional result.</p>:
-              <button type="button" className="op-launch" disabled={pending} onClick={()=>void start(selected)}>
+              <button type="button" className="op-launch" disabled={pending||demoOnly} onClick={()=>void start(selected)}>
                 {pending?<LoaderCircle size={17} className="op-spin"/>:<Zap size={17}/>}
-                {pending?"Preparing validated assessment…":selected.availability==="RESUME"?"Resume current assessment":"Start verified challenge"}
+                {demoOnly?"Preview only — sign in to assess":pending?"Preparing validated assessment…":selected.availability==="RESUME"?"Resume current assessment":"Start verified challenge"}
                 {!pending&&<ArrowRight size={17}/>}
               </button>}
             {error&&<p className="op-error" role="alert">{error}</p>}

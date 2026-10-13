@@ -7,6 +7,7 @@ import {
   ExternalLink,Filter,GraduationCap,Info,Search,ShieldCheck,Sparkles,Target
 } from "lucide-react";
 import type {CertificationMatch} from "@/lib/domain/certification-recommender";
+import {SaveCertificationButton} from "@/components/certifications/save-certification-button";
 import type {CertificationTrack} from "@/lib/domain/certification-catalog";
 
 type Mode="recommended"|"all";
@@ -56,6 +57,7 @@ export function CertificationExplorer({goalName,hasGapSnapshot,matches}:Props){
         <Link href="/overview" className="hover:text-brand-600">Home</Link>
         <ChevronRight className="size-3.5"/>
         <span className="font-semibold text-slate-700">Certifications</span>
+        <Link href="/certifications/journey" className="ml-auto text-xs font-semibold text-indigo-700 hover:underline">My Certification Journey →</Link>
       </div>
       <section className="relative overflow-hidden rounded-[28px] bg-slate-950 px-6 py-8 text-white shadow-xl shadow-slate-900/10 sm:px-10 sm:py-10">
         <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-40 size-[360px] rounded-full bg-indigo-500/25 blur-[85px]"/>
@@ -271,6 +273,7 @@ export function CertificationExplorer({goalName,hasGapSnapshot,matches}:Props){
                       <Info className="mt-0.5 size-4 shrink-0"/>{selected.certification.note}
                     </p>
                   </div>
+                  <SaveCertificationButton key={selected.certification.id} certificationId={selected.certification.id}/>
                   <a href={selected.certification.officialUrl} target="_blank" rel="noopener noreferrer"
                     className="btn-primary inline-flex w-full items-center justify-center gap-2 text-center">
                     Official exam and preparation <ExternalLink className="size-4"/>

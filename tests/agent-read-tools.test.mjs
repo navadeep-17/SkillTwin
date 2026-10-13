@@ -61,7 +61,7 @@ test("agent route cannot dispatch model-selected writes or substitute model user
 });
 test("read execution keeps learner identity and factual synthesis on server",()=>{
   const source=readFileSync(new URL("../lib/services/chat/agent-read-orchestrator.ts",import.meta.url),"utf8");
-  assert.match(source,/userId:input\.userId/);
+  assert.match(source,/\[input\.userId\]/);
   assert.match(source,/No upcoming task is recorded/);
   assert.match(source,/not a hiring probability/);
   assert.match(source,/never model-generated/);

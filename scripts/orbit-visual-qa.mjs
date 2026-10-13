@@ -44,7 +44,7 @@ try {
     await page.getByText(/No assessment, score or roadmap is saved/).waitFor();
     await page.screenshot({ path: out + "/" + v.name + "-challenge-result.png", fullPage: true, animations: "disabled" });
 
-    for (const route of ["/orbit-beta", "/orbit-onboarding"]) {
+    for (const route of ["/orbit-beta", "/orbit-onboarding", "/orbit-skills"]) {
       const noSession = await page.request.get(base + route, { maxRedirects: 0 });
       assert.ok([302, 303, 307, 308].includes(noSession.status()), route + " must redirect anonymous visitors");
     }

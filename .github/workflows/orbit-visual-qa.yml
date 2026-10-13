@@ -8,6 +8,7 @@ on:
       - "app/orbit-skills/**"
       - "app/orbit-journey/**"
       - "app/orbit-prove/**"
+      - "app/orbit-explore/**"
       - "app/orbit-onboarding/**"
       - "scripts/orbit-visual-qa.mjs"
       - "tests/orbit-preview.test.mjs"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Activity, MessageSquareText, Sparkles, X } from "lucide-react";
 import { JourneyChat } from "@/components/journey/journey-chat";
@@ -18,45 +18,84 @@ export function GlobalAssistantDock({ orbitDefault = false }: { orbitDefault?: b
   const [open, setOpen] = useState<"chat" | "activity" | null>(null);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
+  const [activityError, setActivityError] = useState<string | null>(null);
+  const [activityRetry, setActivityRetry] = useState(0);
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  function togglePanel(panel: "chat" | "activity", trigger: HTMLButtonElement) {
+    triggerRef.current = trigger;
+    setOpen(previous => previous === panel ? null : panel);
+  }
 
   useEffect(() => {
     if (!open) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+    const opener = triggerRef.current;
+
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(null);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(null);
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const controls = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )).filter(element => element.getClientRects().length > 0);
+      if (!controls.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !dialogRef.current.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
     }
+
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = originalOverflow;
+      opener?.focus();
+    };
   }, [open]);
 
   useEffect(() => {
     if (open !== "activity") return;
-    let active = true;
+    const controller = new AbortController();
     setLoadingEvents(true);
+    setActivityError(null);
 
-    fetch("/api/agent-events?limit=20", { cache: "no-store" })
-      .then(response => response.json())
-      .then(payload => {
-        if (!active) return;
-        setEvents(payload?.data?.events ?? []);
+    void fetch("/api/agent-events?limit=20", { cache: "no-store", signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error("Agent Activity is temporarily unavailable.");
+        const payload = await response.json();
+        if (!Array.isArray(payload?.data?.events)) throw new Error("Invalid activity response.");
+        if (!controller.signal.aborted) setEvents(payload.data.events);
       })
       .catch(() => {
-        if (active) setEvents([]);
+        if (!controller.signal.aborted) setActivityError("We couldn't load your activity. Retry to fetch your saved events.");
       })
       .finally(() => {
-        if (active) setLoadingEvents(false);
+        if (!controller.signal.aborted) setLoadingEvents(false);
       });
 
-    return () => {
-      active = false;
-    };
-  }, [open]);
+    return () => controller.abort();
+  }, [open, activityRetry]);
 
   return (
     <>
-      <div className={"fixed bottom-5 right-5 z-40 hidden items-center gap-2 lg:flex" + (orbitDefault ? " orbit-dock-toolbar" : "")}>
+      <div className={"fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 flex items-center gap-2 lg:bottom-5 lg:right-5" + (orbitDefault ? " orbit-dock-toolbar" : "")}>
         <button
           type="button"
-          onClick={() => setOpen(open === "activity" ? null : "activity")}
+          onClick={event => togglePanel("activity", event.currentTarget)}
           className="inline-flex size-11 items-center justify-center rounded-xl border border-slate-200 bg-white/95 text-slate-600 shadow-soft backdrop-blur transition duration-200 hover:-translate-y-px hover:border-slate-300 hover:text-slate-950 hover:shadow-lift"
           aria-label="Open Agent Activity"
           aria-expanded={open === "activity"}
@@ -65,7 +104,7 @@ export function GlobalAssistantDock({ orbitDefault = false }: { orbitDefault?: b
         </button>
         <button
           type="button"
-          onClick={() => setOpen(open === "chat" ? null : "chat")}
+          onClick={event => togglePanel("chat", event.currentTarget)}
           className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(91,92,226,0.28)] transition duration-200 hover:-translate-y-px hover:bg-brand-600"
           aria-label="Ask SkillTwin"
           aria-expanded={open === "chat"}
@@ -76,20 +115,21 @@ export function GlobalAssistantDock({ orbitDefault = false }: { orbitDefault?: b
       </div>
 
       {open ? (
-        <div className={"fixed inset-0 z-50 hidden lg:block" + (orbitDefault ? " orbit-dock-dialog" : "")}>
+        <div className={"fixed inset-0 z-50 block" + (orbitDefault ? " orbit-dock-dialog" : "")}>
           <button
             type="button"
             aria-label="Close assistant panel"
             onClick={() => setOpen(null)}
-            className="absolute inset-0 bg-slate-950/10 backdrop-blur-[1px]"
+            className="absolute inset-0 bg-slate-950/55 backdrop-blur-[2px]" tabIndex={-1} aria-hidden="true"
           />
           <aside
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-label={open === "chat" ? "Ask SkillTwin" : "Agent Activity"}
-            className="drawer-enter absolute inset-y-0 right-0 flex w-[430px] max-w-[92vw] flex-col border-l border-slate-200 bg-white shadow-2xl"
+            className="drawer-enter absolute inset-x-0 bottom-0 flex h-[min(85dvh,760px)] w-full flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-2xl lg:inset-y-0 lg:left-auto lg:right-0 lg:h-full lg:w-[430px] lg:max-w-[92vw] lg:rounded-none"
           >
-            <header className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
               <div className="flex items-center gap-3">
                 <span className="flex size-9 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
                   {open === "chat" ? <MessageSquareText className="size-4.5" /> : <Activity className="size-4.5" />}
@@ -104,6 +144,7 @@ export function GlobalAssistantDock({ orbitDefault = false }: { orbitDefault?: b
                 </div>
               </div>
               <button
+                ref={closeButtonRef}
                 type="button"
                 onClick={() => setOpen(null)}
                 className="inline-flex size-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
@@ -117,7 +158,7 @@ export function GlobalAssistantDock({ orbitDefault = false }: { orbitDefault?: b
               {open === "chat" ? (
                 <JourneyChat compact />
               ) : (
-                <ActivityPanel events={events} loading={loadingEvents} />
+                <ActivityPanel events={events} loading={loadingEvents} error={activityError} onRetry={() => setActivityRetry(value => value + 1)} href={orbitDefault ? "/orbit-activity" : "/activity"} />
               )}
             </div>
           </aside>
@@ -127,7 +168,9 @@ export function GlobalAssistantDock({ orbitDefault = false }: { orbitDefault?: b
   );
 }
 
-function ActivityPanel({ events, loading }: { events: EventRow[]; loading: boolean }) {
+function ActivityPanel({ events, loading, error, onRetry, href }: {
+  events: EventRow[]; loading: boolean; error: string | null; onRetry: () => void; href: string;
+}) {
   if (loading) {
     return (
       <div className="space-y-3">
@@ -140,6 +183,15 @@ function ActivityPanel({ events, loading }: { events: EventRow[]; loading: boole
         ))}
       </div>
     );
+  }
+
+  if (error) {
+    return <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900">
+      <p>{error}</p>
+      <button type="button" onClick={onRetry} className="mt-3 rounded-lg border border-amber-500 px-3 py-2 font-semibold hover:bg-amber-100">
+        Retry activity
+      </button>
+    </div>;
   }
 
   return (
@@ -161,7 +213,7 @@ function ActivityPanel({ events, loading }: { events: EventRow[]; loading: boole
         </div>
       )}
 
-      <Link href="/activity" className="btn-secondary w-full">
+      <Link href={href} className="btn-secondary w-full">
         Open full activity history
       </Link>
     </div>

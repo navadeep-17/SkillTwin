@@ -41,6 +41,8 @@ test("Orbit UI has keyboard graph controls and reduced-motion styling", () => {
   assert.match(ui, /aria-label/);
   assert.match(ui, /onKeyDown/);
   assert.match(ui, /aria-pressed/);
+  assert.match(ui, /orbit-live-node-list/);
+  assert.match(css, /orbit-live-node-list/);
   assert.match(css, /prefers-reduced-motion/);
   assert.match(labCss, /prefers-reduced-motion/);
 });

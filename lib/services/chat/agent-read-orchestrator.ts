@@ -2,13 +2,16 @@ import "server-only";
 import { z } from "zod";
 import { getSql } from "@/lib/db/postgres";
 import { getGeminiStructuredClient } from "@/lib/ai/gemini-interactions";
+import { CERTIFICATION_CATALOG } from "@/lib/domain/certification-catalog";
+import {buildCertificationPreparationPlan} from "@/lib/domain/certification-preparation";
+import type {CertificationJourney} from "@/lib/domain/certification-journey";
 import {
   AGENT_READ_TOOLS, fallbackReadTools, validateReadPlan,
   type AgentReadIntent, type AgentReadTool
 } from "@/lib/domain/agent-read-plan";
 
 type Row=Record<string,unknown>;
-export type AgentRef={type:"skill"|"gap_snapshot"|"learning_plan"|"learning_task"|"plan_diff"|"assessment"|"agent_event";id:string;label:string};
+export type AgentRef={type:"skill"|"gap_snapshot"|"learning_plan"|"learning_task"|"plan_diff"|"assessment"|"agent_event"|"certification_goal";id:string;label:string};
 export type AgentReadContext={
   snapshot:Row|null;gaps:Row[];plan:Row|null;tasks:Row[];
   latestDiff:Row|null;skills:Row[];mentionedSkill:Row|null;latestAssessment:Row|null;
@@ -43,7 +46,8 @@ function readIntentRequires(intent:AgentReadIntent):AgentReadTool|null {
     :intent==="WHY_ROADMAP_CHANGED"?"get_replan_reason"
     :intent==="WHAT_NEXT"?"get_next_tasks"
     :intent==="READINESS"?"get_role_gap"
-    :intent==="SKILL_STATUS"?"get_skill_state":null;
+    :intent==="SKILL_STATUS"?"get_skill_state"
+    :intent==="CERTIFICATION_PREP"?"get_certification_preparation":null;
 }
 
 /** Model plans at most three read tools; timeout or error -> deterministic tools. */
@@ -68,7 +72,8 @@ export async function chooseReadTools(message:string,intent:AgentReadIntent):Pro
           get_active_plan:"Active plan version and existence",
           get_next_tasks:"Next planned learning tasks",
           get_replan_reason:"Latest applied roadmap change or assessment-linked no-change reason",
-          get_activity:"Recent committed agent activity"
+          get_activity:"Recent committed agent activity",
+          get_certification_preparation:"Official issuer study resources and current saved certification topic progress"
         }
       }),
       jsonSchema:planJsonSchema,
@@ -110,9 +115,52 @@ export class AgentReadOrchestrator {
   }
 
   private async readTool(tool:AgentReadTool,input:{
-    userId:string;context:AgentReadContext;readAssessmentProof:ProofReader
+    userId:string;message:string;context:AgentReadContext;readAssessmentProof:ProofReader
   }):Promise<ToolObservation> {
     const c=input.context;
+    if(tool==="get_certification_preparation") {
+      // Never let the model supply a learner ID, SQL query, or URL. Retrieve only
+      // this signed-in learner's saved goals, using a constant parameterized query.
+      const result=await getSql().unsafe(
+        "select id,certification_id,status,completed_topics from public.user_certification_goals where user_id=$1::uuid order by updated_at desc limit 25",
+        [input.userId]
+      );
+      const goals=result as Row[];
+      if(!goals.length) {
+        return {text:"You have no saved certification preparation goals. Browse /certifications and save a credential first. No exam readiness estimate is available.",refs:[]};
+      }
+      const question=input.message.toLowerCase();
+      const selected=goals.find(g=>{
+        const cert=CERTIFICATION_CATALOG.find(c=>c.id===g.certification_id);
+        return Boolean(cert && (
+          question.includes(cert.id.replaceAll("-"," ")) ||
+          question.includes(cert.title.toLowerCase()) ||
+          (cert.id==="azure-fundamentals"&&question.includes("az 900")) ||
+          (cert.id==="power-bi-data-analyst"&&question.includes("pl 300")) ||
+          (cert.id==="cisco-ccna"&&question.includes("ccna"))));
+      })??goals[0];
+      const preparation=buildCertificationPreparationPlan({
+        certification_id:String(selected.certification_id),
+        status:String(selected.status) as CertificationJourney["status"],
+        completed_topics:Array.isArray(selected.completed_topics)
+          ?selected.completed_topics.filter((v):v is string=>typeof v==="string"):[]
+      });
+      if(!preparation)return {
+        text:"The saved credential is not in the current reviewed certification catalog. Review /certifications/journey before preparing.",refs:[]
+      };
+      const step=preparation.nextStep;
+      return {
+        text:preparation.certificationTitle+": "+preparation.studyCoveragePercent+
+          "% of study topics marked complete (self-reported). "+(
+          step?"Next recommended preparation step: "+step.title+". "+step.details+
+          " Official issuer resource: "+step.resource.url+". ":"Review current issuer objectives. "
+          )+"SkillTwin has not assessed your exam readiness or booked an exam. Open /certifications/journey for your saved preparation plan.",
+        refs:[{
+          type:"certification_goal",id:String(selected.id),
+          label:preparation.certificationTitle
+        }]
+      };
+    }
     if(tool==="get_assessment_proof") {
       const proof=await input.readAssessmentProof();
       return {text:proof.content,refs:proof.refs};

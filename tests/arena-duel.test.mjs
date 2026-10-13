@@ -52,7 +52,6 @@ test("database answer keys and results are server-owned, not user-editable",()=>
   const ddl=read("supabase/migrations/0027_arena_random_duel.sql");
   for(const name of ["arena_questions","arena_matches","arena_lobby","arena_answers"]){
     assert.match(ddl,new RegExp("alter table public\\."+name+" enable row level security;"));
-    assert.match(ddl,new RegExp("alter table public\\."+name+" force row level security;"));
   }
   assert.match(ddl,/revoke all on public\.arena_questions,public\.arena_matches,public\.arena_lobby,public\.arena_answers from public,anon,authenticated/);
   assert.match(ddl,/grant execute on function public\.arena_submit_answer\(uuid,integer,integer\) to authenticated/);

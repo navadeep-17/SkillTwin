@@ -38,7 +38,7 @@ const starters = [
 
 /** Only link exact, commit-pinned GitHub source citations returned by the RAG reader. */
 function RagCitedText({content}:{content:string}) {
-  const pattern=/(https:\/\/github\.com\/[A-Za-z0-9-]+\/[A-Za-z0-9_.-]+\/blob\/[a-f0-9]{40}\/[A-Za-z0-9_~.%+/@-]+#L\d+-L\d+)/g;
+  const pattern=/(https:\/\/github\.com\/[A-Za-z0-9-]+\/[A-Za-z0-9_.-]+\/blob\/[a-f0-9]{40}\/[A-Za-z0-9_~.%+@\/-]+#L\d+-L\d+)/g;
   const parts=content.split(pattern);
   return <span className="whitespace-pre-wrap break-words">{parts.map((part,index)=>
     /^https:\/\/github\.com\//.test(part)

@@ -239,11 +239,11 @@ export function OrbitSkillExperience({ roleName, skills, dependencies }: { roleN
         </div>
         <div className="orbit-skills-workspace">
           <section className="orbit-skills-canvas" aria-label="Role competency network">
-            <div className="orbit-skills-canvas-header"><span><GitBranch size={16}/> Requirement network</span><small>Solid: required · Dashed: supporting</small></div>
+            <div className="orbit-skills-canvas-header"><span><GitBranch size={16}/> Requirement network</span><small>Drag to explore · Use controls to fit all · Solid: required · Dashed: supporting</small></div>
             {!visible.length ? <div className="orbit-skills-zero"><Search size={25}/><strong>No matching competencies</strong><p>Try another search or filter.</p><button onClick={()=>{setQuery("");setFilter("all");}}>Clear filters</button></div> :
               view==="graph" ? <div className="orbit-skills-flow">
-                <ReactFlow nodes={nodes} edges={edges} fitView fitViewOptions={{padding:.25}} nodesDraggable={false} nodesConnectable={false}
-                  minZoom={.25} maxZoom={1.6} onNodeClick={(_,node)=>setSelectedId(node.id)} onPaneClick={()=>setSelectedId(null)}>
+                <ReactFlow nodes={nodes} edges={edges} defaultViewport={{ x: 32, y: 130, zoom: .85 }} nodesDraggable={false} nodesConnectable={false}
+                  minZoom={.25} maxZoom={1.9} onNodeClick={(_,node)=>setSelectedId(node.id)} onPaneClick={()=>setSelectedId(null)}>
                   <Background color="#3A4664" gap={23} size={1}/>
                   <Controls showInteractive={false} position="bottom-left"/>
                 </ReactFlow>

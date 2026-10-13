@@ -49,3 +49,21 @@ body:has(.orbit-lab) > div[class*="lg:pl-64"] {
 @media(max-width:900px){
   .orbit-float-note{display:none}
 }
+
+
+/* Orbit release-preview navigation: usable even while other workflows retain
+   their existing stable pages. The active destination has an explicit label. */
+.orbit-preview-nav-wrap{max-width:1230px;margin:auto;min-height:75px;padding:14px 26px;display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid rgba(190,188,248,.14);color:#f4f7ff}
+.orbit-preview-brand{display:inline-flex;align-items:center;gap:11px;white-space:nowrap;text-decoration:none;color:#f4f7ff;font-size:17px;font-weight:790;letter-spacing:-.5px}
+.orbit-preview-brand-mark{width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:linear-gradient(125deg,#8977ff,#5141b7);box-shadow:0 4px 22px rgba(124,99,255,.25);color:#fff}
+.orbit-preview-brand-accent{color:#52e7c7}.orbit-preview-brand small{font-size:8px;letter-spacing:1.6px;color:#c5b7ff;padding:4px 5px;border:1px solid #514779;border-radius:5px;vertical-align:middle;margin-left:4px}
+.orbit-preview-nav{display:flex;align-items:center;gap:4px;padding:5px;background:rgba(255,255,255,.035);border:1px solid rgba(185,192,242,.12);border-radius:13px}
+.orbit-preview-nav-link{display:inline-flex;align-items:center;gap:8px;text-decoration:none;padding:10px 11px;font-weight:690;font-size:11px;color:#a5b1cf;white-space:nowrap;border-radius:9px;transition:background .2s,color .2s}
+.orbit-preview-nav-link:hover{background:#272e49;color:#f4f7ff}.orbit-preview-nav-link.active{background:#38305e;color:#fff}
+.orbit-preview-build{white-space:nowrap;text-decoration:none;border-radius:10px;border:1px solid rgba(169,154,255,.45);background:rgba(105,83,210,.18);color:#e1d9ff;font-size:11px;font-weight:780;padding:12px 15px;transition:border-color .2s,background .2s}
+.orbit-preview-build:hover,.orbit-preview-build.active{background:rgba(105,83,210,.4);border-color:#b5a6ff}
+.orbit-preview-nav-wrap a:focus-visible{outline:2px solid #52e7c7;outline-offset:3px}
+@media(max-width:1000px){.orbit-preview-nav-wrap{gap:8px;padding:14px 22px}.orbit-preview-nav-link{padding:9px 8px;gap:5px}.orbit-preview-brand small{display:none}}
+@media(max-width:750px){.orbit-preview-nav-wrap{flex-wrap:wrap;gap:12px;padding:15px 16px}.orbit-preview-nav{order:3;width:100%;justify-content:space-between;padding:5px 2px}.orbit-preview-nav-link{display:flex;flex-direction:column;flex:1;gap:6px;padding:8px 3px;text-align:center;font-size:10px}.orbit-preview-build{margin-left:auto;padding:10px}.orbit-preview-brand{font-size:15px}}
+@media(max-width:375px){.orbit-preview-nav-link{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.orbit-preview-nav-wrap a{transition:none!important}}

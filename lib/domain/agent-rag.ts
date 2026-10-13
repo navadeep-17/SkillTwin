@@ -175,8 +175,8 @@ export function selectSavedCodeProject(
   if(!projects.length)return {status:"NONE"};
   // A named external GitHub URL must never be silently replaced with the
   // learner's only saved repository, even when exactly one project exists.
-  const explicit=[...question.matchAll(/(?:https?:\\/\\/)?github\\.com\\/([a-z0-9-]+)\\/([a-z0-9_.-]+)/gi)]
-    .map(match=>(match[1]+"/"+match[2]).replace(/\\.git$/i,"").toLowerCase());
+  const explicit=[...question.matchAll(/(?:https?:\/\/)?github\.com\/([a-z0-9-]+)\/([a-z0-9_.-]+)/gi)]
+    .map(match=>(match[1]+"/"+match[2]).replace(/\.git$/i,"").toLowerCase());
   if(explicit.length){
     const explicitlySaved=projects.filter(p=>explicit.includes(p.repository.toLowerCase()));
     if(explicitlySaved.length===1 && explicit.every(name=>name===explicitlySaved[0].repository.toLowerCase()))

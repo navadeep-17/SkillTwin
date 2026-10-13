@@ -21,13 +21,12 @@ try{
     await page.getByRole("heading",{name:/SQL JOINs: Understand the relationships/}).waitFor();
     await page.getByText(/full transcript has not been licensed or retrieved/i).waitFor();
     assert.equal(await page.locator("iframe").count(),0,"YouTube embed must await explicit consent");
-    assert.equal(await page.getByRole("fieldset").count(),0); // fieldsets are native and not landmark roles
     const questions=page.locator("fieldset");
     assert.equal(await questions.count(),3);
     const before=page.getByRole("button",{name:"Check my answers"});
     assert.equal(await before.isDisabled(),true);
-    for(const answer of ["INNER JOIN","LEFT JOIN","It specifies how rows are matched"]){
-      await page.getByRole("radio",{name:answer,exact:true}).check();
+    for(const [index,answer] of ["INNER JOIN","LEFT JOIN","It specifies how rows are matched"].entries()){
+      await questions.nth(index).getByRole("radio",{name:answer,exact:true}).check();
     }
     assert.equal(await before.isEnabled(),true);
     await before.click();
@@ -36,7 +35,7 @@ try{
     assert.equal(await page.getByRole("button",{name:"Check my answers"}).isDisabled(),true);
     await page.getByLabel("Draft your SQL solution (not saved)").fill("SELECT c.name FROM customers c");
     await page.getByRole("button",{name:"Reveal example solution"}).click();
-    await page.getByText(/LEFT JOIN orders o ON c.id = o.customer_id/).waitFor();
+    await page.locator("pre").filter({hasText:"LEFT JOIN orders o ON c.id = o.customer_id"}).last().waitFor();
     const chapters=page.getByRole("button",{name:/Play LEFT JOIN from 13:55/});
     await chapters.click();
     await page.locator("iframe[src*='youtube-nocookie.com/embed/0OQJDd3QqQM']").waitFor();

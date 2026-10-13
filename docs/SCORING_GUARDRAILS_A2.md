@@ -2,7 +2,7 @@
 
 ## Scope and status
 
-This patch improves **newly completed** assessment scoring without training a new model, adding network services, or modifying existing learner records. It preserves the existing skill estimator (`skill-estimator-a1`) and role-gap engine; the assessment aggregator is independently versioned as `assessment-aggregator-e2`.
+This patch implements improved **newly completed** assessment scoring without training a new model, adding network services, or modifying existing learner records. It is explicitly **disabled by default**: the original e1 formula remains in use unless the server environment variable `SKILLTWIN_SCORING_A2_ENABLED=true` is set in an isolated application environment. It preserves the existing skill estimator (`skill-estimator-a1`) and role-gap engine; the assessment aggregator is independently versioned as `assessment-aggregator-e2`.
 
 **Important:** a2 is a conservative, transparent heuristic, *not* an empirical calibration, probabilistic confidence, Item Response Theory, or a claim of validated hiring readiness. Expert annotation and evaluation remain future work.
 
@@ -23,9 +23,13 @@ Previous assessment completion computed `levelSignal = 0.4 + 2.5 * normalizedSco
 ## Release boundaries
 
 - No migrations and no automatic reprocessing of historical assessments; historical assessments retain their original scoring model.
+- Server-only opt-in: `SKILLTWIN_SCORING_A2_ENABLED=true`. Any other value or absence routes all new assessment completions through the original e1 formula and version. Do not use `NEXT_PUBLIC_` for this flag.
+- To roll back a2, remove or set the flag to `false` and redeploy/restart the staging service. Previously completed a2 assessment evidence is intentionally preserved, not silently recalculated.
+- New e1 or e2 assessment outcomes preserve their respective aggregator version and evidence producerVersion; historical records remain untouched.
 - Do not silently replace the entire skill estimator, conflict handling or career readiness formula with unvalidated weights.
 - The guardrail tests demonstrate invariants, **not external validity**.
-- Check build, deterministic tests and a signed-in staging assessment from start to finish before deploying.
+- Check build, deterministic tests and a signed-in staging assessment from start to finish before deploying. Staging must have the canonical SkillTwin schema and approved disposable learner, never production Supabase credentials.
+- Production rollout requires successful QA with the flag ON in staging; merging code with the flag absent is an inert dark launch, not product activation.
 - Treat `confidence` and `readiness` as heuristic *indicators* in UI/pitches, never statistically calibrated probabilities.
 
 ## Benchmark invariants implemented

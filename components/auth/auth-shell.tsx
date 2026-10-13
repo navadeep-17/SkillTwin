@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { BrainCircuit, ShieldCheck, Sparkles, Workflow } from "lucide-react";
+import { isOrbitDefaultEnabled } from "@/lib/runtime/orbit-default";
+import "./orbit-auth-shell.css";
 
 export function AuthShell({
   eyebrow,
@@ -12,8 +14,9 @@ export function AuthShell({
   description: string;
   children: ReactNode;
 }) {
+  const orbit = isOrbitDefaultEnabled();
   return (
-    <main className="min-h-screen bg-[#F7F8FA] p-3 sm:p-5">
+    <main className={"min-h-screen bg-[#F7F8FA] p-3 sm:p-5" + (orbit ? " orbit-auth-root" : "")}>
       <div className="mx-auto grid min-h-[calc(100vh-24px)] max-w-6xl overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(16,24,40,0.08)] sm:min-h-[calc(100vh-40px)] lg:grid-cols-[1.05fr_.95fr]">
         <section className="relative hidden overflow-hidden bg-[#111827] p-10 text-white lg:flex lg:flex-col">
           <div className="absolute -right-28 -top-28 size-96 rounded-full bg-brand-500/20 blur-3xl" />

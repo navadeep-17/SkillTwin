@@ -46,7 +46,7 @@ export default async function DiscoverCareersPage() {
   if (skillsError) throw skillsError;
 
   // One most recent active version per role; older versions remain in history.
-  const mostRecent = new Map<string, (typeof versions extends (infer V)[] | null ? V : never)>();
+  const mostRecent = new Map<string, NonNullable<typeof versions>[number]>();
   for (const version of versions ?? []) {
     const roleId = String(version.role_id);
     if (!mostRecent.has(roleId)) mostRecent.set(roleId, version);

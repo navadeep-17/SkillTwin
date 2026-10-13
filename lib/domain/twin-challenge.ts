@@ -122,7 +122,7 @@ export function buildTwinProofTrail(
     row.skill_id === outcome.skill_id && row.trigger_ref === outcome.assessment_id
   );
   const decision = decisions.find(row => row.trigger_ref === outcome.assessment_id);
-  const diff = diffs.find(row => containsExactReference(row.trigger_refs,outcome.assessment_id));
+  const diff = diffs.find(row => row.status === "APPLIED" && containsExactReference(row.trigger_refs,outcome.assessment_id));
   const planStatus = diff ? "CHANGED" : decision?.decision === "NO_OP" ? "UNCHANGED" : "NOT_RECORDED";
   return {
     assessmentId:outcome.assessment_id,

@@ -102,6 +102,17 @@ function RealSkillGraph({
           );
         })}
       </svg>
+      <div className="orbit-live-node-list" aria-label="Role requirements">
+        {visible.map(node => (
+          <button type="button" key={node.id}
+            aria-pressed={selectedId === node.id}
+            onClick={() => onSelect(node.id)}
+            className={"orbit-live-node-option " + (selectedId===node.id?"selected":"")}>
+            <span className="orbit-live-option-dot" style={{background:palette[node.status].color}}/>
+            <span><strong>{node.name}</strong><small>{palette[node.status].label} · {node.evidenceCount} evidence records</small></span>
+          </button>
+        ))}
+      </div>
       <div className="orbit-live-legend">
         {(Object.keys(palette) as Array<keyof typeof palette>).map(status=>
           <span key={status}><i style={{background:palette[status].color}} />{palette[status].label}</span>)}

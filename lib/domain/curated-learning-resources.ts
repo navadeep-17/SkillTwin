@@ -56,7 +56,7 @@ export const CURATED_LEARNING_RESOURCES: readonly CuratedResource[] = [
   {id:"system-design-roadmap",skillSlug:"system-design",title:"System design learning map",provider:"roadmap.sh",url:"https://roadmap.sh/system-design",format:"ARTICLE",levels:["BASIC","STANDARD","ADVANCED"],modes:["LEARN","PRACTICE"],studyBlockMinutes:40,quality:.9,official:false},
   {id:"well-architected",skillSlug:"system-design",title:"AWS Well-Architected Framework",provider:"AWS Docs",url:"https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html",format:"DOCS",levels:["STANDARD","ADVANCED"],modes:["LEARN","BUILD"],studyBlockMinutes:45,quality:.98,official:true},
   {id:"cloud-aws-framework",skillSlug:"cloud",title:"AWS Well-Architected Framework",provider:"AWS Docs",url:"https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html",format:"DOCS",levels:["STANDARD","ADVANCED"],modes:["LEARN","BUILD"],studyBlockMinutes:45,quality:.98,official:true}
-] as const;
+];
 
 const trustedHosts = new Set([
   "docs.python.org","dev.java","nodejs.org","www.postgresql.org",

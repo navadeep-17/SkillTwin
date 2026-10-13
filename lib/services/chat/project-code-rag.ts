@@ -68,6 +68,11 @@ export async function readSavedProjectCode(input:{userId:string;question:string}
     refs:[] as Array<{type:"profile_project";id:string;label:string}>,
     meta:{generator:"source-rag-fallback-v1" as const,readTools:["get_project_code"] as string[]}
   };
+  if(selection.status==="UNSAVED")return {
+    content:"The specific GitHub repository named in your question is not one of your saved public projects. Save that repository in Projects before asking me to inspect its code.",
+    refs:[] as Array<{type:"profile_project";id:string;label:string}>,
+    meta:{generator:"source-rag-fallback-v1" as const,readTools:["get_project_code"] as string[]}
+  };
   if(selection.status==="AMBIGUOUS")return {
     content:"You have multiple saved public GitHub projects. Mention the repository name or exact saved project title so I don't inspect the wrong code. Options: "+
       selection.titles.join(", ")+".",

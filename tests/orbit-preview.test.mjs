@@ -357,8 +357,34 @@ test("Orbit secondary features remain authenticated, use a shared shell and pres
   assert.ok(bridgeCss.includes("prefers-reduced-motion"));
   assert.ok(bridgeCss.includes(".osw-content"),"Preserve readable native legacy forms in accessible island");
   assert.ok(nav.includes('href="/project-defense"') && nav.includes('href="/passport"'));
-  assert.ok(nav.includes('href="/activity"') && nav.includes('href="/settings"'));
+  assert.ok(nav.includes('href="/orbit-activity"') && nav.includes('href="/settings"'));
   assert.ok(nav.includes('href="/overview?classic=1"'));
   assert.ok(fixture.includes("Fictional demonstration"));
   assert.ok(qa.includes('"/orbit-lab/workspaces-demo"'));
+});
+
+
+test("Native Orbit Agent Activity is authenticated, read-only, and uses persisted events",()=>{
+  const page=read("app/orbit-activity/page.tsx");
+  const ui=read("app/orbit-activity/orbit-agent-activity.tsx");
+  const css=read("app/orbit-activity/orbit-activity.css");
+  const middleware=read("middleware.ts");
+  const menu=read("components/orbit/orbit-preview-nav.tsx");
+  const sample=read("app/orbit-lab/activity-demo/page.tsx");
+  const qa=read("scripts/orbit-visual-qa.mjs");
+  assert.ok(middleware.includes('"/orbit-activity"'));
+  assert.ok(page.includes("supabase.auth.getUser()"));
+  assert.ok(page.includes('from("agent_events")'));
+  assert.ok(page.includes('.eq("user_id",auth.user.id)'));
+  assert.ok(page.includes(".limit(60)"));
+  assert.ok(!page.includes(".insert(") && !page.includes(".update(") && !page.includes(".delete("));
+  assert.ok(page.includes("evidenceCount:") && page.includes("entityCount:"));
+  assert.ok(!page.includes('metadata') && !page.includes("raw_messages"));
+  assert.ok(menu.includes('href="/orbit-activity"'));
+  assert.ok(ui.includes("aria-pressed={kind===item.id}"));
+  assert.ok(ui.includes('timeZone:"UTC"'));
+  assert.ok(ui.includes("Category labels are UI-only groupings"));
+  assert.ok(css.includes("prefers-reduced-motion"));
+  assert.ok(sample.includes("Fictional activity"));
+  assert.ok(qa.includes('"/orbit-lab/activity-demo"'));
 });

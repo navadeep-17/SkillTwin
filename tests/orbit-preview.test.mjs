@@ -236,3 +236,29 @@ test("Explore fixture never touches live profile and browser QA covers compariso
   assert.ok(qa.includes("Shared skill comparison must use canonical IDs"));
   assert.ok(qa.includes('"/orbit-explore"'));
 });
+
+
+test("Orbit authenticated routes use real indeterminate loading states", () => {
+  const loader=read("components/orbit/orbit-loading.tsx");
+  const css=read("components/orbit/orbit-loading.css");
+  assert.ok(loader.includes('role="status"')&&loader.includes('aria-busy="true"'));
+  assert.ok(loader.includes("no simulated percentages"));
+  assert.ok(css.includes("prefers-reduced-motion"));
+  for(const route of ["orbit-beta","orbit-skills","orbit-journey","orbit-prove","orbit-explore","orbit-onboarding"]) {
+    const file=read("app/"+route+"/loading.tsx");
+    assert.ok(file.includes("OrbitLoading"),route+" lacks branded loader");
+    assert.ok(!file.includes("setInterval"),route+" must not fake progress");
+  }
+});
+
+test("Writing E2E assessment test is gated to an isolated non-production database", () => {
+  const script=read("scripts/orbit-e2e-isolated.mjs");
+  assert.ok(script.includes("ORBIT_E2E_ALLOW_WRITES"));
+  assert.ok(script.includes("ORBIT_E2E_ISOLATED_PREVIEW"));
+  assert.ok(script.includes("ORBIT_E2E_TEST_DB_REF"));
+  assert.ok(script.includes('branchRef==="eozvilqmrhtujqtdmrri"'));
+  assert.ok(script.includes('"skilltwin-production.up.railway.app"'));
+  assert.ok(script.includes("ORBIT_E2E_BLOCKED"));
+  assert.ok(script.includes("Recorded completed challenge"));
+  assert.ok(!read(".github/workflows/ci.yml").includes("orbit-e2e-isolated"),"CI must never execute writing E2E automatically");
+});

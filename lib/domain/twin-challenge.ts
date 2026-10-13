@@ -75,14 +75,22 @@ type ChangeState = {
   capability: number | null;
 };
 function parseState(raw: unknown): ChangeState {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+  // Older evidence-history writes can serialize their JSON object *inside*
+  // a JSONB string. Decode a bounded number of layers without guessing
+  // missing data or ever executing the stored value.
+  let value=raw;
+  for(let depth=0;depth<2 && typeof value==="string";depth++) {
+    try { value=JSON.parse(value); }
+    catch { break; }
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return { level:null,confidencePercent:null,capability:null };
   }
-  const object = raw as Record<string,unknown>;
-  const score = object.capabilityScore;
+  const object = value as Record<string,unknown>;
+  const score = object.capabilityScore ?? object.capability_score;
   const confidence = object.confidence;
   return {
-    level: typeof object.level === "string" ? object.level : null,
+    level: typeof object.level === "string" ? object.level : typeof object.level_value === "string" ? object.level_value : null,
     confidencePercent: typeof confidence === "number" ? normalizedConfidence(confidence) : null,
     capability: typeof score === "number" && Number.isFinite(score) ? score : null
   };

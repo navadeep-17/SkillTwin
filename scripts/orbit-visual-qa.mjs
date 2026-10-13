@@ -49,6 +49,9 @@ try {
     const sampleResponse = await page.goto(base + "/orbit-lab/skill-demo", { waitUntil: "networkidle", timeout: 45000 });
     assert.equal(sampleResponse?.status(), 200, "Skill Constellation sample route must load");
     await page.getByRole("heading", { name: /Explore your skill universe/i }).waitFor();
+    await page.getByRole("button", { name: "Graph", exact: true }).click();
+    await page.locator(".react-flow__node").first().waitFor({ state: "visible", timeout: 20000 });
+    await page.screenshot({ path: out + "/" + v.name + "-skill-graph.png", fullPage: true, animations: "disabled" });
     await page.getByRole("button", { name: "List", exact: true }).click();
     const python = page.locator(".orbit-skills-list-item").filter({ hasText: "Python" });
     await python.click();

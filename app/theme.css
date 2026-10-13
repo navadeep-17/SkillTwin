@@ -199,3 +199,22 @@ html[data-theme="dark"] .st-auth-shell:not(.orbit-auth-root)>div>section:last-ch
 html[data-theme="dark"] .st-auth-shell:not(.orbit-auth-root) :is([class~="text-slate-950"],[class~="text-slate-900"],[class~="text-slate-800"]){color:#f2f5ff!important}
 html[data-theme="dark"] .st-auth-shell:not(.orbit-auth-root) :is([class~="text-slate-700"],[class~="text-slate-600"],[class~="text-slate-500"]){color:#b3c0d9!important}
 html[data-theme="dark"] .st-auth-shell:not(.orbit-auth-root) :is(input,textarea,select){color:#eef3ff!important;background:#111a2b!important;border-color:#52617d!important}
+
+/* Light-mode contrast refinements found in actual 1440px / 390px browser captures. */
+html[data-theme="light"] .oh-site .oh-action-secondary{
+  color:#3f348d!important;background:#eeebff!important;border-color:#c1b8ed!important;
+}
+html[data-theme="light"] .oh-site .oh-action-secondary:hover{background:#e5dfff!important}
+html[data-theme="light"] .oh-site :is(.oh-trust,.oh-universe-label,.oh-journey-step,.oh-proof-chip small,.oh-evolve-chip,.oh-showcase-foot,.oh-showcase-cards small){
+ color:#445675!important;
+}
+html[data-theme="light"] .oh-site :is(.oh-proof-chip b,.oh-evolve-chip span){color:#172642!important}
+html[data-theme="light"] .oh-site .oh-universe-label>span:last-child{
+ color:#506185!important;border-color:#bdc9df!important;background:#eef2fb;
+}
+html[data-theme="light"] .oh-site .oh-universe-svg text[fill="#50e2c4"]{fill:#087865!important}
+html[data-theme="light"] .oh-site .oh-universe-svg text[fill="#f9c678"]{fill:#885b12!important}
+html[data-theme="light"] .oh-site .oh-universe-svg text[fill="#8da0c7"]{fill:#405875!important}
+html[data-theme="light"] .oh-site .oh-pulse{
+ background:#168b77;box-shadow:0 0 0 4px rgba(13,128,107,.12);
+}

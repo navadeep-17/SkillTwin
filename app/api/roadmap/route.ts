@@ -1,3 +1,4 @@
+import { getSql } from "@/lib/db/postgres";
 import { getRequestId } from "@/lib/api/request-context";
 import { fail, ok } from "@/lib/api/responses";
 import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
@@ -64,16 +65,15 @@ export async function GET() {
     const validationCounts = new Map<string, number>();
 
     if (skillIds.length) {
-      const { data: bankRows, error: bankError } = await supabase
-        .from("assessment_question_bank")
-        .select("id,skill_id")
-        .in("skill_id", skillIds)
-        .eq("is_active", true)
-        .in("type", ["MCQ","SHORT_TEXT","SCENARIO"]);
-      if (bankError) throw bankError;
-      for (const row of bankRows ?? []) {
-        const key = String(row.skill_id);
-        validationCounts.set(key, (validationCounts.get(key) ?? 0) + 1);
+      // The answer-bearing question bank is intentionally inaccessible through
+      // the learner's PostgREST role (migration 0025). Read only aggregate
+      // availability counts via the server-owned database connection.
+      const bankRows = await getSql().unsafe(
+        "select skill_id::text as skill_id, count(*)::integer as question_count from public.assessment_question_bank where is_active = true and type in ('MCQ','SHORT_TEXT','SCENARIO') and skill_id = any($1::uuid[]) group by skill_id",
+        [skillIds]
+      );
+      for (const row of bankRows) {
+        validationCounts.set(String(row.skill_id), Number(row.question_count));
       }
     }
 

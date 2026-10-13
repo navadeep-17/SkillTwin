@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {retrieveProjectPassages,renderProjectRagResult} from "../dist/lib/domain/agent-rag.js";
+import {retrieveProjectPassages,renderProjectRagResult,shouldRetrieveProjectCode} from "../dist/lib/domain/agent-rag.js";
 const sha="a".repeat(40),blob="b".repeat(40);
 const mk=(path,excerpt)=>({
   path,excerpt,blobSha:blob,startLine:1,endLine:30,
@@ -19,7 +19,7 @@ test("source RAG ranks relevant observed authentication code and preserves pinne
   const answer=renderProjectRagResult("sample/app",sha,hits);
   assert.match(answer,/login\.ts/);
   assert.match(answer,/blob\/a{40}\/src\/auth\/login.ts#L1-L30/);
-  assert.match(answer,/not verified authorship/);
+  assert.match(answer,/do not prove who wrote the code/);
 });
 test("no fabricated answers or links for unsupported questions",()=>{
   const hits=retrieveProjectPassages("Where are the Kubernetes deployment manifests?",[
@@ -46,4 +46,14 @@ test("project retrieval remains user-scoped, server-owned and read-only",()=>{
   assert.match(orchestrator,/readSavedProjectCode/);
   assert.match(journey,/!isMutatingJourneyIntent\(intent\)/);
   assert.doesNotMatch(service,/getEvidenceEngine|getAssessmentService|getInitialPlanService|delete from|insert into/);
+});
+
+test("only explicit code questions trigger project retrieval",()=>{
+  assert.equal(shouldRetrieveProjectCode("How was authentication implemented in my project?"),true);
+  assert.equal(shouldRetrieveProjectCode("Show me the source code from my GitHub repo"),true);
+  assert.equal(shouldRetrieveProjectCode("Find the sorting algorithm in this repository"),true);
+  assert.equal(shouldRetrieveProjectCode("What is my current skill score?"),false);
+  assert.equal(shouldRetrieveProjectCode("Why is project evidence confidence low?"),false);
+  assert.equal(shouldRetrieveProjectCode("How does my project affect ML Engineer career readiness?"),false);
+  assert.equal(shouldRetrieveProjectCode("Build my project learning plan"),false);
 });

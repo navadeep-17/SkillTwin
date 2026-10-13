@@ -444,3 +444,21 @@ test("Orbit secondary module interiors use native dark surfaces and preserve tru
  assert.ok(projects.includes('.eq("user_id", auth.user.id)'),"project records must remain tenant scoped");
  assert.ok(qa.includes("osw-native-content"),"browser fixture must inspect actual native interior");
 });
+
+test("Orbit rollout gives authenticated and public auth screens a single accessible visual system",()=>{
+ const shell=read("components/auth/auth-shell.tsx");
+ const authCSS=read("components/auth/orbit-auth-shell.css");
+ const dock=read("components/shell/global-assistant-dock.tsx");
+ const dockCSS=read("components/shell/orbit-assistant-dock.css");
+ const layout=read("app/layout.tsx");
+ const qa=read("scripts/orbit-visual-qa.mjs");
+ assert.ok(shell.includes("isOrbitDefaultEnabled()"));
+ assert.ok(shell.includes("orbit-auth-root"));
+ assert.ok(authCSS.includes("prefers-reduced-motion"));
+ assert.ok(authCSS.includes("background:#111a2f"),"login fields must have accessible contrast");
+ assert.ok(dock.includes("orbitDefault = false"));
+ assert.ok(dock.includes("orbit-dock-toolbar")&&dock.includes("orbit-dock-dialog"));
+ assert.ok(layout.includes("<GlobalAssistantDock orbitDefault={orbitDefault} />"));
+ assert.ok(dockCSS.includes("prefers-reduced-motion"));
+ assert.ok(qa.includes("orbit-auth-root"),"verify auth route in the actual browser");
+});

@@ -39,7 +39,7 @@ export function classifyJourneyIntent(message: string): JourneyIntent {
 }
 
 /** Match complete skill names, not substrings ("Java" must not match "JavaScript"). */
-export function findMentionedSkill<T extends { canonical_name: unknown; slug: unknown }>(
+export function findMentionedSkill<T extends Record<string, unknown>>(
   message: string, skills: T[]
 ): T | null {
   const normalized = (s: string) => s.toLowerCase()

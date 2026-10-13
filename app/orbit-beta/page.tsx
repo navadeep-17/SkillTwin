@@ -95,6 +95,40 @@ export default async function OrbitBetaPage() {
     if (g.error) throw g.error;
     gaps = (g.data ?? []) as Gap[];
   }
+  let nextTask: OrbitTodayModel["nextTask"] = null;
+  let planVersion: number | null = null;
+  if (goal?.id) {
+    const planQuery = await supabase.from("learning_plans")
+      .select("id,version")
+      .eq("user_id", auth.user.id)
+      .eq("goal_id", goal.id)
+      .eq("status", "ACTIVE")
+      .order("version", { ascending: false })
+      .limit(1).maybeSingle();
+    if (planQuery.error) throw planQuery.error;
+    if (planQuery.data) {
+      planVersion = Number(planQuery.data.version);
+      const taskQuery = await supabase.from("learning_tasks")
+        .select("id,title,type,duration_minutes,status,due_at")
+        .eq("plan_id", planQuery.data.id)
+        .in("status", ["IN_PROGRESS", "PLANNED"])
+        .order("due_at", { ascending: true, nullsFirst: false })
+        .limit(12);
+      if (taskQuery.error) throw taskQuery.error;
+      const tasks = taskQuery.data ?? [];
+      const task = tasks.find(item => item.status === "IN_PROGRESS") ?? tasks[0] ?? null;
+      if (task) {
+        nextTask = {
+          id: String(task.id),
+          title: String(task.title),
+          type: String(task.type),
+          durationMinutes: Number(task.duration_minutes),
+          dueAt: task.due_at ?? null,
+          status: String(task.status)
+        };
+      }
+    }
+  }
   const skillsById = new Map((skills ?? []).map(s => [String(s.skill_id), s]));
   const gapsById = new Map(gaps.map(g => [String(g.skill_id), g]));
   const nodes: OrbitTodayModel["nodes"] = requirements.map(req => {
@@ -114,6 +148,8 @@ export default async function OrbitBetaPage() {
     };
   });
   const model: OrbitTodayModel = {
+    nextTask,
+    planVersion,
     roleName,
     readiness: currentSnapshot?.readiness == null ? null : Number(currentSnapshot.readiness),
     coverage: currentSnapshot?.evidence_coverage == null ? null : Number(currentSnapshot.evidence_coverage),

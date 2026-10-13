@@ -11,6 +11,8 @@ type Message = {
   role: "USER" | "ASSISTANT";
   content: string;
   refs?: Ref[];
+  agentMode?: string;
+  readTools?: string[];
 };
 
 type Proposal = {
@@ -80,7 +82,9 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
           id: payload.data.message.id,
           role: "ASSISTANT",
           content: payload.data.message.content,
-          refs: payload.data.message.refs ?? []
+          refs: payload.data.message.refs ?? [],
+          agentMode:payload.data.message.agentMode,
+          readTools:payload.data.message.readTools ?? []
         }
       ]);
       setProposal(payload.data.actionProposal ?? null);
@@ -179,6 +183,12 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
             >
               {message.content}
             </div>
+            {message.role === "ASSISTANT" && message.readTools?.length ? (
+              <p className="mt-1.5 text-[11px] text-slate-500">
+                {message.agentMode === "gemini-read-plan-v1" ? "AI-selected evidence checks" : "Grounded evidence checks"}:
+                {" "}{message.readTools.map(tool => tool.replaceAll("_"," ")).join(" · ")}
+              </p>
+            ) : null}
             {message.role === "ASSISTANT" && message.refs?.length ? (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {message.refs.map(reference => (

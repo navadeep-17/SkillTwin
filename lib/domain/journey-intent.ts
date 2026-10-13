@@ -22,7 +22,8 @@ export function classifyJourneyIntent(message: string): JourneyIntent {
 
   // "Why didn't my roadmap change?" is not a request to explain some
   // unrelated recent PlanDiff. It requires this assessment's stored NO_OP.
-  const explanatory = /\b(why|explain|how|what)\b/.test(text);
+  const explanatory = /\b(why|explain)\b/.test(text)
+    || (/\b(what|how)\b/.test(text) && /\b(changed|happened|after|result)\b/.test(text));
   const noChange = /\b(didn|did not|not|no|never|unchanged|same|stayed)\b/.test(text)
     && /\b(roadmap|plan|replan)\b/.test(text);
   const assessedState = /\b(assessment|quiz|challenge|test result|skill estimate|skill level|confidence|proficiency|capability|score)\b/.test(text)
@@ -35,4 +36,20 @@ export function classifyJourneyIntent(message: string): JourneyIntent {
   if (/\b(readiness|ready for|how ready)\b/.test(text)) return "READINESS";
   if (/\b(skill|confidence|capability|level|gap)\b/.test(text)) return "SKILL_STATUS";
   return "JOURNEY_SUMMARY";
+}
+
+/** Match complete skill names, not substrings ("Java" must not match "JavaScript"). */
+export function findMentionedSkill<T extends { canonical_name: unknown; slug: unknown }>(
+  message: string, skills: T[]
+): T | null {
+  const normalized = (s: string) => s.toLowerCase()
+    .replace(/[^a-z0-9+#.]+/g, " ").replace(/\s+/g, " ").trim();
+  const text = " " + normalized(message) + " ";
+  // Prefer a longer, more specific name if multiple complete names occur.
+  const candidates = skills.flatMap(skill => {
+    const names = [String(skill.canonical_name ?? ""), String(skill.slug ?? "")];
+    return names.map(name => ({skill, term:normalized(name)}));
+  }).filter(item => Boolean(item.term) && text.includes(" " + item.term + " "));
+  candidates.sort((a,b)=>b.term.length-a.term.length);
+  return candidates[0]?.skill ?? null;
 }

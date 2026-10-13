@@ -43,7 +43,7 @@ export interface CompetencyAssessment {
   demonstratedLevel: CompetencyTier | null;
   requiredCriterionCount: number;
   demonstratedCriterionCount: number;
-  assertedCriterionCount: number;
+  observedCriterionCount: number;
   failedCriterionCount: number;
   conflictedCriterionCount: number;
   demonstratedCoverage: number;
@@ -172,7 +172,7 @@ export function assessSkillCompetencies(input: {
     demonstratedLevel,
     requiredCriterionCount:required.length,
     demonstratedCriterionCount:demonstrated.length,
-    assertedCriterionCount:asserted.length,
+    observedCriterionCount:asserted.length,
     failedCriterionCount:failed.length,
     conflictedCriterionCount:conflicted.length,
     demonstratedCoverage:required.length ? round(demonstrated.length/required.length) : 1,

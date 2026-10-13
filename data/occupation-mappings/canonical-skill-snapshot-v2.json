@@ -1,0 +1,328 @@
+{
+  "snapshotId": "skilltwin-canonical-2026-10-13-v2",
+  "source": "SkillTwin v1 live catalog + curated cross-domain vocabulary (migration 0024)",
+  "generatedDate": "2026-10-13",
+  "mappingKey": "stable canonical slug",
+  "schemaVersion": 2,
+  "skills": [
+    {
+      "slug": "accessibility",
+      "name": "Web Accessibility",
+      "category": "Frontend",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "active-learning",
+      "name": "Active Learning",
+      "category": "Learning",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "active-listening",
+      "name": "Active Listening",
+      "category": "Communication",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "authentication",
+      "name": "Authentication",
+      "category": "Backend Fundamentals",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "cloud",
+      "name": "Cloud Fundamentals",
+      "category": "Infrastructure",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "complex-problem-solving",
+      "name": "Complex Problem Solving",
+      "category": "Reasoning",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "coordination",
+      "name": "Coordination",
+      "category": "Interpersonal",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "critical-thinking",
+      "name": "Critical Thinking",
+      "category": "Reasoning",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "css",
+      "name": "CSS",
+      "category": "Frontend",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "data-visualization",
+      "name": "Data Visualization",
+      "category": "Analytics",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "docker",
+      "name": "Docker",
+      "category": "Infrastructure",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "excel",
+      "name": "Excel / Spreadsheets",
+      "category": "Analytics",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "feature-engineering",
+      "name": "Feature Engineering",
+      "category": "ML",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "git",
+      "name": "Git",
+      "category": "Engineering",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "html",
+      "name": "HTML",
+      "category": "Frontend",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "http",
+      "name": "HTTP",
+      "category": "Backend Fundamentals",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "instructing",
+      "name": "Instructing",
+      "category": "Education",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "java",
+      "name": "Java",
+      "category": "Programming",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "javascript",
+      "name": "JavaScript",
+      "category": "Programming",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "judgment-decision-making",
+      "name": "Judgment and Decision Making",
+      "category": "Reasoning",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "learning-strategies",
+      "name": "Learning Strategies",
+      "category": "Learning",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "linux",
+      "name": "Linux",
+      "category": "Infrastructure",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "machine-learning",
+      "name": "Machine Learning",
+      "category": "ML",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "mathematics",
+      "name": "Mathematics",
+      "category": "Quantitative",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "model-evaluation",
+      "name": "Model Evaluation",
+      "category": "ML",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "monitoring",
+      "name": "Monitoring",
+      "category": "Reasoning",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "nodejs",
+      "name": "Node.js",
+      "category": "Programming",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "numpy",
+      "name": "NumPy",
+      "category": "Data",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "pandas",
+      "name": "Pandas",
+      "category": "Data",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "persuasion",
+      "name": "Persuasion",
+      "category": "Interpersonal",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "power-bi",
+      "name": "Power BI",
+      "category": "Analytics",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "prioritization",
+      "name": "Prioritization",
+      "category": "Product",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "product-analytics",
+      "name": "Product Analytics",
+      "category": "Product",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "product-strategy",
+      "name": "Product Strategy",
+      "category": "Product",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "python",
+      "name": "Python",
+      "category": "Programming",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "react",
+      "name": "React",
+      "category": "Frontend",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "reading-comprehension",
+      "name": "Reading Comprehension",
+      "category": "Communication",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "rest-api",
+      "name": "REST APIs",
+      "category": "Backend Fundamentals",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "roadmapping",
+      "name": "Product Roadmapping",
+      "category": "Product",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "scikit-learn",
+      "name": "scikit-learn",
+      "category": "ML",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "service-orientation",
+      "name": "Service Orientation",
+      "category": "Interpersonal",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "social-perceptiveness",
+      "name": "Social Perceptiveness",
+      "category": "Interpersonal",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "speaking",
+      "name": "Speaking",
+      "category": "Communication",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "sql",
+      "name": "SQL",
+      "category": "Databases",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "stakeholder-management",
+      "name": "Stakeholder Management",
+      "category": "Product",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "statistics",
+      "name": "Statistics",
+      "category": "Analytics",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "system-design",
+      "name": "System Design",
+      "category": "Engineering",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "testing",
+      "name": "Testing",
+      "category": "Engineering",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "time-management",
+      "name": "Time Management",
+      "category": "Self Management",
+      "taxonomyVersion": 2
+    },
+    {
+      "slug": "typescript",
+      "name": "TypeScript",
+      "category": "Programming",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "user-research",
+      "name": "User Research",
+      "category": "Product",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "web-performance",
+      "name": "Web Performance",
+      "category": "Frontend",
+      "taxonomyVersion": 1
+    },
+    {
+      "slug": "writing",
+      "name": "Writing",
+      "category": "Communication",
+      "taxonomyVersion": 2
+    }
+  ],
+  "reviewNote": "Names align with selected O*NET OnLine source skill labels; descriptions are SkillTwin-authored proposals, not validated assessments. No source equivalence is approved by these additions."
+}

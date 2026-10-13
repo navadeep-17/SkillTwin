@@ -229,6 +229,48 @@ try {
     assert.ok(overflow.scrollWidth <= overflow.viewportWidth + 1,
       v.name + " has horizontal overflow: " + JSON.stringify(overflow));
 
+    // Real rendered light-mode screenshots of every public fictional feature
+    // surface. These cannot prove authenticated database behavior, but they
+    // catch white-on-white / dark-on-dark regressions across the product UI.
+    await page.goto(base + "/", {waitUntil:"networkidle",timeout:45000});
+    await page.getByRole("combobox",{name:"Appearance theme"}).selectOption("light");
+    const lightScenes=[
+      {name:"today",path:"/orbit-lab",selector:".orbit-lab"},
+      {name:"skills",path:"/orbit-lab/skill-demo",selector:".orbit-lab"},
+      {name:"journey",path:"/orbit-lab/journey-demo",selector:".orbit-lab"},
+      {name:"prove",path:"/orbit-lab/proof-demo",selector:".orbit-lab"},
+      {name:"explore",path:"/orbit-lab/explore-demo",selector:".orbit-lab"},
+      {name:"activity",path:"/orbit-lab/activity-demo",selector:".orbit-lab"},
+      {name:"settings",path:"/orbit-lab/settings-demo",selector:".orbit-lab"},
+      {name:"workspaces",path:"/orbit-lab/workspaces-demo",selector:".orbit-lab"},
+      {name:"login",path:"/login",selector:".orbit-auth-root"}
+    ];
+    for(const scene of lightScenes){
+      const res=await page.goto(base+scene.path,{waitUntil:"networkidle",timeout:45000});
+      assert.equal(res?.status(),200,"Light "+scene.name+" must load");
+      await page.locator(scene.selector).first().waitFor();
+      assert.equal(await page.locator("html").getAttribute("data-theme"),"light",
+        "Light preference survives navigation to "+scene.name);
+      const visual=await page.locator(scene.selector).first().evaluate(element=>{
+        const style=getComputedStyle(element);
+        const overflow=document.documentElement.scrollWidth-document.documentElement.clientWidth;
+        return {background:style.backgroundColor,color:style.color,overflow};
+      });
+      assert.notEqual(visual.background,"rgb(11, 16, 32)",scene.name+" remains dark in light mode");
+      assert.ok(visual.overflow<=2,scene.name+" light mode overflow: "+visual.overflow);
+      if(scene.name==="today")await page.getByRole("button",{name:"Today",exact:true}).click();
+      if(scene.name==="skills")await page.getByRole("button",{name:"Graph",exact:true}).click();
+      await page.screenshot({path:out+"/"+v.name+"-"+scene.name+"-light.png",fullPage:true,animations:"disabled"});
+    }
+    await page.goto(base+"/",{waitUntil:"networkidle",timeout:45000});
+    const mutedCta=await page.locator(".oh-action-secondary").evaluate(element=>({
+      foreground:getComputedStyle(element).color,
+      background:getComputedStyle(element).backgroundColor
+    }));
+    assert.notEqual(mutedCta.foreground,"rgb(225, 217, 255)",
+      "Light secondary CTA must use readable foreground, not dark-theme lavender");
+    await page.getByRole("combobox",{name:"Appearance theme"}).selectOption("dark");
+
     assert.deepEqual(screenshotErrors, [], v.name + " client errors");
     console.log(v.name + ": screenshots, navigation, checklist, assessment demo and overflow checks passed");
     await context.close();

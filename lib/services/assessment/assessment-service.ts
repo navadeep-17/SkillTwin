@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { getSql } from "@/lib/db/postgres";
+import { selectAssessmentSignals, LEGACY_ASSESSMENT_SCORING_VERSION } from "@/lib/domain/assessment-scoring-guardrails";
 import { getGeminiStructuredClient } from "@/lib/ai/gemini-interactions";
 import { evaluateConstructedWithFallback } from "@/lib/domain/constructed-assessment";
 import { assessmentAnswerReplay } from "@/lib/domain/assessment-replay";
@@ -17,7 +18,7 @@ import { getAdaptiveReplannerService } from "@/lib/services/replanner/adaptive-r
 
 export const ASSESSMENT_BLUEPRINT_VERSION = "adaptive-blueprint-e3";
 export const ASSESSMENT_EVALUATION_VERSION = "hybrid-rubric-evaluator-e2";
-export const ASSESSMENT_AGGREGATOR_VERSION = "assessment-aggregator-e1";
+export const ASSESSMENT_AGGREGATOR_VERSION = LEGACY_ASSESSMENT_SCORING_VERSION;
 export const ASSESSMENT_QUESTION_VERSION = "mixed-bank-g1";
 
 type Row = Record<string, unknown>;
@@ -707,21 +708,14 @@ export class AssessmentService {
       [assessmentId, userId]
     ));
     const attemptRows = rows(await sql.unsafe(
-      "select a.score,q.difficulty,q.concept_ids from public.skill_assessment_attempts a join public.skill_assessment_questions q on q.id=a.question_id where a.assessment_id=$1::uuid and a.user_id=$2::uuid order by q.ordinal",
+      "select a.score,a.evaluator_confidence,q.difficulty,q.concept_ids from public.skill_assessment_attempts a join public.skill_assessment_questions q on q.id=a.question_id where a.assessment_id=$1::uuid and a.user_id=$2::uuid order by q.ordinal",
       [assessmentId, userId]
     ));
     if (!attemptRows.length) throw new Error("ASSESSMENT_HAS_NO_ATTEMPTS");
 
-    let weightedScore = 0;
-    let totalWeight = 0;
     const conceptStats = new Map<string, { score: number; count: number }>();
-
     for (const row of attemptRows) {
-      const difficulty = Number(row.difficulty);
-      const weight = 0.8 + 0.1 * difficulty;
       const score = Number(row.score);
-      weightedScore += score * weight;
-      totalWeight += weight;
       const conceptId = jsonArray(row.concept_ids)[0] ?? "unknown";
       const current = conceptStats.get(conceptId) ?? { score: 0, count: 0 };
       current.score += score;
@@ -729,7 +723,6 @@ export class AssessmentService {
       conceptStats.set(conceptId, current);
     }
 
-    const normalizedScore = totalWeight ? weightedScore / totalWeight : 0;
     const blueprintJson = jsonObject(assessment.blueprint_json);
     const targets = Array.isArray(blueprintJson.conceptTargets)
       ? blueprintJson.conceptTargets as Array<Record<string, unknown>>
@@ -750,11 +743,17 @@ export class AssessmentService {
       else weaknesses.push(conceptId);
     }
 
-    const assessmentConfidence = Math.min(
-      0.95,
-      0.58 + 0.22 * coverage + 0.15 * Math.min(attemptRows.length / 6, 1)
-    );
-    const levelSignal = Math.min(3.5, Math.max(0.4, 0.4 + normalizedScore * 2.5));
+    // Default OFF: enable only after staging assessment acceptance.
+    const scoring = selectAssessmentSignals({
+      coverage,
+      attempts: attemptRows.map(row => ({
+        score: Number(row.score),
+        difficulty: Number(row.difficulty),
+        evaluatorConfidence: Number(row.evaluator_confidence ?? 0.5),
+        conceptId: jsonArray(row.concept_ids)[0] ?? "unknown"
+      }))
+    }, process.env.SKILLTWIN_SCORING_A2_ENABLED === "true");
+    const { normalizedScore, assessmentConfidence, levelSignal } = scoring;
 
     const outcomeRows = rows(await sql.unsafe(
       "insert into public.skill_assessment_outcomes(assessment_id,user_id,skill_id,normalized_score,level_signal,coverage,assessment_confidence,strengths,weaknesses,concept_summary,aggregator_version) values ($1::uuid,$2::uuid,$3::uuid,$4,$5,$6,$7,$8::jsonb,$9::jsonb,$10::jsonb,$11) on conflict(assessment_id) do update set normalized_score=excluded.normalized_score,level_signal=excluded.level_signal,coverage=excluded.coverage,assessment_confidence=excluded.assessment_confidence,strengths=excluded.strengths,weaknesses=excluded.weaknesses,concept_summary=excluded.concept_summary returning *",
@@ -769,7 +768,7 @@ export class AssessmentService {
         JSON.stringify(strengths),
         JSON.stringify(weaknesses),
         JSON.stringify(conceptSummary),
-        ASSESSMENT_AGGREGATOR_VERSION
+        scoring.scoringVersion
       ]
     ));
     let outcome = outcomeRows[0];
@@ -777,7 +776,7 @@ export class AssessmentService {
     const evidenceResult = await getEvidenceEngine().ingestBatch({
       userId,
       trigger: { type: "ASSESSMENT_COMPLETED", ref: assessmentId },
-      producerVersion: ASSESSMENT_AGGREGATOR_VERSION,
+      producerVersion: scoring.scoringVersion,
       candidates: [{
         skillId: String(assessment.skill_id),
         sourceType: "ASSESSMENT_SUMMARY",
@@ -792,6 +791,10 @@ export class AssessmentService {
         metadata: {
           assessmentId,
           normalizedScore: Number(normalizedScore.toFixed(4)),
+          scoringVersion: scoring.scoringVersion,
+          assessedQuestionCount: scoring.questionCount,
+          meanQuestionDifficulty: scoring.meanDifficulty,
+          meanEvaluatorConfidence: scoring.meanEvaluatorConfidence,
           strengths,
           weaknesses,
           conceptSummary

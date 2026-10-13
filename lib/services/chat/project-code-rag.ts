@@ -5,7 +5,7 @@ import type { RagHit } from "@/lib/domain/agent-rag";
 import { getSql } from "@/lib/db/postgres";
 import { inspectPublicRepository } from "@/lib/services/projects/project-defense-service";
 import { parsePublicGitHubRepo } from "@/lib/domain/project-defense";
-import { retrieveProjectPassages, renderProjectRagResult } from "@/lib/domain/agent-rag";
+import { retrieveProjectPassages, renderProjectRagResult, codeQuestionWithoutProjectName } from "@/lib/domain/agent-rag";
 
 /**
  * This intentionally reuses Project Defense's vetted public GitHub reader:
@@ -80,8 +80,9 @@ export async function readSavedProjectCode(input:{userId:string;question:string}
   const selected=matched[0]??eligible[0];
   try {
     const snapshot=await inspectPublicRepository(selected.artifact_url);
-    const hits=retrieveProjectPassages(input.question,snapshot.sources,2);
-    const summary=await synthesizeCodeAnswer(input.question,hits);
+    const technicalQuestion=codeQuestionWithoutProjectName(input.question,selected.title,snapshot.repository);
+    const hits=retrieveProjectPassages(technicalQuestion,snapshot.sources,2);
+    const summary=await synthesizeCodeAnswer(technicalQuestion,hits);
     return {
       content:renderProjectRagResult(snapshot.repository,snapshot.commitSha,hits,summary),
       refs:[{type:"profile_project" as const,id:selected.id,label:selected.title}],

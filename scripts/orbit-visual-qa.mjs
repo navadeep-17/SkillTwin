@@ -260,6 +260,24 @@ try {
       assert.ok(visual.overflow<=2,scene.name+" light mode overflow: "+visual.overflow);
       if(scene.name==="today")await page.getByRole("button",{name:"Today",exact:true}).click();
       if(scene.name==="skills")await page.getByRole("button",{name:"Graph",exact:true}).click();
+      if(scene.name==="prove"||scene.name==="explore"){
+        const selector=scene.name==="prove"?".op-estimate-row > div strong":".oe-detail-stats > div strong";
+        const contrast=await page.locator(selector).first().evaluate(element=>{
+          const parse=color=>color.match(/[0-9.]+/g)?.slice(0,3).map(Number)??[0,0,0];
+          const luminance=color=>{
+            const values=parse(color).map(v=>{
+              const s=v/255;
+              return s<=0.04045?s/12.92:Math.pow((s+0.055)/1.055,2.4);
+            });
+            return values[0]*.2126+values[1]*.7152+values[2]*.0722;
+          };
+          const foreground=luminance(getComputedStyle(element).color);
+          const background=luminance(getComputedStyle(element.parentElement).backgroundColor);
+          return (Math.max(foreground,background)+.05)/(Math.min(foreground,background)+.05);
+        });
+        assert.ok(contrast>=4.5,
+          scene.name+" light-mode statistic must be readable (contrast="+contrast.toFixed(2)+")");
+      }
       await page.screenshot({path:out+"/"+v.name+"-"+scene.name+"-light.png",fullPage:true,animations:"disabled"});
     }
     await page.goto(base+"/",{waitUntil:"networkidle",timeout:45000});

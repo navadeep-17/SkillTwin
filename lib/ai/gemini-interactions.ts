@@ -41,6 +41,8 @@ export class GeminiStructuredClient {
     prompt: string;
     jsonSchema: Record<string, unknown>;
     validator: z.ZodType<T>;
+    timeoutMs?: number;
+    maxOutputTokens?: number;
   }) {
     const env = getServerEnv();
     const apiKey = env.GEMINI_API_KEY;
@@ -48,6 +50,7 @@ export class GeminiStructuredClient {
 
     const response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
       method: "POST",
+      signal: input.timeoutMs ? AbortSignal.timeout(input.timeoutMs) : undefined,
       headers: {
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey
@@ -59,7 +62,7 @@ export class GeminiStructuredClient {
         store: false,
         generation_config: {
           temperature: 0.1,
-          max_output_tokens: 2500
+          max_output_tokens: input.maxOutputTokens ?? 2500
         },
         response_format: {
           type: "text",
@@ -91,6 +94,8 @@ export class GeminiStructuredClient {
     prompt: string;
     jsonSchema: Record<string, unknown>;
     validator: z.ZodType<T>;
+    timeoutMs?: number;
+    maxOutputTokens?: number;
   }): Promise<T | null> {
     const env = getServerEnv();
     if (!env.GEMINI_API_KEY) return null;

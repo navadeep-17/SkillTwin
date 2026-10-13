@@ -73,3 +73,11 @@ export function renderProjectRagResult(
   return intro+"Repository: "+repository+" at commit "+commitSha.slice(0,12)+"\n"+
     lines.join("\n\n")+"\n\nOnly inspected code is cited; these excerpts do not prove who wrote the code or establish proficiency.";
 }
+
+/** Route explicit code-search questions only; never hijack skill, plan or readiness questions. */
+export function shouldRetrieveProjectCode(question:string):boolean {
+  const text=question.toLowerCase().replace(/\\s+/g," ").trim();
+  if(!/\\b(project|repo|repository|github|codebase)\\b/.test(text))return false;
+  if(/\\b(readiness|career|confidence|score|assessment|roadmap|learning plan|skill gap|progress)\\b/.test(text))return false;
+  return /\\b(code|source|file|files|function|functions|implement|implemented|implementation|algorithm|logic|pipeline|architecture|auth|authentication|design|security|bug|review)\\b/.test(text);
+}

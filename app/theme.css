@@ -148,3 +148,11 @@ html[data-theme="light"] .orbit-lab .orbit-live-graph .orbit-live-node-option{
  color:#ecf1ff!important;background:#242e4d!important;border-color:#515c7e!important;
 }
 html[data-theme="light"] .orbit-lab .orbit-live-graph .orbit-live-node-option strong{color:#f0f4ff!important}
+
+/* Keep all three header controls available on 360px phones. */
+@media(max-width:560px){
+ .oh-site .oh-header{flex-wrap:wrap;padding:12px 17px;row-gap:7px}
+ .oh-site .oh-header-actions{width:100%;justify-content:space-between}
+ .orbit-preview-actions{gap:5px}
+ .orbit-preview-nav-wrap>.orbit-preview-build{padding:9px 7px;font-size:10px}
+}

@@ -13,6 +13,8 @@ const password = process.env.SMOKE_PASSWORD;
 const secondEmail = process.env.SMOKE_SECOND_EMAIL?.trim();
 const secondPassword = process.env.SMOKE_SECOND_PASSWORD;
 const results = [];
+const trustedOrigins = (process.env.QA_ALLOWED_ORIGINS ?? "")
+  .split(",").map(value => value.trim().replace(/\/$/, "")).filter(Boolean);
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -20,11 +22,7 @@ function assert(condition, message) {
 function allowedUrl(raw) {
   try {
     const parsed = new URL(raw);
-    return parsed.protocol === "https:" && (
-      parsed.hostname.endsWith(".up.railway.app") ||
-      parsed.hostname.endsWith(".vercel.app") ||
-      parsed.hostname.endsWith(".railway.app")
-    );
+    return parsed.protocol === "https:" && trustedOrigins.includes(parsed.origin);
   } catch { return false; }
 }
 function pass(label) {
@@ -62,7 +60,7 @@ async function checkPage(context, path, heading) {
   return page;
 }
 
-assert(allowedUrl(baseUrl), "BASE_URL must be an HTTPS Railway or Vercel preview/staging hostname");
+assert(allowedUrl(baseUrl), "BASE_URL must match an exact HTTPS origin in QA_ALLOWED_ORIGINS before credentials can be used");
 assert(email && password, "SMOKE_EMAIL and SMOKE_PASSWORD are required for real authenticated QA");
 const browser = await chromium.launch({ headless: true });
 try {

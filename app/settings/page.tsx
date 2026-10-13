@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LearningSettingsForm } from "@/components/settings/learning-settings-form";
+import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -25,6 +26,7 @@ export default async function SettingsPage() {
         </p>
       </header>
 
+      <div className="st-theme-classic mb-5"><ThemeSwitcher /></div>
       <LearningSettingsForm
         initial={data ?? {
           notifications_enabled: true,

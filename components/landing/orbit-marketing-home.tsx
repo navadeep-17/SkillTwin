@@ -5,6 +5,7 @@ import {
   Play, ShieldCheck, Sparkles, Target, Waypoints
 } from "lucide-react";
 import "./orbit-marketing-home.css";
+import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 
 const abilities=[
   {id:"python",name:"Python",x:68,y:86,state:"verified",hint:"Evidence"},
@@ -67,7 +68,7 @@ export default function OrbitMarketingHome(){
         <a href="#why-skilltwin">Why SkillTwin</a>
         <Link href="/orbit-lab">Interactive demo</Link>
       </nav>
-      <div className="oh-header-actions"><Link className="oh-signin" href="/login?next=%2Forbit-beta">Sign in</Link><Link className="oh-header-start" href="/orbit-onboarding">Get started <ArrowUpRight size={15}/></Link></div>
+      <div className="oh-header-actions"><ThemeSwitcher compact/><Link className="oh-signin" href="/login?next=%2Forbit-beta">Sign in</Link><Link className="oh-header-start" href="/orbit-onboarding">Get started <ArrowUpRight size={15}/></Link></div>
     </header>
     <section className="oh-hero">
       <div className="oh-hero-copy">

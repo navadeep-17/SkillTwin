@@ -34,6 +34,23 @@ try {
       "Landing must lead to real Orbit onboarding");
     const homeOverflow = await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth);
     assert.ok(homeOverflow <= 2, v.name + " default landing overflows horizontally: "+homeOverflow);
+    // Verify the real persisted theme switcher before continuing other UI tests.
+    const theme = page.getByRole("combobox", {name:"Appearance theme"});
+    await theme.selectOption("light");
+    assert.equal(await page.locator("html").getAttribute("data-theme"),"light");
+    const lightSurface = await page.locator("main.oh-site").evaluate(el=>getComputedStyle(el).backgroundColor);
+    assert.notEqual(lightSurface,"rgb(11, 16, 32)","Light appearance must repaint the landing surface");
+    await page.screenshot({path:out+"/"+v.name+"-appearance-light.png",fullPage:true,animations:"disabled"});
+    await theme.selectOption("dark");
+    assert.equal(await page.locator("html").getAttribute("data-theme"),"dark");
+    await page.reload({waitUntil:"networkidle"});
+    assert.equal(await page.locator("html").getAttribute("data-theme"),"dark","Saved dark preference survives reload");
+    await page.getByRole("combobox",{name:"Appearance theme"}).selectOption("system");
+    await page.emulateMedia({colorScheme:"dark"});
+    await page.waitForFunction(()=>document.documentElement.dataset.theme==="dark");
+    await page.emulateMedia({colorScheme:"light"});
+    await page.waitForFunction(()=>document.documentElement.dataset.theme==="light");
+    await page.getByRole("combobox",{name:"Appearance theme"}).selectOption("dark");
     await page.screenshot({path:out+"/"+v.name+"-production-landing.png",fullPage:true,animations:"disabled"});
 
     const secondaryResponse = await page.goto(base + "/orbit-lab/workspaces-demo", {waitUntil:"networkidle",timeout:45000});
@@ -211,6 +228,66 @@ try {
     }));
     assert.ok(overflow.scrollWidth <= overflow.viewportWidth + 1,
       v.name + " has horizontal overflow: " + JSON.stringify(overflow));
+
+    // Real rendered light-mode screenshots of every public fictional feature
+    // surface. These cannot prove authenticated database behavior, but they
+    // catch white-on-white / dark-on-dark regressions across the product UI.
+    await page.goto(base + "/", {waitUntil:"networkidle",timeout:45000});
+    await page.getByRole("combobox",{name:"Appearance theme"}).selectOption("light");
+    const lightScenes=[
+      {name:"today",path:"/orbit-lab",selector:".orbit-lab"},
+      {name:"skills",path:"/orbit-lab/skill-demo",selector:".orbit-lab"},
+      {name:"journey",path:"/orbit-lab/journey-demo",selector:".orbit-lab"},
+      {name:"prove",path:"/orbit-lab/proof-demo",selector:".orbit-lab"},
+      {name:"explore",path:"/orbit-lab/explore-demo",selector:".orbit-lab"},
+      {name:"activity",path:"/orbit-lab/activity-demo",selector:".orbit-lab"},
+      {name:"settings",path:"/orbit-lab/settings-demo",selector:".orbit-lab"},
+      {name:"workspaces",path:"/orbit-lab/workspaces-demo",selector:".orbit-lab"},
+      {name:"login",path:"/login",selector:".orbit-auth-root"}
+    ];
+    for(const scene of lightScenes){
+      const res=await page.goto(base+scene.path,{waitUntil:"networkidle",timeout:45000});
+      assert.equal(res?.status(),200,"Light "+scene.name+" must load");
+      await page.locator(scene.selector).first().waitFor();
+      assert.equal(await page.locator("html").getAttribute("data-theme"),"light",
+        "Light preference survives navigation to "+scene.name);
+      const visual=await page.locator(scene.selector).first().evaluate(element=>{
+        const style=getComputedStyle(element);
+        const overflow=document.documentElement.scrollWidth-document.documentElement.clientWidth;
+        return {background:style.backgroundColor,color:style.color,overflow};
+      });
+      assert.notEqual(visual.background,"rgb(11, 16, 32)",scene.name+" remains dark in light mode");
+      assert.ok(visual.overflow<=2,scene.name+" light mode overflow: "+visual.overflow);
+      if(scene.name==="today")await page.getByRole("button",{name:"Today",exact:true}).click();
+      if(scene.name==="skills")await page.getByRole("button",{name:"Graph",exact:true}).click();
+      if(scene.name==="prove"||scene.name==="explore"){
+        const selector=scene.name==="prove"?".op-estimate-row > div strong":".oe-detail-stats > div strong";
+        const contrast=await page.locator(selector).first().evaluate(element=>{
+          const parse=color=>color.match(/[0-9.]+/g)?.slice(0,3).map(Number)??[0,0,0];
+          const luminance=color=>{
+            const values=parse(color).map(v=>{
+              const s=v/255;
+              return s<=0.04045?s/12.92:Math.pow((s+0.055)/1.055,2.4);
+            });
+            return values[0]*.2126+values[1]*.7152+values[2]*.0722;
+          };
+          const foreground=luminance(getComputedStyle(element).color);
+          const background=luminance(getComputedStyle(element.parentElement).backgroundColor);
+          return (Math.max(foreground,background)+.05)/(Math.min(foreground,background)+.05);
+        });
+        assert.ok(contrast>=4.5,
+          scene.name+" light-mode statistic must be readable (contrast="+contrast.toFixed(2)+")");
+      }
+      await page.screenshot({path:out+"/"+v.name+"-"+scene.name+"-light.png",fullPage:true,animations:"disabled"});
+    }
+    await page.goto(base+"/",{waitUntil:"networkidle",timeout:45000});
+    const mutedCta=await page.locator(".oh-action-secondary").evaluate(element=>({
+      foreground:getComputedStyle(element).color,
+      background:getComputedStyle(element).backgroundColor
+    }));
+    assert.notEqual(mutedCta.foreground,"rgb(225, 217, 255)",
+      "Light secondary CTA must use readable foreground, not dark-theme lavender");
+    await page.getByRole("combobox",{name:"Appearance theme"}).selectOption("dark");
 
     assert.deepEqual(screenshotErrors, [], v.name + " client errors");
     console.log(v.name + ": screenshots, navigation, checklist, assessment demo and overflow checks passed");

@@ -61,23 +61,32 @@ function hasCanonicalPinnedCitation(source:RagCodeSource):boolean {
 }
 
 /**
- * Saved project names select the repository. They are not evidence that
- * a source file answers the technical question. Remove them from retrieval
- * keywords without touching terms embedded inside longer identifiers.
+ * A saved project title is a selection hint, not evidence that the source
+ * contains the concepts the user is asking about. Ignore project identifiers
+ * as retrieval keywords while preserving terms embedded in larger words.
  */
 export function codeQuestionWithoutProjectName(
   question:string,projectTitle:string,repository:string
 ):string {
   const repoName=repository.split("/").pop()??"";
   const keys=[repository,projectTitle,repoName]
-    .map(key=>key.trim()).filter(key=>key.length>=3)
+    .map(value=>value.trim()).filter(value=>value.length>=3)
     .sort((a,b)=>b.length-a.length);
-  let result=question;
-  for(const key of keys) {
-    const safe=key.replace(/[.*+?^${}()|[\]\\]/g,"\\/** Rank ONLY existing inspected, pinned, public source snippets. No speculative retrieval. */");
-    result=result.replace(new RegExp("(^|[^a-z0-9])"+safe+"(?=$|[^a-z0-9])","gi"),"$1 ");
+  let text=question;
+  for(const key of keys){
+    let offset=0;
+    while(offset<text.length){
+      const index=text.toLowerCase().indexOf(key.toLowerCase(),offset);
+      if(index<0)break;
+      const left=index===0||!/\w/.test(text[index-1]);
+      const right=index+key.length===text.length||!/\w/.test(text[index+key.length]);
+      if(left&&right){
+        text=text.slice(0,index)+" "+text.slice(index+key.length);
+        offset=index+1;
+      }else offset=index+key.length;
+    }
   }
-  return result;
+  return text;
 }
 
 /** Rank ONLY existing inspected, pinned, public source snippets. No speculative retrieval. */

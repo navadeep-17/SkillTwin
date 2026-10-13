@@ -1,5 +1,7 @@
 import "server-only";
 import { getSql } from "@/lib/db/postgres";
+import { classifyJourneyIntent, type JourneyIntent } from "@/lib/domain/journey-intent";
+import { buildTwinProofTrail } from "@/lib/domain/twin-challenge";
 
 type Row = Record<string, unknown>;
 
@@ -28,16 +30,6 @@ function normalize(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9+#.]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
-export type JourneyIntent =
-  | "WHY_ROADMAP_CHANGED"
-  | "WHAT_NEXT"
-  | "READINESS"
-  | "SKILL_STATUS"
-  | "UNDO_ROADMAP_CHANGE"
-  | "START_ASSESSMENT"
-  | "GENERATE_PLAN"
-  | "JOURNEY_SUMMARY";
-
 export interface JourneyReference {
   type: "skill" | "gap_snapshot" | "learning_plan" | "learning_task" | "plan_diff" | "assessment";
   id: string;
@@ -52,19 +44,6 @@ export interface ChatActionProposal {
   expiresAt: string;
 }
 
-function classify(message: string): JourneyIntent {
-  const text = normalize(message);
-  if (/\b(undo|revert|roll back|rollback)\b/.test(text)) return "UNDO_ROADMAP_CHANGE";
-  if (/\b(challenge me|test me|quiz me|assess me|validate me)\b/.test(text)) return "START_ASSESSMENT";
-  if (/\b(generate|create|build)\b.*\b(plan|roadmap)\b/.test(text)) return "GENERATE_PLAN";
-  if (/\bwhy\b.*\b(roadmap|plan)\b.*\b(change|changed|update|updated)\b/.test(text)
-    || /\bwhy did.*change\b/.test(text)) return "WHY_ROADMAP_CHANGED";
-  if (/\b(what next|next task|do next|learn next|today|this week)\b/.test(text)) return "WHAT_NEXT";
-  if (/\b(readiness|ready for|how ready)\b/.test(text)) return "READINESS";
-  if (/\b(skill|confidence|capability|level|gap)\b/.test(text)) return "SKILL_STATUS";
-  return "JOURNEY_SUMMARY";
-}
-
 function ref(type: JourneyReference["type"], row: Row, label: string): JourneyReference {
   return { type, id: String(row.id), label };
 }
@@ -72,7 +51,7 @@ function ref(type: JourneyReference["type"], row: Row, label: string): JourneyRe
 export class JourneyChatService {
   async send(input: { userId: string; message: string; threadId?: string | null }) {
     const sql = getSql();
-    const intent = classify(input.message);
+    const intent = classifyJourneyIntent(input.message);
     const threadId = await this.resolveThread(input.userId, input.threadId ?? null);
 
     const userMessageRows = rows(await sql.unsafe(
@@ -82,7 +61,7 @@ export class JourneyChatService {
     const userMessageId = String(userMessageRows[0].id);
 
     const context = await this.context(input.userId, input.message);
-    const generated = await this.answer(intent, input.message, context);
+    const generated = await this.answer(intent, input.message, context, input.userId);
     let actionProposal: ChatActionProposal | null = null;
 
     if (generated.action) {
@@ -268,6 +247,105 @@ export class JourneyChatService {
     };
   }
 
+  /**
+   * Read-only, assessment-ID-linked agent tool.
+   * Never infer a PlanDiff from recency or manufacture an explanation.
+   * All three evidence lookups are scoped to this signed-in learner.
+   */
+  private async explainAssessment(userId: string, mentionedSkill: Row | null) {
+    const sql = getSql();
+    const skillId = mentionedSkill?.skill_id == null ? null : String(mentionedSkill.skill_id);
+    const outcomeRows = rows(await sql.unsafe(
+      "select o.assessment_id,o.skill_id,o.normalized_score,o.coverage,o.created_at,s.canonical_name from public.skill_assessment_outcomes o join public.skills s on s.id=o.skill_id where o.user_id=$1::uuid and ($2::uuid is null or o.skill_id=$2::uuid) order by o.created_at desc limit 1",
+      [userId, skillId]
+    ));
+    const outcome = outcomeRows[0];
+    const skillName = mentionedSkill?.canonical_name == null ? "this skill" : String(mentionedSkill.canonical_name);
+    if (!outcome) {
+      return {
+        content: "I cannot verify a completed assessment for " + skillName +
+          " yet. I won't guess why your score or roadmap did or didn't change. Complete a challenge, then ask me to explain its recorded result.",
+        refs: [] as JourneyReference[],
+        evidenceRefs: [] as string[],
+        action: null
+      };
+    }
+
+    const assessmentId = String(outcome.assessment_id);
+    const assessedSkillId = String(outcome.skill_id);
+    const [historyResults, decisionResults, diffResults] = await Promise.all([
+      sql.unsafe(
+        "select skill_id,trigger_ref,before_state,after_state,explanation from public.skill_history where user_id=$1::uuid and skill_id=$2::uuid and trigger_type='ASSESSMENT_COMPLETED' and trigger_ref=$3 order by created_at desc limit 1",
+        [userId, assessedSkillId, assessmentId]
+      ),
+      sql.unsafe(
+        "select trigger_ref,decision,reason_code,reason from public.replan_decisions where user_id=$1::uuid and trigger_type='ASSESSMENT_COMPLETED' and trigger_ref=$2 order by created_at desc limit 1",
+        [userId, assessmentId]
+      ),
+      sql.unsafe(
+        "select id,trigger_refs,status,summary from public.plan_diffs where user_id=$1::uuid and status='APPLIED' order by created_at desc limit 100",
+        [userId]
+      )
+    ]);
+    const history = rows(historyResults).map(row => ({
+      skill_id: String(row.skill_id),
+      trigger_ref: String(row.trigger_ref),
+      before_state: row.before_state,
+      after_state: row.after_state,
+      explanation: row.explanation == null ? null : String(row.explanation)
+    }));
+    const decisions = rows(decisionResults).map(row => ({
+      trigger_ref: String(row.trigger_ref),
+      decision: String(row.decision),
+      reason_code: row.reason_code == null ? null : String(row.reason_code),
+      reason: row.reason == null ? null : String(row.reason)
+    }));
+    const diffs = rows(diffResults).map(row => ({
+      id: String(row.id),
+      trigger_refs: row.trigger_refs,
+      status: String(row.status),
+      summary: row.summary == null ? null : String(row.summary)
+    }));
+    const proof = buildTwinProofTrail({
+      assessment_id: assessmentId,
+      skill_id: assessedSkillId,
+      normalized_score: outcome.normalized_score == null ? null : Number(outcome.normalized_score),
+      coverage: outcome.coverage == null ? null : Number(outcome.coverage),
+      created_at: String(outcome.created_at)
+    },history,decisions,diffs);
+    if (!proof) throw new Error("ASSESSMENT_PROOF_NOT_FOUND");
+
+    const formatState = (state: typeof proof.before) => state
+      ? (state.level ?? "Unknown") +
+        (state.capability == null ? "" : " (capability " + state.capability.toFixed(2) + ")") +
+        (state.confidencePercent == null ? "" : ", confidence " + state.confidencePercent + "%")
+      : "not confirmed by a matching history record";
+
+    const parts = [
+      "Your latest recorded " + String(outcome.canonical_name) + " assessment scored " +
+        (proof.scorePercent == null ? "an unavailable score" : proof.scorePercent + "%") +
+        " with " + (proof.coveragePercent == null ? "unavailable" : proof.coveragePercent + "%") + " concept coverage.",
+      "Before: " + formatState(proof.before) + ".",
+      "After: " + formatState(proof.after) + "."
+    ];
+    if (proof.skillExplanation) parts.push("Recorded explanation: " + proof.skillExplanation);
+    parts.push(
+      proof.planStatus === "CHANGED" ? "Roadmap: an assessment-linked change was applied. " + proof.planReason
+        : proof.planStatus === "UNCHANGED" ? "Roadmap: no change was needed. " + proof.planReason
+          : "Roadmap: no decision for this assessment is confirmed. " + proof.planReason
+    );
+    parts.push("The skill estimate and confidence are guidance, not a certification or hiring probability.");
+
+    const refs: JourneyReference[] = [
+      {type:"assessment",id:assessmentId,label:"Completed " + String(outcome.canonical_name) + " assessment"},
+      {type:"skill",id:assessedSkillId,label:String(outcome.canonical_name)}
+    ];
+    if (proof.planDiffId) {
+      refs.push({type:"plan_diff",id:proof.planDiffId,label:"Applied assessment-linked roadmap change"});
+    }
+    return {content:parts.join(" "),refs,evidenceRefs:[] as string[],action:null};
+  }
+
   private async answer(
     intent: JourneyIntent,
     message: string,
@@ -280,8 +358,13 @@ export class JourneyChatService {
       skills: Row[];
       mentionedSkill: Row | null;
       latestAssessment: Row | null;
-    }
+    },
+    userId: string
   ) {
+    if (intent === "EXPLAIN_ASSESSMENT") {
+      return this.explainAssessment(userId, context.mentionedSkill);
+    }
+
     const refs: JourneyReference[] = [];
     const evidenceRefs: string[] = [];
 

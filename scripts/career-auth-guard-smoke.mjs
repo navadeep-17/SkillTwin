@@ -45,6 +45,7 @@ try {
   const unknownId="00000000-0000-0000-0000-000000000001";
   const privateApi=[
     {method:"GET",path:"/api/chat"},
+    {method:"GET",path:"/api/certifications"},
     {method:"GET",path:"/api/chat?threadId="+unknownId},
     {method:"POST",path:"/api/chat",body:JSON.stringify({message:"Hello"})},
     {method:"POST",path:"/api/chat/actions/"+unknownId+"/confirm"},
@@ -67,7 +68,7 @@ try {
   if(![301,302,303,307,308].includes(journey.status)||!location.includes("/login"))
     throw new Error("Journey page must redirect anonymous users to login.");
 
-  for (const route of ["/passport", "/challenge-my-twin", "/project-defense", "/discover", "/occupations", "/occupations/mappings", "/occupations/models"]) {
+  for (const route of ["/passport", "/challenge-my-twin", "/project-defense", "/discover", "/certifications", "/occupations", "/occupations/mappings", "/occupations/models"]) {
     const response = await get(route);
     const location = response.headers.get("location") ?? "";
     if (![301, 302, 303, 307, 308].includes(response.status) ||

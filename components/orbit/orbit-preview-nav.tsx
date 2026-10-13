@@ -8,7 +8,7 @@ const items = [
   { href: "/orbit-beta", label: "Today", icon: House, orbit: true },
   { href: "/orbit-skills", label: "My Twin", icon: BrainCircuit, orbit: true },
   { href: "/orbit-journey", label: "Journey", icon: Route, orbit: true },
-  { href: "/challenge-my-twin", label: "Prove", icon: Fingerprint, orbit: false },
+  { href: "/orbit-prove", label: "Prove", icon: Fingerprint, orbit: true },
   { href: "/discover", label: "Explore", icon: Compass, orbit: false }
 ] as const;
 

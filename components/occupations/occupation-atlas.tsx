@@ -80,6 +80,8 @@ export function OccupationAtlas({ snapshot }: { snapshot: OccupationalSnapshot }
 
       <Link href="/occupations/mappings" className="btn-secondary mt-5">Inspect how occupational skills are mapped <ArrowUpRight className="size-4" /></Link>
 
+      <Link href="/occupations/models" className="btn-secondary mt-3 ml-0 sm:ml-3">Review career model readiness <ArrowUpRight className="size-4" /></Link>
+
       <section aria-label="Catalog coverage" className="mt-6 grid gap-3 sm:grid-cols-3">
         <Stat icon={BookOpen} number={String(occupationCount)} label="Source-linked occupations" />
         <Stat icon={Compass} number={String(families.length - 1)} label="Career fields represented" />

@@ -18,6 +18,8 @@ jobs:
       - run: npm run typecheck:core
       - run: npm run test:core
       - run: node --test tests/occupation-mapping.test.mjs
+      - run: node --test tests/reviewed-career-model.test.mjs
+      - run: node scripts/reviewed-career-models.mjs status > /dev/null
       - run: node --test tests/taxonomy-extension.test.mjs
       - run: node scripts/occupation-mapping-review.mjs validate
       - run: node scripts/export-reviewed-occupation-crosswalk.mjs > /dev/null

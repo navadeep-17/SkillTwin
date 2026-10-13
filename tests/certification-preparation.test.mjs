@@ -59,6 +59,7 @@ test("certification prompts never trigger generic generate-roadmap actions",()=>
   for(const text of [
     "How do I prepare for my AWS certification exam?",
     "Generate my certification study plan",
+    "Create a certification roadmap",
     "What is next for my CCNA exam preparation?",
     "What learning resources help GitHub Foundations certification?"
   ]){

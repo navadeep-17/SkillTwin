@@ -162,7 +162,7 @@ export function OrbitTodayLive({ model }: { model: OrbitTodayModel }) {
                 </div>
               </> : <div><span>Explore your SkillTwin</span><strong>Select a competency node</strong><small>Inspect current capability, evidence confidence, and the target level separately.</small></div>}
             </div>
-            <div className="orbit-live-actions"><Link href="/skills">Inspect evidence <ArrowRight size={15}/></Link><Link href="/challenge-my-twin">Challenge my Twin <Fingerprint size={15}/></Link></div>
+            <div className="orbit-live-actions"><Link href="/orbit-skills">Inspect evidence <ArrowRight size={15}/></Link><Link href="/challenge-my-twin">Challenge my Twin <Fingerprint size={15}/></Link></div>
           </section>
           <aside className="orbit-live-side">
             <section className="orbit-panel orbit-live-metric">

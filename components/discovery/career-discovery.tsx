@@ -68,6 +68,9 @@ export function CareerDiscovery({ roles }: Props) {
           Browse our currently supported career models, see the competencies each requires,
           and choose a direction to explore in SkillTwin. You do not have to commit to a goal to inspect a role.
         </p>
+        <Link href="/occupations" className="btn-secondary mt-5">
+          Explore more professions <ArrowRight className="size-4" />
+        </Link>
       </header>
 
       <div className="mt-6 rounded-xl border border-brand-100 bg-brand-50/60 p-4 text-sm leading-6 text-slate-700">

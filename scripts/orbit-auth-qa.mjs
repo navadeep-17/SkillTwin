@@ -35,6 +35,7 @@ try {
         {path:"/orbit-beta",marker:".orbit-live-inner"},
         {path:"/orbit-skills",marker:".orbit-skills-inner"},
         {path:"/orbit-journey",marker:".oj-main"},
+        {path:"/orbit-prove",marker:".op-main"},
         {path:"/orbit-onboarding",marker:".orbit-onboarding-frame"}
       ];
       for (const item of screens) {

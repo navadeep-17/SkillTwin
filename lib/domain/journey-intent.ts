@@ -32,7 +32,7 @@ export function classifyJourneyIntent(message: string): JourneyIntent {
 
   if (/\bwhy\b.*\b(roadmap|plan)\b.*\b(change|changed|update|updated)\b/.test(text)
     || /\bwhy did.*change\b/.test(text)) return "WHY_ROADMAP_CHANGED";
-  if (/\b(what next|next task|do next|learn next|today|this week)\b/.test(text)) return "WHAT_NEXT";
+  if (/\b(what next|next task|do next|learn next|focus on next|focus next|work on next|today|this week)\b/.test(text)) return "WHAT_NEXT";
   if (/\b(readiness|ready for|how ready)\b/.test(text)) return "READINESS";
   if (/\b(skill|confidence|capability|level|gap)\b/.test(text)) return "SKILL_STATUS";
   return "JOURNEY_SUMMARY";

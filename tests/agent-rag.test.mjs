@@ -44,6 +44,7 @@ test("project retrieval remains user-scoped, server-owned and read-only",()=>{
   assert.match(service,/parsePublicGitHubRepo/);
   assert.match(service,/inspectPublicRepository/);
   assert.match(orchestrator,/readSavedProjectCode/);
+  assert.match(orchestrator,/SKILLTWIN_AGENT_V3_RAG_ENABLED === "true"/, "RAG must be explicitly enabled on the server before real account reads");
   assert.match(journey,/!isMutatingJourneyIntent\(intent\)/);
   assert.doesNotMatch(service,/getEvidenceEngine|getAssessmentService|getInitialPlanService|delete from|insert into/);
 });

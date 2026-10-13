@@ -35,6 +35,19 @@ const starters = [
   "Explain my biggest skill gap"
 ];
 
+
+/** Only link exact, commit-pinned GitHub source citations returned by the RAG reader. */
+function RagCitedText({content}:{content:string}) {
+  const pattern=/(https:\/\/github\.com\/[A-Za-z0-9-]+\/[A-Za-z0-9_.-]+\/blob\/[a-f0-9]{40}\/[A-Za-z0-9_~.%+/@-]+#L\d+-L\d+)/g;
+  const parts=content.split(pattern);
+  return <span className="whitespace-pre-wrap break-words">{parts.map((part,index)=>
+    /^https:\/\/github\.com\//.test(part)
+      ? <a key={index} href={part} target="_blank" rel="noopener noreferrer"
+          className="font-medium text-indigo-700 underline underline-offset-2 hover:text-indigo-900">{part}</a>
+      : part
+  )}</span>;
+}
+
 export function JourneyChat({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const [threadId, setThreadId] = useState<string | null>(null);
@@ -307,7 +320,7 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
                   : "rounded-2xl rounded-bl-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700"
               }
             >
-              {message.content}
+              {message.role === "ASSISTANT" && message.agentMode === "source-rag-fallback-v1" ? <RagCitedText content={message.content}/> : message.content}
             </div>
             {message.role === "ASSISTANT" && message.readTools?.length ? (
               <p className="mt-1.5 text-[11px] text-slate-500">

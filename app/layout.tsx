@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppNav } from "@/components/shell/app-nav";
+import { isOrbitDefaultEnabled } from "@/lib/runtime/orbit-default";
 import { OrbitAwareChrome } from "@/components/shell/orbit-aware-chrome";
 import { GlobalAssistantDock } from "@/components/shell/global-assistant-dock";
 import { PageTransition } from "@/components/shell/page-transition";
@@ -24,13 +25,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   const user = data.user;
+  const orbitDefault = isOrbitDefaultEnabled();
 
   return (
     <html lang="en">
       <body className="min-h-screen text-slate-950 antialiased">
         <RouteProgress />
         {user ? <ProductRealtimeSync userId={user.id} /> : null}
-        <OrbitAwareChrome signedIn={Boolean(user)} legacyNavigation={user ? <AppNav userId={user.id} email={user.email} /> : null}>
+        <OrbitAwareChrome signedIn={Boolean(user)} orbitDefault={orbitDefault} legacyNavigation={user ? <AppNav userId={user.id} email={user.email} orbitDefault={orbitDefault} /> : null}>
           <PageTransition>{children}</PageTransition>
         </OrbitAwareChrome>
         {user ? <GlobalAssistantDock /> : null}

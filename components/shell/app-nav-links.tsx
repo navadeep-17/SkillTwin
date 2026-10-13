@@ -27,17 +27,16 @@ type NavLink = {
   icon: LucideIcon;
 };
 
-// Build-time activation switch. Disabled by default so merging the UI does
-// not silently move learners away from the tested classic experience.
-const primaryLinks: NavLink[] = process.env.NEXT_PUBLIC_SKILLTWIN_ORBIT_DEFAULT === "true"
-  ? [
+// The server passes rollout state from the running environment. This cannot
+// depend on a public NEXT_PUBLIC flag being baked into the browser bundle.
+const orbitPrimaryLinks: NavLink[] = [
       { href: "/orbit-beta", label: "Today", icon: Home },
       { href: "/orbit-skills", label: "My Twin", icon: Network },
       { href: "/orbit-journey", label: "Journey", icon: Map },
       { href: "/orbit-prove", label: "Prove", icon: Sparkles },
       { href: "/orbit-explore", label: "Explore", icon: Compass }
-    ]
-  : [
+    ];
+const classicPrimaryLinks: NavLink[] = [
       { href: "/overview", label: "Home", icon: Home },
       { href: "/skills", label: "Skills", icon: Network },
       { href: "/roadmap", label: "Plan", icon: Map },
@@ -63,8 +62,9 @@ function active(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export function AppNavLinks() {
+export function AppNavLinks({ orbitDefault = false }: { orbitDefault?: boolean }) {
   const pathname = usePathname();
+  const primaryLinks = orbitDefault ? orbitPrimaryLinks : classicPrimaryLinks;
 
   return (
     <>
@@ -85,8 +85,9 @@ export function AppNavLinks() {
   );
 }
 
-export function MobileNavLinks() {
+export function MobileNavLinks({ orbitDefault = false }: { orbitDefault?: boolean }) {
   const pathname = usePathname();
+  const primaryLinks = orbitDefault ? orbitPrimaryLinks : classicPrimaryLinks;
 
   return (
     <nav className="grid grid-cols-5">

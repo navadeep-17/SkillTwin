@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { isOrbitDefaultEnabled } from "@/lib/runtime/orbit-default";
 import { createClient } from "@/lib/supabase/server";
 import { AuthForm } from "@/components/auth/auth-form";
 import { AuthShell } from "@/components/auth/auth-shell";
@@ -10,7 +11,7 @@ export default async function LoginPage({
 }) {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
-  const orbitDefault = process.env.NEXT_PUBLIC_SKILLTWIN_ORBIT_DEFAULT === "true";
+  const orbitDefault = isOrbitDefaultEnabled();
   if (data.user) redirect(orbitDefault ? "/orbit-beta" : "/onboarding");
 
   const params = await searchParams;
@@ -24,7 +25,7 @@ export default async function LoginPage({
       title="Welcome to SkillTwin"
       description="Sign in to continue your persistent learner profile, target-role analysis, and adaptive roadmap."
     >
-      <AuthForm initialMessage={params.error ?? ""} nextPath={nextPath} />
+      <AuthForm initialMessage={params.error ?? ""} nextPath={nextPath} orbitDefault={orbitDefault} />
     </AuthShell>
   );
 }

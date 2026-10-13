@@ -287,22 +287,49 @@ test("Orbit integration preserves newer main certifications and deployment setup
 });
 
 
-test("Orbit default activation is opt-in, reversible and preserves classic sign-in routes", () => {
+test("Orbit default renders a real dark marketing homepage from a server runtime flag", () => {
+  const page = read("app/page.tsx");
+  const flag = read("lib/runtime/orbit-default.ts");
+  const marketing = read("components/landing/orbit-marketing-home.tsx");
+  const styles = read("components/landing/orbit-marketing-home.css");
+  const old = read("components/landing/classic-home.tsx");
+  assert.ok(page.includes('dynamic = "force-dynamic"'), "homepage must not freeze the rollout at build time");
+  assert.ok(page.includes("isOrbitDefaultEnabled() ? <OrbitMarketingHome /> : <ClassicHome />"));
+  assert.ok(flag.includes("process.env[serverName] ?? process.env[existingName]"));
+  assert.ok(marketing.includes('href="/orbit-onboarding"'));
+  assert.ok(marketing.includes('href="/login?next=%2Forbit-beta"'));
+  assert.ok(marketing.includes("ILLUSTRATION") && marketing.includes("no manufactured scores"));
+  assert.ok(styles.includes("prefers-reduced-motion"));
+  assert.ok(old.includes("A learning agent") && old.includes("Build my SkillTwin"), "classic landing must remain available as rollback fallback");
+});
+
+test("Orbit default navigation and authentication follow SERVER rollout state, not frozen NEXT_PUBLIC client JS", () => {
   const links = read("components/shell/app-nav-links.tsx");
+  const nav = read("components/shell/app-nav.tsx");
+  const layout = read("app/layout.tsx");
   const login = read("app/login/page.tsx");
   const form = read("components/auth/auth-form.tsx");
   const callback = read("app/auth/callback/route.ts");
-  const flag = "NEXT_PUBLIC_SKILLTWIN_ORBIT_DEFAULT";
-  for (const [name,source] of [["links",links],["login",login],["signup",form],["callback",callback]]) {
-    assert.ok(source.includes(flag), name + " should respect the single rollout flag");
-  }
+  assert.ok(links.includes("orbitDefault ? orbitPrimaryLinks : classicPrimaryLinks"));
+  assert.ok(!links.includes("process.env."), "client navigation must not read a build-frozen flag");
   assert.ok(links.includes('href: "/orbit-beta"') && links.includes('href: "/overview"'));
-  assert.ok(links.includes('label: "Try SkillTwin Orbit"'), "Classic product must offer explicit opt-in before the default switch is enabled");
-  const mobileHeader=read("components/shell/app-nav.tsx");
-  assert.ok(mobileHeader.includes('href="/orbit-beta"') && mobileHeader.includes("Try Orbit"),"Mobile header must expose the opt-in path");
-  assert.ok(mobileHeader.includes('href="/journey"'),"Mobile navigation must preserve Ask SkillTwin");
-  assert.ok(links.includes('href: "/orbit-prove"') && links.includes('href: "/practice"'));
+  assert.ok(links.includes('label: "Try SkillTwin Orbit"'));
+  assert.ok(nav.includes("<AppNavLinks orbitDefault={orbitDefault} />"));
+  assert.ok(nav.includes("<MobileNavLinks orbitDefault={orbitDefault} />"));
+  assert.ok(nav.includes('href="/journey"'), "Ask SkillTwin must remain available");
+  assert.ok(layout.includes("isOrbitDefaultEnabled()"));
+  assert.ok(layout.includes("orbitDefault={orbitDefault}"));
+  const chrome = read("components/shell/orbit-aware-chrome.tsx");
+  assert.ok(chrome.includes('(orbitDefault && pathname === "/")'), "Signed-in homepage must not inherit the classic sidebar");
   assert.ok(login.includes('orbitDefault ? "/orbit-beta" : "/onboarding"'));
-  assert.ok(form.includes('"/orbit-onboarding" : "/onboarding"'));
-  assert.ok(callback.includes('"/orbit-onboarding" : "/onboarding"'));
+  assert.ok(login.includes('orbitDefault={orbitDefault}'));
+  assert.ok(form.includes('const signupDestination = orbitDefault ? "/orbit-onboarding" : "/onboarding"'));
+  assert.ok(!form.includes("process.env."));
+  assert.ok(callback.includes("isOrbitDefaultEnabled()"));
+  const overview=read("app/overview/page.tsx");
+  const orbitNav=read("components/orbit/orbit-preview-nav.tsx");
+  assert.ok(overview.includes('query.classic !== "1"') && overview.includes('redirect("/orbit-beta")'),
+    "Old dashboard bookmarks should land on Orbit by default");
+  assert.ok(orbitNav.includes('href="/overview?classic=1"'),
+    "The explicit classic-view fallback must not loop back to Orbit");
 });

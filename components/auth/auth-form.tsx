@@ -8,10 +8,12 @@ import { createClient } from "@/lib/supabase/browser";
 
 export function AuthForm({
   initialMessage = "",
-  nextPath = "/onboarding"
+  nextPath = "/onboarding",
+  orbitDefault = false
 }: {
   initialMessage?: string;
   nextPath?: string;
+  orbitDefault?: boolean;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -51,8 +53,7 @@ export function AuthForm({
       return;
     }
 
-    const signupDestination = process.env.NEXT_PUBLIC_SKILLTWIN_ORBIT_DEFAULT === "true"
-      ? "/orbit-onboarding" : "/onboarding";
+    const signupDestination = orbitDefault ? "/orbit-onboarding" : "/onboarding";
     router.replace(mode === "signin" ? nextPath : signupDestination);
     router.refresh();
   }

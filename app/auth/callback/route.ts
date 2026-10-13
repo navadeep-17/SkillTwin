@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import { isOrbitDefaultEnabled } from "@/lib/runtime/orbit-default";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 function safeNext(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return process.env.NEXT_PUBLIC_SKILLTWIN_ORBIT_DEFAULT === "true" ? "/orbit-onboarding" : "/onboarding";
+    return isOrbitDefaultEnabled() ? "/orbit-onboarding" : "/onboarding";
   }
   return value;
 }

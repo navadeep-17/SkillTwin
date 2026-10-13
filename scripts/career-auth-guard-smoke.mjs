@@ -45,6 +45,9 @@ try {
   const unknownId="00000000-0000-0000-0000-000000000001";
   const privateApi=[
     {method:"GET",path:"/api/chat"},
+    {method:"GET",path:"/api/arena/state"},
+    {method:"POST",path:"/api/arena/match",body:JSON.stringify({action:"find",topic:"python"})},
+    {method:"POST",path:"/api/arena/answer",body:JSON.stringify({matchId:unknownId,questionNumber:1,optionIndex:0})},
     {method:"GET",path:"/api/certifications"},
     {method:"GET",path:"/api/certifications/journey"},
     {method:"POST",path:"/api/certifications/journey",body:JSON.stringify({certificationId:"github-foundations"})},
@@ -72,7 +75,7 @@ try {
   if(![301,302,303,307,308].includes(journey.status)||!location.includes("/login"))
     throw new Error("Journey page must redirect anonymous users to login.");
 
-  for (const route of ["/passport", "/challenge-my-twin", "/project-defense", "/discover", "/certifications", "/certifications/journey", "/occupations", "/occupations/mappings", "/occupations/models"]) {
+  for (const route of ["/passport", "/challenge-my-twin", "/project-defense", "/discover", "/certifications", "/certifications/journey", "/arena", "/occupations", "/occupations/mappings", "/occupations/models"]) {
     const response = await get(route);
     const location = response.headers.get("location") ?? "";
     if (![301, 302, 303, 307, 308].includes(response.status) ||

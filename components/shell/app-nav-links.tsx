@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   Award,
+  Swords,
   Compass,
   Fingerprint,
   FileCode2,
@@ -52,6 +53,7 @@ const secondaryLinks: NavLink[] = [
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/project-defense", label: "Project Defense", icon: FileCode2 },
   { href: "/certifications", label: "Certifications", icon: Award },
+  { href: "/arena", label: "Arena 1v1", icon: Swords },
   { href: "/passport", label: "Evidence Passport", icon: ScrollText },
   { href: "/journey", label: "Ask SkillTwin", icon: MessageSquareText },
   { href: "/activity", label: "Activity", icon: Activity },

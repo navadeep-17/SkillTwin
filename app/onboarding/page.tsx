@@ -4,7 +4,11 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ role?: string }> }) {
+  const params = await searchParams;
+  const requestedRoleVersionId = typeof params.role === "string" && /^[a-fA-F0-9-]{36}$/.test(params.role)
+    ? params.role
+    : undefined;
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   if (!data.user) redirect("/login");
@@ -33,7 +37,7 @@ export default async function OnboardingPage() {
       </header>
 
       <div className="fade-up">
-        <OnboardingFlow />
+        <OnboardingFlow initialRoleVersionId={requestedRoleVersionId} />
       </div>
     </main>
   );

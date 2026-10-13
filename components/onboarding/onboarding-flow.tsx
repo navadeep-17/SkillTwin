@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { ResumeAnalyzer } from "@/components/onboarding/resume-analyzer";
 import { UnresolvedSkillTerms } from "@/components/onboarding/unresolved-skill-terms";
 import { ManualProfileEvidence } from "@/components/onboarding/manual-profile-evidence";
@@ -40,7 +41,7 @@ type RolesEnvelope = {
 
 const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] as const;
 
-export function OnboardingFlow() {
+export function OnboardingFlow({ initialRoleVersionId }: { initialRoleVersionId?: string }) {
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState("");
   const [hoursPerWeek, setHoursPerWeek] = useState(10);
@@ -95,16 +96,19 @@ export function OnboardingFlow() {
         setPlanReady(Boolean(roadmapJson?.ok && roadmapJson.data?.plan));
 
         const goal = goalJson.data?.goal;
+        const requestedRole = initialRoleVersionId && loadedRoles.some(item => item.roleVersionId === initialRoleVersionId)
+          ? initialRoleVersionId
+          : null;
         if (goal) {
-          setSelectedRole(goal.role_version_id);
+          setSelectedRole(requestedRole ?? goal.role_version_id);
           setHoursPerWeek(Number(goal.hours_per_week) || 10);
           setTargetDate(goal.target_date ?? "");
           setPreferredSessionMinutes(Number(goal.preferred_session_minutes) || 60);
           setLearningDays(Array.isArray(goal.learning_days) && goal.learning_days.length ? goal.learning_days : ["Mon","Tue","Wed","Thu","Fri","Sat"]);
           setAdaptationMode(goal.adaptation_mode === "ASK_FIRST" ? "ASK_FIRST" : "AUTOMATIC");
-          setGoalSaved(true);
+          setGoalSaved(!requestedRole || requestedRole === goal.role_version_id);
         } else if (loadedRoles.length) {
-          setSelectedRole(loadedRoles[0].roleVersionId);
+          setSelectedRole(requestedRole ?? loadedRoles[0].roleVersionId);
         }
       } catch (error) {
         setMessage(error instanceof Error ? error.message : "Could not load onboarding.");
@@ -117,7 +121,7 @@ export function OnboardingFlow() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialRoleVersionId]);
 
   const role = useMemo(
     () => roles.find(item => item.roleVersionId === selectedRole) ?? null,
@@ -285,6 +289,7 @@ export function OnboardingFlow() {
             <p className="mt-2 text-sm text-slate-600">
               SkillTwin compares your evidence against a versioned competency model for this role.
             </p>
+            <Link href="/discover" className="quiet-link mt-2 inline-block font-semibold text-brand-600">Not sure which role? Explore careers →</Link>
           </div>
           {goalSaved && role ? (
             <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">

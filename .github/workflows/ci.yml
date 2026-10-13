@@ -14,8 +14,10 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - run: node --check scripts/career-feature-qa.mjs
       - run: npm run typecheck:core
       - run: npm run test:core
       - run: npm run qa:contracts
       - run: npm run typecheck
       - run: npm run build
+      - run: node scripts/career-auth-guard-smoke.mjs

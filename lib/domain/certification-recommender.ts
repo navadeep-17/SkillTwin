@@ -6,7 +6,7 @@ export type LearnerSkillSignal={
   slug:string;level:string|null;confidence:number|null;evidenceCount:number;
 };
 export type LearnerGapSignal={
-  slug:string;priorityBand:string|null;severity:number|null;
+  slug:string;status:string|null;priorityBand:string|null;severity:number|null;
 };
 export type CertificationLearnerContext={
   goalName:string|null;skills:LearnerSkillSignal[];gaps:LearnerGapSignal[];
@@ -24,9 +24,9 @@ export type CertificationMatch={
 const norm=(s:string)=>s.toLowerCase().replace(/\s+/g," ").trim();
 const safe=(x:number|null)=>x!=null&&Number.isFinite(x)?x:null;
 const levelKnown=(l:string|null)=>Boolean(l && l.toUpperCase()!=="UNKNOWN");
-const status=(g:LearnerGapSignal)=>Boolean(
-  g.priorityBand && !["NONE","MET","SATISFIED"].includes(g.priorityBand.toUpperCase())
-  || safe(g.severity)!=null && (g.severity as number)>0.03
+const isActionableGap=(g:LearnerGapSignal)=>(
+  ["GAP","DEVELOPING"].includes(String(g.status??"").toUpperCase())
+  && (Boolean(g.priorityBand)||safe(g.severity)!=null&&(g.severity as number)>0.03)
 );
 const priority=(s:string|null)=>({CRITICAL:4,HIGH:3,MEDIUM:2,LOW:1}[String(s??"").toUpperCase()]??0);
 
@@ -36,7 +36,7 @@ export function rankCertifications(
 ):CertificationMatch[] {
   const role=norm(context.goalName??"");
   const bySkill=new Map(context.skills.map(s=>[s.slug,s]));
-  const gaps=new Map(context.gaps.filter(status).map(g=>[g.slug,g]));
+  const gaps=new Map(context.gaps.filter(isActionableGap).map(g=>[g.slug,g]));
   const hasGoal=Boolean(role);
   return catalog.map(certification=>{
     const roleMatch=hasGoal&&certification.roleKeywords.some(keyword=>role.includes(norm(keyword)));

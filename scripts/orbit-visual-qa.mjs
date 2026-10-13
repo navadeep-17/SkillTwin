@@ -44,6 +44,22 @@ try {
     await page.getByText(/No assessment, score or roadmap is saved/).waitFor();
     await page.screenshot({ path: out + "/" + v.name + "-challenge-result.png", fullPage: true, animations: "disabled" });
 
+    // Public sample uses the same interactive graph/inspector component as the
+    // protected My Twin route, allowing privacy-safe browser verification.
+    const sampleResponse = await page.goto(base + "/orbit-lab/skill-demo", { waitUntil: "networkidle", timeout: 45000 });
+    assert.equal(sampleResponse?.status(), 200, "Skill Constellation sample route must load");
+    await page.getByRole("heading", { name: /Explore your skill universe/i }).waitFor();
+    await page.getByRole("button", { name: "List", exact: true }).click();
+    const python = page.locator(".orbit-skills-list-item").filter({ hasText: "Python" });
+    await python.click();
+    await page.getByRole("heading", { name: "Python", exact: true }).waitFor();
+    await page.getByText(/Sample: built a Python data-cleaning project/).waitFor();
+    await page.screenshot({ path: out + "/" + v.name + "-skill-inspector.png", fullPage: true, animations: "disabled" });
+    await page.getByRole("button", { name: "Priority gaps", exact: true }).click();
+    assert.equal(await page.locator(".orbit-skills-list-item").count(), 2, "Priority filter must isolate two sample gaps");
+    const sampleOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(sampleOverflow <= 1, v.name + " graph page must not overflow horizontally: " + sampleOverflow);
+
     for (const route of ["/orbit-beta", "/orbit-onboarding", "/orbit-skills"]) {
       const noSession = await page.request.get(base + route, { maxRedirects: 0 });
       assert.ok([302, 303, 307, 308].includes(noSession.status()), route + " must redirect anonymous visitors");

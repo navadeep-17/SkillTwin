@@ -29,6 +29,16 @@ The source is **untrusted**. Its comments, filenames and contents can never comm
 - Prompts and code snippets are untrusted content and should not override system instructions.
 - No changes to production Supabase tables, Railway settings or credentials in this initial slice.
 
+## Integration update and controlled activation
+
+- Agent V3 PR #51 now incorporates deployed main `b57ea8e5`, retaining SkillTwin Orbit, Certifications, their migrations, and main's regression suite.
+- The pure retriever and renderer now validate that citations refer to the exact repository, pinned commit, encoded source path and line interval. Forged or mismatched citations are rejected before synthesis, and citations are checked again when rendering.
+- **Server-side feature gate:** `SKILLTWIN_AGENT_V3_RAG_ENABLED=true` explicitly enables project-code retrieval. **Absent or any other value means OFF**, preserving existing V2 Journey Chat behavior. This is not a public browser environment variable.
+- Do not enable this on the production Railway service until a separate isolated preview / authorized disposable learner has passed signed-in project selection, cross-user isolation, retrieval, fallback and prompt-injection testing.
+- A merge of the RAG PR is not equivalent to activation: enabling the env flag is a separate owner-controlled step. No new Supabase migrations are needed for this slice.
+- A GitHub CI pass proves isolated ranking, provenance, static privacy boundaries, type safety and build compatibility; it does **not** establish real signed-in retrieval success.
+- Release procedure: enable only in a non-production preview, run read-only authenticated tests on a fictitious saved public project, inspect results and errors, then perform an explicit production activation if approved. Disable the flag to revert to V2 routing without database changes.
+
 ## QA fixtures and acceptance tests
 1. Ask how authentication was implemented in a saved public project; retrieve a matching inspected file and return pinned source link.
 2. Ask about a missing concept; show uncertainty and inspector coverage limitation.

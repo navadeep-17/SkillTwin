@@ -24,3 +24,19 @@
 .orbit-dock-dialog :is([class~="text-rose-700"],[class~="text-red-700"]){color:#ffb7c7}
 .orbit-dock-dialog :is([class~="text-emerald-700"],[class~="text-green-700"]){color:#87efce}
 @media(prefers-reduced-motion:reduce){.orbit-dock-toolbar *,.orbit-dock-dialog *{animation:none!important;transition:none!important}}
+
+/* Mobile assistant: an accessible bottom sheet clear of the primary navigation. */
+@media(max-width:1023px){
+  .orbit-dock-toolbar{bottom:calc(5.5rem + env(safe-area-inset-bottom));right:14px;gap:8px}
+  .orbit-dock-toolbar button:first-child{width:42px;height:42px}
+  .orbit-dock-toolbar button:last-child{min-height:42px;padding:9px 13px;font-size:12px}
+  .orbit-dock-dialog aside[role="dialog"]{border:1px solid rgba(173,158,249,.32);border-bottom:0;border-radius:18px 18px 0 0;box-shadow:0 -18px 56px rgba(0,0,0,.44)}
+  .orbit-dock-dialog aside[role="dialog"] header{padding:13px 16px}
+  .orbit-dock-dialog aside[role="dialog"]>div:last-child{overscroll-behavior:contain;padding:13px}
+}
+@media(max-width:380px){
+  .orbit-dock-toolbar button:last-child{padding:9px 10px}
+}
+@media(prefers-reduced-motion:reduce){
+  .orbit-dock-dialog .drawer-enter{animation:none!important}
+}

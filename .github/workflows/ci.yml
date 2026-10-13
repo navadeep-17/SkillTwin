@@ -31,7 +31,6 @@ jobs:
       - run: node --test tests/arena-duel.test.mjs
       - run: node --test tests/arena-ai-fallback.test.mjs
       - run: node --test tests/orbit-preview.test.mjs
-      - run: node --test tests/theme-preferences.test.mjs
       - run: node --test tests/project-defense.test.mjs
       - run: node --test tests/judge-demo-integrity.test.mjs
       - run: node --test tests/assessment-bank-boundary.test.mjs

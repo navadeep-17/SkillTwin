@@ -320,7 +320,7 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
                   : "rounded-2xl rounded-bl-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700"
               }
             >
-              {message.role === "ASSISTANT" && message.agentMode === "source-rag-fallback-v1" ? <RagCitedText content={message.content}/> : message.content}
+              {message.role === "ASSISTANT" && (message.agentMode === "source-rag-fallback-v1" || message.agentMode === "source-rag-gemini-v1") ? <RagCitedText content={message.content}/> : message.content}
             </div>
             {message.role === "ASSISTANT" && message.readTools?.length ? (
               <p className="mt-1.5 text-[11px] text-slate-500">

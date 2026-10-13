@@ -59,6 +59,16 @@ Set secrets in your local environment or a protected CI secret store instead of 
 
 Then execute `node scripts/orbit-e2e-isolated.mjs`. It deliberately answers questions using ordinary test input (not privileged answer keys). It validates that a completed challenge is persisted, that the Prove proof trail links to its canonical skill, and that a recorded replan decision is present. A failed result blocks release; it does not justify editing production records.
 
+## Updated main integration and activation (2026-10-14)
+- Orbit has been merged **from** main into the design branch, incorporating `26ad0317`. The existing Certifications catalog, certification journey, agent upgrades, Dockerfile, `output: "standalone"` and main CI tests are preserved.
+- Reconciled the overlapping `middleware.ts`, `.github/workflows/ci.yml`, and `ChallengeSession` return route. `OrbitAwareChrome` hides duplicate classic navigation and left padding only on Orbit routes. The classic interface, including Certifications, remains accessible.
+- `NEXT_PUBLIC_SKILLTWIN_ORBIT_DEFAULT` is the **single, disabled-by-default build-time activation switch** for signed-in primary links, login, account creation and OAuth callback defaults. Set to `true` only after authorized signed-in QA. Because it is a public Next.js build-time variable, switching it requires a **new build/deployment**.
+- The original public `/` marketing page remains classic and is outside this authenticated-navigation activation switch. A complete branded public landing cutover needs a separate explicit review.
+- Railway has successfully deployed the latest existing main commit (without Orbit), and the certification journey table exists on the current Supabase project. The prior failed deployments were earlier commits; production still needs a fresh release health check before any Orbit merge.
+- Combining Orbit with main in PR #42 does **not** automatically deploy or merge the redesign. A merge into `main` **will** trigger a Railway deployment because the service tracks `main`.
+- Switching `NEXT_PUBLIC_SKILLTWIN_ORBIT_DEFAULT` back to `false` and rebuilding restores classic primary links/login defaults without deleting historical records. The source-level rollback remains a revert of the UI merge.
+- **Important:** until staging or an owner-authorized disposable account has verified private real-data paths and the assessment write flow, do not label the UI release production-validated.
+
 ## Gate checklist
 - [ ] Public concept fixture CI + visual QA green at latest head
 - [ ] Isolated non-production database, services and test learner confirmed

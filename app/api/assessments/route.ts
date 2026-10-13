@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const requestId = await getRequestId();
+  const startedAt = Date.now();
 
   try {
     const { user } = await requireUser();
@@ -30,6 +31,11 @@ export async function POST(request: Request) {
       sourceTaskId: parsed.data.sourceTaskId,
       mode: parsed.data.mode
     });
+
+    const durationMs = Date.now() - startedAt;
+    if (durationMs > 3000) {
+      console.warn("assessment.create.slow", { requestId, durationMs });
+    }
 
     return ok(requestId, result, {
       notifications: [{
@@ -60,7 +66,10 @@ export async function POST(request: Request) {
       return fail(requestId, 409, "QUESTION_BANK_TOO_SMALL", "This skill does not have enough validated challenge items.");
     }
 
-    console.error("assessment.create.failed", { requestId, error: message });
+    // No learner answers, question text or credentials are logged.
+    console.error("assessment.create.failed", {
+      requestId, durationMs: Date.now() - startedAt, error: message
+    });
     return fail(requestId, 500, "ASSESSMENT_CREATE_FAILED", "Could not start Challenge Me.");
   }
 }

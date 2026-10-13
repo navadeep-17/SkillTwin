@@ -13,6 +13,16 @@ import {
 } from "lucide-react";
 import { ToastNotice, type ToastMessage } from "@/components/ui/toast-notice";
 
+type RecommendedLearningResource = {
+  id: string;
+  title: string;
+  provider: string;
+  url: string;
+  format: "DOCS" | "ARTICLE" | "INTERACTIVE";
+  suggested_minutes: number;
+  reason: string;
+};
+
 type ResourceAssignment = {
   learning_resources?: {
     id?: string;
@@ -38,6 +48,7 @@ type Task = {
   rationale_code: string;
   validation_available?: boolean;
   resource?: ResourceAssignment | null;
+  recommended_resources?: RecommendedLearningResource[];
 };
 
 type Objective = {
@@ -308,6 +319,7 @@ function TaskCard({
   onNotify: (tone: ToastMessage["tone"], title: string, detail?: string) => void;
 }) {
   const resource = task.resource?.learning_resources;
+  const suggested = (task.recommended_resources ?? []).filter(item => item.url !== resource?.url);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -402,6 +414,43 @@ function TaskCard({
           </span>
           <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-slate-400 transition group-hover:text-brand-600" />
         </a>
+      ) : null}
+
+      {suggested.length ? (
+        <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-blue-900">
+              {resource?.url ? "More learning sources" : "Recommended for this task"}
+            </p>
+            <span className="text-[10px] font-medium text-blue-700">Curated · external</span>
+          </div>
+          <div className="space-y-2">
+            {suggested.map((item, index) => (
+              <a
+                key={item.id}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-start justify-between gap-3 rounded-lg border border-blue-100 bg-white p-3 transition hover:border-blue-300 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
+              >
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-900">{item.title}</span>
+                    {index === 0 ? <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800">Start here</span> : null}
+                  </span>
+                  <span className="mt-1 block text-[11px] text-slate-600">
+                    {item.provider} · {item.format.toLowerCase()} · suggested {item.suggested_minutes}m study block
+                  </span>
+                  <span className="mt-1 block text-[11px] leading-5 text-slate-500">{item.reason}</span>
+                </span>
+                <ExternalLink aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-blue-600" />
+              </a>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] leading-5 text-slate-600">
+            Opening a resource doesn't mark this task complete. Apply what you learn before submitting evidence.
+          </p>
+        </div>
       ) : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">

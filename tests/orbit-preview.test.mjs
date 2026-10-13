@@ -115,3 +115,14 @@ test("Orbit My Twin navigation and anonymous access are explicit", () => {
   assert.ok(nav.includes('href: "/orbit-skills"'));
   assert.ok(visual.includes('"/orbit-skills"'));
 });
+
+
+test("Sample constellation is explicitly fictional and never imports private learner data", () => {
+  const page = read("app/orbit-lab/skill-demo/page.tsx");
+  assert.ok(page.includes("Sample concept"));
+  assert.ok(page.includes("no real learner records"));
+  assert.ok(page.includes("type OrbitSkill"));
+  assert.ok(page.includes("OrbitSkillExperience"));
+  assert.ok(!page.includes("createClient"));
+  assert.ok(!page.includes("supabase"));
+});

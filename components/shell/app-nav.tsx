@@ -82,9 +82,6 @@ export async function AppNav({ userId, email, orbitDefault = false }: { userId: 
           <span className="font-semibold tracking-tight">SkillTwin</span>
         </Link>
         <div className="flex items-center gap-2">
-          <Link href="/orbit-beta" className="rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-700">
-            Try Orbit
-          </Link>
           <Link href="/journey" className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600">
             Ask SkillTwin
           </Link>

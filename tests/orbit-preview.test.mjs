@@ -319,6 +319,8 @@ test("Orbit default navigation and authentication follow SERVER rollout state, n
   assert.ok(nav.includes('href="/journey"'), "Ask SkillTwin must remain available");
   assert.ok(layout.includes("isOrbitDefaultEnabled()"));
   assert.ok(layout.includes("orbitDefault={orbitDefault}"));
+  const chrome = read("components/shell/orbit-aware-chrome.tsx");
+  assert.ok(chrome.includes('(orbitDefault && pathname === "/")'), "Signed-in homepage must not inherit the classic sidebar");
   assert.ok(login.includes('orbitDefault ? "/orbit-beta" : "/onboarding"'));
   assert.ok(login.includes('orbitDefault={orbitDefault}'));
   assert.ok(form.includes('const signupDestination = orbitDefault ? "/orbit-onboarding" : "/onboarding"'));

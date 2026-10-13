@@ -9,7 +9,7 @@ import { getApprovedOccupationCrosswalk } from "../dist/lib/domain/occupation-ma
 const load=path=>JSON.parse(readFileSync(new URL(path,import.meta.url),"utf8"));
 const result=getApprovedOccupationCrosswalk(
   load("../data/occupations/onet-online-curated-2026-10-13-v1.json"),
-  load("../data/occupation-mappings/canonical-skill-snapshot-v1.json"),
-  load("../data/occupation-mappings/review-decisions-v1.json")
+  load("../data/occupation-mappings/canonical-skill-snapshot-v2.json"),
+  load("../data/occupation-mappings/review-decisions-v2.json")
 );
 process.stdout.write(JSON.stringify(result,null,2)+"\n");

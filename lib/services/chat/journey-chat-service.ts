@@ -26,10 +26,6 @@ function arrayOfStrings(value: unknown): string[] {
   return Array.isArray(parsed) ? parsed.map(String) : [];
 }
 
-function normalize(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9+#.]+/g, " ").replace(/\s+/g, " ").trim();
-}
-
 export interface JourneyReference {
   type: "skill" | "gap_snapshot" | "learning_plan" | "learning_task" | "plan_diff" | "assessment";
   id: string;

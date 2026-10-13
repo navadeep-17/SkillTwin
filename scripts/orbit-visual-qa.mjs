@@ -102,7 +102,25 @@ try {
     const proofOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(proofOverflow <= 1, v.name + " Prove page overflows horizontally: " + proofOverflow);
 
-    for (const route of ["/orbit-beta", "/orbit-onboarding", "/orbit-skills", "/orbit-journey", "/orbit-prove", "/orbit-prove/session/00000000-0000-0000-0000-000000000000"]) {
+    const exploreResponse = await page.goto(base + "/orbit-lab/explore-demo", { waitUntil: "networkidle", timeout: 45000 });
+    assert.equal(exploreResponse?.status(), 200, "Fictional Explore demo must load");
+    await page.getByRole("heading", { name: /Your future has many orbits/i }).waitFor();
+    await page.getByText(/Fictional career catalog preview/).waitFor();
+    await page.locator(".oe-role").filter({ hasText: "Data Analyst" }).click();
+    await page.locator(".oe-role-hero h2").getByText("Data Analyst").waitFor();
+    await page.locator("#oe-compare-select").selectOption("demo-ml");
+    assert.equal(await page.locator(".oe-compare-counts > div").first().locator("strong").innerText(), "2", "Shared skill comparison must use canonical IDs");
+    await page.screenshot({ path: out + "/" + v.name + "-explore-comparison.png", fullPage: true, animations: "disabled" });
+    await page.getByLabel("Career family").selectOption("Software Engineering");
+    await page.locator(".oe-role").filter({ hasText: "Full Stack Developer" }).click();
+    await page.locator(".oe-role-hero h2").getByText("Full Stack Developer").waitFor();
+    await page.getByText(/AI-generated · review required/).waitFor();
+    await page.screenshot({ path: out + "/" + v.name + "-explore-role.png", fullPage: true, animations: "disabled" });
+    assert.equal(await page.locator('a[href^="/orbit-onboarding?role="]').count(), 0, "Public fictional catalog must never offer a real goal write action");
+    const exploreOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(exploreOverflow <= 1, v.name + " Explore page overflows horizontally: " + exploreOverflow);
+    
+    for (const route of ["/orbit-beta", "/orbit-onboarding", "/orbit-skills", "/orbit-journey", "/orbit-prove", "/orbit-prove/session/00000000-0000-0000-0000-000000000000", "/orbit-explore"]) {
       const noSession = await page.request.get(base + route, { maxRedirects: 0 });
       assert.ok([302, 303, 307, 308].includes(noSession.status()), route + " must redirect anonymous visitors");
     }

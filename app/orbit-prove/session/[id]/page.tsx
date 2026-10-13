@@ -33,7 +33,7 @@ export default async function OrbitProofSessionPage({params}:{
         <h1>Show what you really know.</h1>
         <p>Questions, scoring and evidence updates are handled by SkillTwin's existing assessment engine. After completion, return to Prove to inspect the persisted evidence and roadmap decision.</p>
       </header>
-      <div className="op-session-content"><ChallengeSession assessmentId={id}/></div>
+      <div className="op-session-content"><ChallengeSession assessmentId={id} proofReturnBase="/orbit-prove"/></div>
       <div className="op-trust"><ShieldCheck size={17}/><p>Do not refresh while an answer is submitting. The assessment service persists submitted progress and allows a saved active session to resume. No demonstration values are used on this screen.</p></div>
     </div>
   </main>;

@@ -43,7 +43,8 @@ test("project retrieval remains user-scoped, server-owned and read-only",()=>{
   const orchestrator=read("lib/services/chat/agent-read-orchestrator.ts");
   const journey=read("lib/services/chat/journey-chat-service.ts");
   assert.match(service,/where user_id=\$1::uuid/);
-  assert.match(service,/parsePublicGitHubRepo/);
+  const flow=read("lib/domain/agent-rag-flow.ts");
+  assert.match(flow,/parsePublicGitHubRepo/);
   assert.match(service,/inspectPublicRepository/);
   assert.match(orchestrator,/readSavedProjectCode/);
   assert.match(orchestrator,/SKILLTWIN_AGENT_V3_RAG_ENABLED === "true"/, "RAG must be explicitly enabled on the server before real account reads");

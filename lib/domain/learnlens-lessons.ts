@@ -1,4 +1,4 @@
-import type { LearnerLevel, LearningTaskType } from "./curated-learning-resources";
+import type { LearnerLevel, LearningTaskType } from "./curated-learning-resources.js";
 
 /**
  * LearnLens pilot: editor-reviewed lesson notes grounded in official PostgreSQL

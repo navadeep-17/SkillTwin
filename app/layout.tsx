@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppNav } from "@/components/shell/app-nav";
+import { themeInitScript } from "@/lib/theme/theme-init";
+import "./theme.css";
 import { isOrbitDefaultEnabled } from "@/lib/runtime/orbit-default";
 import { OrbitAwareChrome } from "@/components/shell/orbit-aware-chrome";
 import { GlobalAssistantDock } from "@/components/shell/global-assistant-dock";
@@ -28,7 +30,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const orbitDefault = isOrbitDefaultEnabled();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{__html:themeInitScript}} /></head>
       <body className="min-h-screen text-slate-950 antialiased">
         <RouteProgress />
         {user ? <ProductRealtimeSync userId={user.id} /> : null}

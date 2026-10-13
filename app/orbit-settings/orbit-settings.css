@@ -1,0 +1,21 @@
+.orbit-settings{min-height:100vh;background:radial-gradient(820px 440px at 68% 0%,rgba(119,95,228,.16),transparent 75%),#0b1020;color:#f4f7ff}
+.os-page{max-width:1290px;margin:auto;padding:16px 27px 68px}.os-breadcrumb{padding:16px 7px;display:flex;align-items:center;gap:11px;color:#94a7c9;font-size:11px}.os-breadcrumb a{color:#c1b1ff;text-decoration:none}
+.os-hero{border:1px solid rgba(179,163,248,.25);border-radius:23px;padding:45px;display:flex;justify-content:space-between;align-items:center;position:relative;overflow:hidden;min-height:300px;background:radial-gradient(470px 280px at 100% 0%,rgba(136,100,237,.25),transparent),linear-gradient(110deg,#25274c,#18243e)}
+.os-hero>div:first-child{position:relative;z-index:1}.os-hero h1{font-size:clamp(34px,5vw,58px);font-weight:800;letter-spacing:-.07em;line-height:1.13;margin:16px 0 14px}.os-hero h1 em{color:#b3a1ff;font-style:normal}.os-hero p:not(.orbit-kicker){font-size:13px;line-height:1.8;color:#b2bfd6;max-width:600px}
+.os-hero-art{position:relative;display:grid;place-items:center;height:176px;width:176px;flex-shrink:0;margin:0 25px;color:#e0d8ff;border-radius:47px;background:linear-gradient(140deg,#8a75e5,#4d3d96);transform:rotate(-11deg);box-shadow:0 0 90px rgba(145,113,241,.2)}.os-hero-art>div{position:absolute;inset:-27px;border:1px dashed rgba(190,169,249,.4);border-radius:51px}
+.os-columns{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(235px,.75fr);gap:17px;margin-top:21px;align-items:start}
+.os-native-settings{border:1px solid rgba(171,183,233,.22);border-radius:18px;background:linear-gradient(150deg,#1e2845,#151e34);box-shadow:0 20px 40px rgba(0,0,0,.14)}
+.os-native-settings .text-slate-950,.os-native-settings .text-slate-900{color:#f4f7ff!important}
+.os-native-settings .text-slate-500,.os-native-settings .text-slate-600{color:#a5b5d0!important}
+.os-native-settings .text-brand-600{color:#b7a5ff!important}
+.os-native-settings .bg-slate-100{background:#2b3353!important}
+.os-native-settings .border-slate-100{border-color:rgba(171,184,223,.14)!important}
+.os-native-settings input[type=checkbox]{width:21px;height:21px;accent-color:#9d89ff;cursor:pointer}
+.os-native-settings .btn-primary{background:linear-gradient(115deg,#8b75e9,#6251ba);color:#fff;border:1px solid #9b87f0}
+.os-native-settings .btn-primary:hover{background:#8870e8}
+.os-native-settings :is(input,button,a):focus-visible{outline:2px solid #74e9d0;outline-offset:3px}
+.os-warning{display:flex;gap:12px;border-radius:11px;border:1px solid rgba(93,213,187,.21);color:#9dbfbf;background:rgba(87,210,182,.075);padding:17px;margin-top:14px}.os-warning svg{flex-shrink:0;color:#73e4ca}.os-warning p{font-size:11px;line-height:1.75}.os-warning strong{color:#cfebdf}
+.os-side{display:flex;flex-direction:column;gap:14px}.os-side-card{padding:25px;background:linear-gradient(145deg,#202a47,#172139);border:1px solid rgba(183,188,232,.17);border-radius:17px}.os-side-card>svg{color:#aa99ff}.os-side-card h2{font-size:18px;letter-spacing:-.4px;line-height:1.35;margin:16px 0 9px;font-weight:800}.os-side-card p{color:#a7b6d0;font-size:12px;line-height:1.8}.os-side-rule{border-top:1px solid rgba(178,190,235,.15);margin:20px 0}.os-side-card>span{display:flex;align-items:center;gap:8px;color:#72dfc4;font-size:10px;font-weight:700}.os-side-card.muted h2{font-size:14px;margin:0 0 12px}.os-side-card.muted a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 0;border-bottom:1px solid rgba(177,185,231,.14);color:#c7baff;font-size:11px;font-weight:760;text-decoration:none}
+@media(max-width:850px){.os-columns{grid-template-columns:1fr}.os-side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.os-hero{padding:34px}.os-hero-art{height:110px;width:110px;border-radius:32px}}
+@media(max-width:560px){.os-page{padding:10px 12px 40px}.os-hero{padding:26px 20px;min-height:0;border-radius:17px}.os-hero h1{font-size:37px}.os-hero-art{display:none}.os-columns{margin-top:14px}.os-side{grid-template-columns:1fr}.os-side-card{padding:20px}.os-warning{padding:13px}}
+@media(prefers-reduced-motion:reduce){.os-settings-form-wrapper *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}

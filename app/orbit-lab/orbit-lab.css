@@ -38,3 +38,14 @@ body:has(.orbit-lab) > div[class*="lg:pl-64"] {
 @keyframes orbit-proof-after{from{opacity:0;transform:translateX(13px)}to{opacity:1;transform:translateX(0)}}
 @keyframes orbit-proof-arrow{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
 @media(prefers-reduced-motion:reduce){.orbit-result-block,.orbit-result-symbol,.orbit-result-symbol:after,.orbit-result-compare>div:nth-child(3),.orbit-result-compare>svg,.orbit-replan-sample{animation:none!important}}
+
+
+/* Visual QA: keep decorative overlay cards away from competency labels. */
+@media(min-width:901px){
+  .orbit-stat-a{top:1%;left:auto;right:7%}
+  .orbit-stat-b{bottom:7%;right:-1%}
+  .orbit-float-note{right:auto;left:13%;bottom:1%}
+}
+@media(max-width:900px){
+  .orbit-float-note{display:none}
+}

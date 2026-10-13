@@ -135,3 +135,12 @@ export function MappingReviewQueue({queue,catalogSkills}:{
     </>
   );
 }
+
+function Counter({label,value}:{label:string;value:number}) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <p className="text-2xl font-semibold text-slate-950">{value}</p>
+      <p className="mt-1 text-xs font-medium text-slate-600">{label}</p>
+    </div>
+  );
+}

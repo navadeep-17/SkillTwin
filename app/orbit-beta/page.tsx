@@ -43,11 +43,11 @@ export default async function OrbitBetaPage() {
     { data: skills, error: skillsError }
   ] = await Promise.all([
     supabase.from("career_goals")
-      .select("role_version_id,role_versions!inner(target_roles!inner(name))")
+      .select("id,role_version_id,role_versions!inner(target_roles!inner(name))")
       .eq("user_id", auth.user.id).eq("status", "ACTIVE")
       .limit(1).maybeSingle(),
     supabase.from("gap_snapshots")
-      .select("id,readiness,evidence_coverage,created_at")
+      .select("id,goal_id,role_version_id,readiness,evidence_coverage,created_at")
       .eq("user_id", auth.user.id).order("created_at", { ascending: false })
       .limit(1).maybeSingle(),
     supabase.from("user_skills")
@@ -56,6 +56,8 @@ export default async function OrbitBetaPage() {
   ]);
   for (const e of [goalError, snapshotError, skillsError]) if (e) throw e;
 
+  // An old role snapshot must never appear as readiness for a newly selected goal.
+  const currentSnapshot = goal?.id && snapshot?.goal_id === goal.id && snapshot?.role_version_id === goal.role_version_id ? snapshot : null;
   const roleVersion = one(goal?.role_versions as RoleVersionLink | RoleVersionLink[] | null);
   const roleName = one(roleVersion?.target_roles)?.name ?? null;
   const roleVersionId = goal?.role_version_id ? String(goal.role_version_id) : null;
@@ -77,10 +79,10 @@ export default async function OrbitBetaPage() {
     requirements = (r.data ?? []) as Requirement[];
     dependencies = (d.data ?? []) as Dependency[];
   }
-  if (snapshot?.id) {
+  if (currentSnapshot?.id) {
     const g = await supabase.from("skill_gap_results")
       .select("skill_id,status,priority_band,recommended_action,priority_score,gap_severity")
-      .eq("snapshot_id", snapshot.id)
+      .eq("snapshot_id", currentSnapshot.id)
       .order("priority_score", { ascending: false });
     if (g.error) throw g.error;
     gaps = (g.data ?? []) as Gap[];
@@ -105,9 +107,9 @@ export default async function OrbitBetaPage() {
   });
   const model: OrbitTodayModel = {
     roleName,
-    readiness: snapshot?.readiness == null ? null : Number(snapshot.readiness),
-    coverage: snapshot?.evidence_coverage == null ? null : Number(snapshot.evidence_coverage),
-    lastUpdated: snapshot?.created_at ?? null,
+    readiness: currentSnapshot?.readiness == null ? null : Number(currentSnapshot.readiness),
+    coverage: currentSnapshot?.evidence_coverage == null ? null : Number(currentSnapshot.evidence_coverage),
+    lastUpdated: currentSnapshot?.created_at ?? null,
     nodes,
     dependencies: dependencies.map(d => ({
       from: String(d.prerequisite_requirement_id),

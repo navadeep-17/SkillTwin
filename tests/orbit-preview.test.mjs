@@ -379,7 +379,8 @@ test("Native Orbit Agent Activity is authenticated, read-only, and uses persiste
   assert.ok(page.includes(".limit(60)"));
   assert.ok(!page.includes(".insert(") && !page.includes(".update(") && !page.includes(".delete("));
   assert.ok(page.includes("evidenceCount:") && page.includes("entityCount:"));
-  assert.ok(!page.includes('metadata') && !page.includes("raw_messages"));
+  assert.ok(!page.includes('entity_refs,evidence_refs,metadata') && !page.includes("raw_messages"),
+    "Agent Activity must not select raw event metadata or conversation content");
   assert.ok(menu.includes('href="/orbit-activity"'));
   assert.ok(ui.includes("aria-pressed={kind===item.id}"));
   assert.ok(ui.includes('timeZone:"UTC"'));

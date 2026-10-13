@@ -67,3 +67,27 @@ test("a recorded assessment outcome does not imply a skill change or plan change
   assert.equal(proof.planStatus,"NOT_RECORDED");
   assert.match(proof.planReason,/No matching roadmap decision/);
 });
+
+test("historical JSONB string snapshots display true before/after values",()=>{
+  const history={...matchingHistory,
+    before_state:JSON.stringify(matchingHistory.before_state),
+    after_state:JSON.stringify(JSON.stringify(matchingHistory.after_state))
+  };
+  const proof=buildTwinProofTrail(exampleOutcome,[history],[],[]);
+  assert.deepEqual(proof.before,{level:"BEGINNER",confidencePercent:31,capability:1.2});
+  assert.deepEqual(proof.after,{level:"INTERMEDIATE",confidencePercent:67,capability:2.2});
+  assert.equal(proof.planStatus,"NOT_RECORDED");
+});
+test("invalid or missing history JSON never fabricates a skill value",()=>{
+  const history={...matchingHistory,before_state:"not-json",after_state:"null"};
+  const proof=buildTwinProofTrail(exampleOutcome,[history],[],[]);
+  assert.deepEqual(proof.before,{level:null,confidencePercent:null,capability:null});
+  assert.deepEqual(proof.after,{level:null,confidencePercent:null,capability:null});
+});
+test("legacy snake_case snapshots are safely supported",()=>{
+  const history={...matchingHistory,
+    after_state:JSON.stringify({level_value:"ADVANCED",capability_score:3.1,confidence:0.83})
+  };
+  const proof=buildTwinProofTrail(exampleOutcome,[history],[],[]);
+  assert.deepEqual(proof.after,{level:"ADVANCED",confidencePercent:83,capability:3.1});
+});

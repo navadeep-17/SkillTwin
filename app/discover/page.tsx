@@ -16,6 +16,10 @@ type RequirementSkill = {
   canonical_name?: string;
   category?: string;
 };
+type RequirementGroup = {
+  name?: string;
+  group_type?: string;
+};
 
 function one<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
@@ -57,6 +61,8 @@ export default async function DiscoverCareersPage() {
   let requirements: Array<{
     role_version_id: string;
     skill_id: string;
+    group_id: string;
+    requirement_groups: RequirementGroup | RequirementGroup[] | null;
     target_score: number;
     importance: number;
     importance_band: string;
@@ -67,7 +73,7 @@ export default async function DiscoverCareersPage() {
   if (versionIds.length) {
     const { data, error } = await supabase
       .from("role_skill_requirements")
-      .select("role_version_id,skill_id,target_score,importance,importance_band,learning_stage,rationale,skills!inner(canonical_name,category)")
+      .select("role_version_id,skill_id,group_id,target_score,importance,importance_band,learning_stage,rationale,skills!inner(canonical_name,category),requirement_groups!inner(name,group_type)")
       .in("role_version_id", versionIds)
       .limit(2500);
     if (error) throw error;
@@ -100,7 +106,10 @@ export default async function DiscoverCareersPage() {
       documentedCount: demonstratedCount,
       requirements: reqs.map(item => {
         const skill = one(item.skills);
+        const group = one(item.requirement_groups);
         return {
+          groupName: group?.name ?? "Competency",
+          groupType: group?.group_type === "ANY_OF" ? "ANY_OF" : group?.group_type === "ALL_OF" ? "ALL_OF" : "SINGLE",
           skillId: item.skill_id,
           name: skill?.canonical_name ?? "Competency",
           category: skill?.category ?? "",

@@ -199,6 +199,22 @@ async function authenticatedChecks() {
   }
 
   assert(Boolean(demoResetSecret), "DEMO_RESET_SECRET is required for destructive smoke");
+  // Hard safety boundary: no smoke runner may reset real production data,
+  // even if a production workflow accidentally enables the destructive flag.
+  const isolatedRef = process.env.SMOKE_TEST_DB_REF?.trim() ?? "";
+  assert(process.env.SMOKE_ISOLATED === "true",
+    "destructive smoke requires SMOKE_ISOLATED=true");
+  assert(/^[a-z0-9]{20}$/.test(isolatedRef)
+    && isolatedRef !== "eozvilqmrhtujqtdmrri",
+    "destructive smoke requires an explicit NON-PRODUCTION Supabase project ref");
+  assert(new URL(supabaseUrl).hostname === isolatedRef + ".supabase.co",
+    "Supabase URL does not match the explicitly verified isolated project ref");
+  const smokeHost = new URL(baseUrl).hostname;
+  assert(smokeHost !== "skilltwin-production.up.railway.app"
+    && smokeHost !== "skilltwin.vercel.app"
+    && !smokeHost.startsWith("skilltwin-production."),
+    "destructive smoke must never run against the production application");
+
 
   const reset = await authRequest("/api/demo/reset", {
     method: "POST",

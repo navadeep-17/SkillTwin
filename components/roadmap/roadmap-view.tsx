@@ -7,6 +7,8 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock3,
+  BookOpen,
+  Code2,
   ExternalLink,
   LoaderCircle,
   Sparkles,
@@ -20,7 +22,10 @@ type RecommendedLearningResource = {
   title: string;
   provider: string;
   url: string;
-  format: "DOCS" | "ARTICLE" | "INTERACTIVE";
+  format: "DOCS" | "ARTICLE" | "INTERACTIVE" | "VIDEO";
+  video_focus?: string;
+  video_start_seconds?: number;
+  reviewed_on?: string;
   suggested_minutes: number;
   reason: string;
 };
@@ -328,7 +333,13 @@ function TaskCard({
   onNotify: (tone: ToastMessage["tone"], title: string, detail?: string) => void;
 }) {
   const resource = task.resource?.learning_resources;
-  const suggested = (task.recommended_resources ?? []).filter(item => item.url !== resource?.url);
+  const suggested = (task.recommended_resources ?? [])
+    .filter(item => item.url !== resource?.url)
+    .sort((a,b) => {
+      const priority = (format: RecommendedLearningResource["format"]) =>
+        format === "VIDEO" ? 0 : format === "INTERACTIVE" ? 1 : 2;
+      return priority(a.format) - priority(b.format);
+    });
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -429,7 +440,7 @@ function TaskCard({
         <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-xs font-semibold text-blue-900">
-              {resource?.url ? "More learning sources" : "Recommended for this task"}
+              {resource?.url ? "More learning sources" : "Watch, read and practice"}
             </p>
             <span className="text-[10px] font-medium text-blue-700">Curated · external</span>
           </div>
@@ -444,12 +455,19 @@ function TaskCard({
               >
                 <span className="min-w-0">
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-900">{item.title}</span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-800">
+                      {item.format === "VIDEO" ? <Video aria-hidden="true" className="size-3" /> : item.format === "INTERACTIVE" ? <Code2 aria-hidden="true" className="size-3" /> : <BookOpen aria-hidden="true" className="size-3" />}
+                      {item.format === "VIDEO" ? "Watch" : item.format === "INTERACTIVE" ? "Practice" : "Read"}
+                    </span>
                     {index === 0 ? <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800">Start here</span> : null}
                   </span>
+                  <span className="mt-1 block text-sm font-semibold text-slate-900">{item.title}</span>
                   <span className="mt-1 block text-[11px] text-slate-600">
-                    {item.provider} · {item.format.toLowerCase()} · suggested {item.suggested_minutes}m study block
+                    {item.provider} · suggested {item.suggested_minutes}m study block{item.format === "VIDEO" ? " (not the entire video)" : ""}
                   </span>
+                  {item.format === "VIDEO" && item.video_focus ? (
+                    <span className="mt-1 block text-[11px] font-medium text-blue-800">Topic: {item.video_focus}</span>
+                  ) : null}
                   <span className="mt-1 block text-[11px] leading-5 text-slate-500">{item.reason}</span>
                 </span>
                 <ExternalLink aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-blue-600" />

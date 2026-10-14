@@ -31,6 +31,7 @@ jobs:
       - run: node --test tests/agent-release-readiness.test.mjs
       - run: node --test tests/certification-recommendations.test.mjs
       - run: node --import tsx --test tests/curated-learning-resources.test.mjs
+      - run: node --import tsx --test tests/curated-video-resources.test.mjs
       - run: node --import tsx --test tests/learnlens-lessons.test.mjs
       - run: node --import tsx --test tests/live-job-matching.test.mjs
       - run: node --import tsx --test tests/ats-job-collector.test.mjs

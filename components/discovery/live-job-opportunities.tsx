@@ -203,7 +203,7 @@ export function LiveJobOpportunities() {
             )}
             <div className="mt-5 border-t border-slate-100 pt-4 text-xs leading-6 text-slate-500">
               <p>Job data: employer career boards (Greenhouse, Lever, Ashby) and <a className="font-semibold text-blue-700 hover:underline" target="_blank" rel="noopener noreferrer" href={data.source.url}>Jobicy public API <ExternalLink aria-hidden="true" className="inline size-3"/></a>
-                {data.source.sourceUpdatedAt ? " · Source update: "+new Date(data.source.sourceUpdatedAt).toLocaleString(): ""}
+                {data.source.sourceUpdatedAt ? " · Feed refreshed/checked: "+new Date(data.source.sourceUpdatedAt).toLocaleString(): ""}
                 {" · "}Employer data is collected by a scheduled worker when configured; Jobicy is cached hourly. Individual postings may close between checks.</p>
               <p className="mt-1">{data.disclaimer} Keyword mentions are not necessarily mandatory skills. Regional filters do not verify an individual applicant's hiring eligibility.</p>
             </div>

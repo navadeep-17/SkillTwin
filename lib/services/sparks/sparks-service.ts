@@ -1,6 +1,6 @@
 import "server-only";
 import { getSql } from "@/lib/db/postgres";
-import { getSparksConsumption } from "@/lib/services/sparks/sparks-consumption";
+import { getSparksConsumption, recoverStaleSparksUsage } from "@/lib/services/sparks/sparks-consumption";
 import { MONTHLY_REWARDED_REFERRAL_LIMIT, REFERRAL_SPARKS, SPARKS_PRICES, type SparksAction, WELCOME_SPARKS } from "@/lib/domain/sparks";
 
 type Row = Record<string, unknown>;
@@ -34,6 +34,7 @@ export async function ensureSparksWallet(userId: string) {
 }
 export async function getSparksWallet(userId: string) {
   await ensureSparksWallet(userId);
+  await recoverStaleSparksUsage(userId);
   const sql = getSql();
   const wallet = rows(await sql.unsafe(
     "select balance,referral_code,created_at from public.sparks_wallets where user_id=$1::uuid",
@@ -72,7 +73,7 @@ export async function spendSparks(userId: string, action: SparksAction, key: str
   });
 }
 export async function refundSparks(userId: string, action: SparksAction, key: string) {
-  if (!isSparksChargingEnabled()) return;
+  // A refund must settle an existing paid operation even if charging was disabled mid-flight.
   const sql = getSql();
   await sql.begin(async tx => {
     await tx.unsafe("select balance from public.sparks_wallets where user_id=$1::uuid for update", [userId]);

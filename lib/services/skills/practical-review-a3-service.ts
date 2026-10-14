@@ -49,6 +49,9 @@ export async function submitPracticalReview(input:PracticalReviewRequest,reviewe
     throw new PracticalReviewError("REPOSITORY_CHANGED_RESTART");
   const parts=parsePublicGitHubRepo(url)!;
   const pinnedUrl="https://github.com/"+parts.owner+"/"+parts.repo;
+  if(url!==pinnedUrl)
+    throw new PracticalReviewError("PROJECT_NOT_ELIGIBLE"); // canonical immutable repo URL only
+
   const criterionSkill=input.criterionId.split(".")[0];
   const rubric=getCompetencyRubric(criterionSkill);
   if(!rubric || !rubric.criteria.some(c=>c.id===input.criterionId))

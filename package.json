@@ -20,7 +20,9 @@
     "qa:db": "node scripts/database-security-qa.mjs",
     "qa:contracts": "node scripts/spec-contract-qa.mjs",
     "qa:scoring-a2:offline": "npm run build:core && node --test tests/assessment-scoring-guardrails.test.mjs tests/scoring-evidence-gap-integration.test.mjs",
-    "qa:scoring-a2:staging": "node scripts/scoring-a2-staging-auth-qa.mjs"
+    "qa:scoring-a2:staging": "node scripts/scoring-a2-staging-auth-qa.mjs",
+    "qa:evidence-a3:offline": "npm run build:core && node --test tests/evidence-a3-competency.test.mjs tests/evidence-a3-real-assessment.test.mjs tests/evidence-a3-practical-review.test.mjs",
+    "qa:evidence-a3:staging": "node scripts/evidence-a3-auth-staging-qa.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

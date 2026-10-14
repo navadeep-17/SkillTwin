@@ -142,6 +142,7 @@ export async function getEvidenceA3Preview(userId:string):Promise<EvidenceA3Prev
     `select r.id,r.learner_user_id,r.reviewer_user_id,r.project_id,r.project_version,
         r.skill_id,r.criterion_id,r.rubric_version,r.repository_url,r.commit_sha,
         r.review_method,r.practical_task,r.observed_result,r.test_procedure,r.verdict,
+        r.reviewed_source_path,r.reviewed_blob_sha,
         s.slug as skill_slug,p.artifact_url as project_repository_url,
         cr.active as reviewer_active
       from public.competency_practical_reviews r
@@ -162,7 +163,8 @@ export async function getEvidenceA3Preview(userId:string):Promise<EvidenceA3Prev
       skillSlug:String(row.skill_slug),criterionId:String(row.criterion_id),
       rubricVersion:String(row.rubric_version),repositoryUrl:String(row.repository_url),
       projectRepositoryUrl:String(row.project_repository_url),
-      commitSha:String(row.commit_sha),reviewMethod:String(row.review_method),
+      commitSha:String(row.commit_sha),reviewedSourcePath:String(row.reviewed_source_path),
+      reviewedBlobSha:String(row.reviewed_blob_sha),reviewMethod:String(row.review_method),
       verdict:String(row.verdict),reviewerActive:row.reviewer_active===true,
       practicalTask:String(row.practical_task),observedResult:String(row.observed_result),
       testProcedure:String(row.test_procedure)

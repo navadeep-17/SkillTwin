@@ -87,7 +87,8 @@ export function normalizeAtsResponse(source:JobSource,payload:unknown):AtsJob[] 
         externalId:row.id,title:row.text,location:categories?.location,
         workplaceType:row.workplaceType,employmentType:categories?.commitment,
         description:row.descriptionPlain,url:row.hostedUrl,
-        publishedAt:row.createdAt,sourceUpdatedAt:row.updatedAt
+        publishedAt:null, // Lever createdAt is creation metadata, not proof of first public publication
+        sourceUpdatedAt:row.updatedAt
       });
     }else{
       // Ashby isListed=false means intentionally unlisted even if the URL works.

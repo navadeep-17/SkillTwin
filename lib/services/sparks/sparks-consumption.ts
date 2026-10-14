@@ -34,8 +34,8 @@ export async function getSparksConsumption(userId:string,createdAt:Date,balance:
   return {
     freeEnhancedRemaining:chatFree,
     freeResumeRemaining:resumeFree,
-    enhancedReplyCostNow:isSparksChargingEnabled()&&chatFree===0?SPARKS_PRICES.ENHANCED_CHAT:0,
-    resumeCostNow:isSparksChargingEnabled()&&resumeFree===0?SPARKS_PRICES.RESUME_REANALYSIS:0,
+    enhancedReplyCostNow:isSparksChargingEnabled(userId)&&chatFree===0?SPARKS_PRICES.ENHANCED_CHAT:0,
+    resumeCostNow:isSparksChargingEnabled(userId)&&resumeFree===0?SPARKS_PRICES.RESUME_REANALYSIS:0,
     weeklyRefillAmount:WEEKLY_REFILL_SPARKS,
     weeklyRefillThreshold:WEEKLY_REFILL_THRESHOLD,
     weeklyRefillEligible:balance<=WEEKLY_REFILL_THRESHOLD&&nextAt.getTime()<=Date.now(),
@@ -43,10 +43,11 @@ export async function getSparksConsumption(userId:string,createdAt:Date,balance:
   };
 }
 export async function reserveSparksUsage(input:{userId:string;action:MeteredSparksAction;key:string;referenceId?:string}) {
-  if(!isSparksChargingEnabled()) return {enabled:false,cost:0,free:true};
+  if(!isSparksChargingEnabled(input.userId)) return {enabled:false,cost:0,free:true};
   if(!validKey(input.key)) throw new Error("INVALID_SPARKS_OPERATION_KEY");
   if(input.referenceId&&!/^[0-9a-f-]{36}$/i.test(input.referenceId)) throw new Error("INVALID_SPARKS_REFERENCE");
   await ensureSparksWallet(input.userId);
+  await recoverStaleSparksUsage(input.userId);
   const sql=getSql();
   return sql.begin(async tx=>{
     const wallet=rows(await tx.unsafe("select balance from public.sparks_wallets where user_id=$1::uuid for update",[input.userId]))[0];
@@ -89,6 +90,38 @@ export async function finishSparksUsage(userId:string,key:string,success:boolean
     const cost=Number(changed.cost);
     await tx.unsafe("update public.sparks_wallets set balance=balance+$2,updated_at=now() where user_id=$1::uuid",[userId,cost]);
     await tx.unsafe("insert into public.sparks_transactions(user_id,delta,reason,operation_key) values($1::uuid,$2,'AI_REFUND',$3)",[userId,cost,"REFUND:"+key]);
+  });
+}
+// Recover abandoned reservations after a process crash or client timeout.
+// Paid work is bounded to under a minute; 15 minutes leaves ample settling time.
+// Acquire the same wallet lock as regular spending and refunds, serialize with them.
+export async function recoverStaleSparksUsage(userId:string){
+  const sql=getSql();
+  await sql.begin(async tx=>{
+    const wallet=rows(await tx.unsafe(
+      "select user_id from public.sparks_wallets where user_id=$1::uuid for update",[userId]
+    ))[0];
+    if(!wallet)return;
+    const stale=rows(await tx.unsafe(
+      "update public.sparks_usage set status='REFUNDED',completed_at=now() "+
+      "where user_id=$1::uuid and status='RESERVED' and created_at<now()-interval '15 minutes' "+
+      "returning operation_key,cost",[userId]
+    ));
+    for(const row of stale){
+      const cost=Number(row.cost);
+      if(cost<=0)continue;
+      const refunded=rows(await tx.unsafe(
+        "insert into public.sparks_transactions(user_id,delta,reason,operation_key) "+
+        "values($1::uuid,$2,'AI_REFUND',$3) on conflict do nothing returning id",
+        [userId,cost,"REFUND:"+String(row.operation_key)]
+      ));
+      if(refunded.length){
+        await tx.unsafe(
+          "update public.sparks_wallets set balance=balance+$2,updated_at=now() where user_id=$1::uuid",
+          [userId,cost]
+        );
+      }
+    }
   });
 }
 export async function claimWeeklySparks(userId:string){

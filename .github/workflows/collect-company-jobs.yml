@@ -1,0 +1,30 @@
+name: Refresh verified company career boards
+
+on:
+  schedule:
+    - cron: "17 */2 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: skilltwin-ats-collector
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Refresh company job catalog
+        env:
+          COLLECTOR_SECRET: ${{ secrets.SKILLTWIN_JOB_COLLECTOR_SECRET }}
+        run: |
+          if [ -z "$COLLECTOR_SECRET" ]; then
+            echo "ATS collector not activated; configure scheduler secret after database migration."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error --max-time 115 --retry 1 \
+            -X POST "https://skilltwin-production.up.railway.app/api/internal/jobs/collect" \
+            -H "Content-Type: application/json" \
+            -H "x-job-collector-secret: $COLLECTOR_SECRET"

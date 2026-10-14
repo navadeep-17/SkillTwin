@@ -1,0 +1,67 @@
+{
+  "manifest_version": 3,
+  "name": "SkillTwin Focus",
+  "description": "Opt-in website limits and short learning quizzes to earn more browsing time.",
+  "version": "0.1.1",
+  "minimum_chrome_version": "120",
+  "permissions": [
+    "storage",
+    "tabs",
+    "alarms",
+    "idle",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "*://youtube.com/*",
+    "*://*.youtube.com/*",
+    "*://youtu.be/*",
+    "*://*.youtu.be/*",
+    "*://instagram.com/*",
+    "*://*.instagram.com/*",
+    "*://reddit.com/*",
+    "*://*.reddit.com/*",
+    "*://x.com/*",
+    "*://*.x.com/*",
+    "*://twitter.com/*",
+    "*://*.twitter.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "SkillTwin Focus",
+    "default_popup": "popup.html",
+    "default_icon": "icon-128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "blocked.html",
+        "blocked.js",
+        "core.mjs",
+        "styles.css"
+      ],
+      "matches": [
+        "*://youtube.com/*",
+        "*://*.youtube.com/*",
+        "*://youtu.be/*",
+        "*://*.youtu.be/*",
+        "*://instagram.com/*",
+        "*://*.instagram.com/*",
+        "*://reddit.com/*",
+        "*://*.reddit.com/*",
+        "*://x.com/*",
+        "*://*.x.com/*",
+        "*://twitter.com/*",
+        "*://*.twitter.com/*"
+      ]
+    }
+  ],
+  "icons": {
+    "16": "icon-128.png",
+    "32": "icon-128.png",
+    "48": "icon-128.png",
+    "128": "icon-128.png"
+  }
+}

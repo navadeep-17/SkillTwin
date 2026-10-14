@@ -22,7 +22,7 @@ test("all usage quota and wallet changes are server-only and transactional",()=>
   assert.match(sql,/sparks_usage_resume_single_active/);
   assert.match(sql,/force row level security/);
   assert.match(sql,/revoke all on public.sparks_usage/);
-  assert.match(svc,/if\(!isSparksChargingEnabled\(\)\) return/);
+  assert.match(svc,/if\(!isSparksChargingEnabled\(input.userId\)\) return/);
   assert.match(svc,/select balance from public.sparks_wallets where user_id=\$1::uuid for update/);
   assert.match(svc,/status in \('RESERVED','COMPLETED'\)/);
   assert.match(svc,/status='complete'/);
@@ -66,4 +66,22 @@ test("project defense refunds a graceful unavailable response, retries use fresh
   assert.match(route,/refundSparks\(user.id,"PROJECT_DEFENSE",operationKey\)/);
   assert.match(route,/operationId:z.string\(\).uuid\(\).optional\(\)/);
   assert.match(view,/operationId:crypto.randomUUID\(\)/);
+});
+
+test("existing charges remain refundable after charging is disabled",()=>{
+  const legacy=read("lib/services/sparks/sparks-service.ts");
+  const refund=legacy.slice(legacy.indexOf("export async function refundSparks("),legacy.indexOf("export async function activateSparksReferral("));
+  assert.doesNotMatch(refund,/if \(!isSparksChargingEnabled\(\)\) return/);
+  assert.match(refund,/REFUND:/);
+  assert.match(refund,/on conflict do nothing returning id/);
+});
+test("orphaned usage reservations are refunded exactly once on the wallet lock",()=>{
+  const consumption=read("lib/services/sparks/sparks-consumption.ts");
+  const wallet=read("lib/services/sparks/sparks-service.ts");
+  assert.match(consumption,/export async function recoverStaleSparksUsage/);
+  assert.match(consumption,/interval '15 minutes'/);
+  assert.match(consumption,/status='RESERVED'/);
+  assert.match(consumption,/on conflict do nothing returning id/);
+  assert.match(consumption,/recoverStaleSparksUsage\(input.userId\)/);
+  assert.match(wallet,/await recoverStaleSparksUsage\(userId\)/);
 });

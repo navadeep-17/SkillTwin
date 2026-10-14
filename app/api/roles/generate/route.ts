@@ -119,8 +119,16 @@ export async function POST(request: Request) {
     sparksOperationKey = "custom-role:" + generationRunId;
     try { await spendSparks(user.id,"CUSTOM_ROLE",sparksOperationKey); }
     catch(error) {
-      if (error instanceof InsufficientSparksError) return fail(requestId,402,"INSUFFICIENT_SPARKS","You need 25 Sparks to create another custom career. Invite a friend from /sparks.");
-      if (error instanceof DuplicateSparksOperationError) return fail(requestId,409,"SPARKS_OPERATION_ALREADY_USED","This custom role request was already charged.");
+      if (error instanceof InsufficientSparksError || error instanceof DuplicateSparksOperationError) {
+        await sql.unsafe(
+          "update public.role_generation_runs set status='FAILED',error_code=$1,completed_at=now() where id=$2::uuid and user_id=$3::uuid and status='RUNNING'",
+          [error.message,generationRunId,user.id]
+        );
+        sparksOperationKey=null;
+        return error instanceof InsufficientSparksError
+          ? fail(requestId,402,"INSUFFICIENT_SPARKS","You need 25 Sparks to create another custom career. Invite a friend from /sparks.")
+          : fail(requestId,409,"SPARKS_OPERATION_ALREADY_USED","This custom role request was already charged.");
+      }
       throw error;
     }
     const ai = getGeminiStructuredClient();

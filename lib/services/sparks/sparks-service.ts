@@ -107,9 +107,11 @@ export async function activateSparksReferral(userId: string) {
   if (!inviter) return false;
   const inviterId = String(inviter.user_id);
   const activated = await sql.begin(async tx => {
-    // Lock inviter to serialize monthly cap and awards; then lock invitee.
-    await tx.unsafe("select balance from public.sparks_wallets where user_id=$1::uuid for update", [inviterId]);
-    await tx.unsafe("select balance from public.sparks_wallets where user_id=$1::uuid for update", [userId]);
+    // Stable lock order prevents deadlock even if two accounts invite each other.
+    await tx.unsafe(
+      "select user_id from public.sparks_wallets where user_id in ($1::uuid,$2::uuid) order by user_id for update",
+      [inviterId,userId]
+    );
     const goal = rows(await tx.unsafe(
       "select 1 from public.career_goals where user_id=$1::uuid and status='ACTIVE' limit 1", [userId]
     ));

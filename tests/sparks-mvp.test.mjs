@@ -23,6 +23,7 @@ test("Sparks ledger uses atomic server-only ownership and distinct operation key
   assert.match(service,/sql\.begin\(async tx =>/);
   assert.match(service,/on conflict do nothing returning id/);
   assert.match(service,/MONTHLY_REWARDED_REFERRAL_LIMIT/);
+  assert.match(service,/order by user_id for update/);
   assert.match(service,/email_confirmed_at/);
   assert.match(sql,/capture_sparks_signup_referral/);
   assert.match(service,/sparks_referral_claims/);

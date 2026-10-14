@@ -4,6 +4,7 @@ import { addCompetencyVerification, type GapVerificationProjection } from "@/lib
 import { mapTrustedGradedAttemptToCompetency, type TrustedGradedAttemptRow, VERIFIED_ATTEMPT_ADAPTER_A3_VERSION } from "@/lib/domain/trusted-assessment-a3";
 import { QUESTION_MAPPING_A3_VERSION } from "@/lib/domain/assessment-question-mapping-a3";
 import type { CompetencyObservation } from "@/lib/domain/evidence-estimator-a3";
+import { verifiedPracticalReviewObservation, type TrustedPracticalReview, PRACTICAL_REVIEW_A3_VERSION } from "@/lib/domain/trusted-practical-review-a3";
 import type { GapAnalysis, GapResult } from "@/lib/domain/gap-engine";
 
 type Row=Record<string,unknown>;
@@ -29,6 +30,10 @@ export type EvidenceA3Preview={
   snapshotId:string;
   asOf:string;
   knowledgeObservationCount:number;
+  practicalReviewObservationCount:number;
+  scannedReviewCount:number;
+  reviewsTruncated:boolean;
+  practicalReviewVersion:string;
   unmappedOrUntrustedAttemptCount:number;
   scannedAttemptCount:number;
   attemptsTruncated:boolean;
@@ -133,6 +138,41 @@ export async function getEvidenceA3Preview(userId:string):Promise<EvidenceA3Prev
     (observationsBySkillId[input.skillId]??=[]).push(observation);
     mapped++;
   }
+  const reviewRows:Row[]=skillIds.length?rows(await sql.unsafe(
+    `select r.id,r.learner_user_id,r.reviewer_user_id,r.project_id,r.project_version,
+        r.skill_id,r.criterion_id,r.rubric_version,r.repository_url,r.commit_sha,
+        r.review_method,r.practical_task,r.observed_result,r.test_procedure,r.verdict,
+        s.slug as skill_slug,p.artifact_url as project_repository_url,
+        cr.active as reviewer_active
+      from public.competency_practical_reviews r
+      join public.profile_projects p on p.id=r.project_id and p.user_id=r.learner_user_id
+        and p.status='ACTIVE' and p.version=r.project_version
+      join public.competency_reviewers cr on cr.user_id=r.reviewer_user_id and cr.active=true
+      join public.skills s on s.id=r.skill_id
+      where r.learner_user_id=$1::uuid and r.skill_id=any($2::uuid[])
+      order by r.reviewed_at desc,r.id limit 401`,
+    [userId,skillIds]
+  )):[];
+  let trustedPracticalReviewCount=0;
+  for(const row of reviewRows.slice(0,400)){
+    const record:TrustedPracticalReview={
+      id:String(row.id),learnerUserId:String(row.learner_user_id),
+      reviewerUserId:String(row.reviewer_user_id),projectId:String(row.project_id),
+      projectVersion:Number(row.project_version),skillId:String(row.skill_id),
+      skillSlug:String(row.skill_slug),criterionId:String(row.criterion_id),
+      rubricVersion:String(row.rubric_version),repositoryUrl:String(row.repository_url),
+      projectRepositoryUrl:String(row.project_repository_url),
+      commitSha:String(row.commit_sha),reviewMethod:String(row.review_method),
+      verdict:String(row.verdict),reviewerActive:row.reviewer_active===true,
+      practicalTask:String(row.practical_task),observedResult:String(row.observed_result),
+      testProcedure:String(row.test_procedure)
+    };
+    const trusted=verifiedPracticalReviewObservation(record);
+    if(trusted){
+      (observationsBySkillId[record.skillId]??=[]).push(trusted);
+      trustedPracticalReviewCount++;
+    }
+  }
   const evidenceCountRows:Row[]=skillIds.length?rows(await sql.unsafe(
     "select skill_id,count(*)::int as count from public.skill_evidence where user_id=$1::uuid and skill_id=any($2::uuid[]) and status in ('ACCEPTED','NON_AGGREGATING') group by skill_id",
     [userId,skillIds]
@@ -145,12 +185,16 @@ export async function getEvidenceA3Preview(userId:string):Promise<EvidenceA3Prev
     projection,snapshotId,
     asOf:String(snapshot.as_of??""),
     knowledgeObservationCount:mapped,
+    practicalReviewObservationCount:trustedPracticalReviewCount,
+    scannedReviewCount:Math.min(400,reviewRows.length),
+    reviewsTruncated:reviewRows.length>400,
+    practicalReviewVersion:PRACTICAL_REVIEW_A3_VERSION,
     unmappedOrUntrustedAttemptCount:knownAttempts.length-mapped,
     scannedAttemptCount:knownAttempts.length,
     attemptsTruncated:attemptRows.length>400,
     legacyEvidenceCountsBySkill,
     questionMappingVersion:QUESTION_MAPPING_A3_VERSION,
     adapterVersion:VERIFIED_ATTEMPT_ADAPTER_A3_VERSION,
-    warning:"Preview only. Reviewed MCQ evidence checks knowledge, not practical skill. Old A1 readiness and role gaps remain authoritative until A3 is validated."
+    warning:"Preview only. MCQ knowledge checks do not prove implementation. Independent reviewer-attested live demonstrations are distinct from automatic code grading or authorship proof. Old A1 readiness and role gaps remain unchanged."
   };
 }

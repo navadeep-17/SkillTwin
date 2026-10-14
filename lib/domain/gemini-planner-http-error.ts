@@ -6,8 +6,8 @@ export function classifyGeminiPlannerHttpError(status: number, body: unknown): s
     ? (body as { error?: { message?: unknown; status?: unknown } }).error : undefined;
   const message = typeof error?.message === "string" ? error.message.slice(0, 1500).toLowerCase() : "";
   if (status === 400) {
-    if (/api.?key|key not valid|api_key_invalid/.test(message)) return "key_rejected";
-    if (/model/.test(message) && /unavailable|not found|not supported|not available/.test(message))
+    if (/api.?key (is )?not valid|api_key_invalid|invalid api key/.test(message)) return "key_rejected";
+    if (/model/.test(message) && /unavailable|not found|not supported|unsupported|not available/.test(message))
       return "model_unavailable";
     if (/thinking|thinkinglevel|thinking_level/.test(message)) return "thinking_parameter";
     if (/temperature/.test(message)) return "temperature_parameter";

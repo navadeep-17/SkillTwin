@@ -35,6 +35,13 @@ export async function submitPracticalReview(input:PracticalReviewRequest,reviewe
     ||reviewerId===input.learnerUserId || input.observedLearnerLive!==true
     ||!sha.test(input.commitSha))throw new PracticalReviewError("INVALID_REVIEW");
   const sql=getSql();
+  // FIRST privilege gate: do not reveal project existence or spend remote
+  // GitHub requests before verifying that this signed-in user is a reviewer.
+  const access=rows(await sql.unsafe(
+    "select user_id from public.competency_reviewers where user_id=$1::uuid and active=true",
+    [reviewerId]
+  ));
+  if(!access.length)throw new PracticalReviewError("REVIEWER_NOT_AUTHORIZED");
   // Preflight the source using existing bounded public-repo inspector;
   // no arbitrary commands or learner-authored code are executed on the server.
   const project=rows(await sql.unsafe(

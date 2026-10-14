@@ -2,6 +2,7 @@ import {z} from "zod";
 import {getRequestId} from "@/lib/api/request-context";
 import {fail,ok} from "@/lib/api/responses";
 import {requireUser,UnauthenticatedError} from "@/lib/auth/require-user";
+import { spendSparks, refundSparks, InsufficientSparksError, DuplicateSparksOperationError } from "@/lib/services/sparks/sparks-service";
 import {evaluatePublicRepositoryDefense} from "@/lib/services/projects/project-defense-service";
 
 const schema=z.object({
@@ -17,11 +18,24 @@ export const dynamic="force-dynamic";
 export async function POST(request:Request){
   const requestId=await getRequestId();
   try{
-    await requireUser();
+    const {user}=await requireUser();
     const input=schema.safeParse(await request.json());
     if(!input.success)return fail(requestId,400,"INVALID_INPUT","Answer all three code-grounded questions (at least 40 characters each).");
-    const result=await evaluatePublicRepositoryDefense(input.data);
-    return ok(requestId,result);
+    const operationKey = "project-defense:" + input.data.commitSha + ":" +
+      (await import("node:crypto")).createHash("sha256").update(JSON.stringify(input.data.answers)).digest("hex").slice(0,24);
+    try { await spendSparks(user.id,"PROJECT_DEFENSE",operationKey); }
+    catch(error) {
+      if(error instanceof InsufficientSparksError) return fail(requestId,402,"INSUFFICIENT_SPARKS","Not enough Sparks for Project Defense. Invite a friend from /sparks.");
+      if(error instanceof DuplicateSparksOperationError) return fail(requestId,409,"SPARKS_OPERATION_ALREADY_USED","This project defense submission was already attempted.");
+      throw error;
+    }
+    try {
+      const result=await evaluatePublicRepositoryDefense(input.data);
+      return ok(requestId,result);
+    } catch(error) {
+      await refundSparks(user.id,"PROJECT_DEFENSE",operationKey);
+      throw error;
+    }
   }catch(error){
     if(error instanceof UnauthenticatedError)return fail(requestId,401,"UNAUTHENTICATED","Sign in to defend a project.");
     const code=error instanceof Error?error.message:"PROJECT_DEFENSE_UNAVAILABLE";

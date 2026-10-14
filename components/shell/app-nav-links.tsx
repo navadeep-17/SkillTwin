@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  Zap,
   Award,
   Swords,
   Compass,
@@ -56,6 +57,7 @@ const secondaryLinks: NavLink[] = [
   { href: "/passport", label: "Evidence Passport", icon: ScrollText },
   { href: "/journey", label: "Ask SkillTwin", icon: MessageSquareText },
   { href: "/activity", label: "Activity", icon: Activity },
+  { href: "/sparks", label: "Sparks", icon: Zap },
   { href: "/settings", label: "Settings", icon: Settings }
 ];
 

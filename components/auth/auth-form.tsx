@@ -9,11 +9,13 @@ import { createClient } from "@/lib/supabase/browser";
 export function AuthForm({
   initialMessage = "",
   nextPath = "/onboarding",
-  orbitDefault = false
+  orbitDefault = false,
+  referralCode = ""
 }: {
   initialMessage?: string;
   nextPath?: string;
   orbitDefault?: boolean;
+  referralCode?: string;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -37,7 +39,8 @@ export function AuthForm({
           email: normalizedEmail,
           password,
           options: {
-            emailRedirectTo: window.location.origin + "/auth/callback"
+            emailRedirectTo: window.location.origin + "/auth/callback",
+            data: referralCode ? { sparks_referral: referralCode } : {}
           }
         });
 
@@ -128,6 +131,7 @@ export function AuthForm({
           </div>
         </label>
 
+        {mode === "signup" && referralCode ? <p className="mt-2 text-xs text-indigo-600">Invitation applied. Both of you can earn 50 Sparks after your career setup.</p> : null}
         {mode === "signup" ? (
           <p className="text-xs leading-5 text-slate-500">
             Use at least 8 characters. If email confirmation is enabled, we will send a verification link before onboarding.

@@ -397,6 +397,36 @@ async function authenticatedChecks() {
   assert((chat.payload?.data?.message?.refs?.length ?? 0) > 0, "Journey Chat readiness answer had no grounded references");
   console.log("GROUNDED_CHAT=PASS");
 
+  // Optional, explicit destructive test on the disposable smoke learner only.
+  // The confirmation route must execute exactly once and leave an audit event.
+  if (process.env.SMOKE_VERIFY_AGENT_ACTION === "true") {
+    const proposed = await authRequest("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ message: "Challenge me" })
+    });
+    assert(proposed.response.status === 200 && proposed.payload?.ok === true,
+      "agent challenge proposal request failed");
+    const proposal = proposed.payload?.data?.actionProposal;
+    assert(proposal?.actionType === "START_ASSESSMENT" && Boolean(proposal.id),
+      "agent did not propose an assessable skill challenge");
+    const actionPath = "/api/chat/actions/" + proposal.id + "/confirm";
+    const confirmed = await authRequest(actionPath, { method: "POST" });
+    assert(confirmed.response.status === 200 && confirmed.payload?.ok === true
+      && confirmed.payload?.data?.actionType === "START_ASSESSMENT",
+      "agent proposal was not confirmed and executed");
+    const duplicate = await authRequest(actionPath, { method: "POST" });
+    assert(duplicate.response.status === 409,
+      "duplicate agent confirmation did not fail closed");
+    const { data: actionEvents, error: actionError } = await supabase
+      .from("agent_events")
+      .select("event_type,trigger_ref")
+      .eq("event_type", "chat.action.executed")
+      .eq("trigger_ref", proposal.id);
+    assert(!actionError && actionEvents?.length === 1,
+      "agent action must have exactly one persisted, proposal-linked audit event");
+    console.log("AGENT_CONFIRMATION_PROOF=PASS");
+  }
+
   const activity = await authRequest("/api/agent-events?limit=50");
   const eventTypes = new Set((activity.payload?.data?.events ?? []).map(event => event.event_type));
   for (const required of ["career.goal.updated","project.evidence.processed","assessment.started","assessment.completed"]) {

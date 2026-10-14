@@ -335,6 +335,11 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
                 {" "}{message.readTools.map(tool => tool.replaceAll("_"," ")).join(" · ")}
               </p>
             ) : null}
+            {message.role === "ASSISTANT" && message.agentMode === "deterministic-read-fallback-v1" ? (
+              <p className="mt-1 text-[11px] text-amber-700">
+                Enhanced AI was unavailable for this reply; your grounded answer is free and no Sparks were used.
+              </p>
+            ) : null}
             {message.role === "ASSISTANT" && message.refs?.length ? (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {message.refs.map(reference => (

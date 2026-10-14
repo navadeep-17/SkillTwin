@@ -45,6 +45,16 @@ export function validateReadPlan(raw: unknown): AgentReadTool[] | null {
   return requested as AgentReadTool[];
 }
 
+/** Merge a mandatory read tool into an already validated model plan.
+ *  Tool names are drawn exclusively from the trusted allowlist.
+ *  Do not use this helper on raw/unvalidated model output. */
+export function includeRequiredReadTool(
+  validated: AgentReadTool[], required: AgentReadTool | null
+): AgentReadTool[] {
+  if(!required || validated.includes(required)) return validated;
+  return [required,...validated].slice(0,3);
+}
+
 export function isMutatingJourneyIntent(intent:string):boolean {
   return intent==="UNDO_ROADMAP_CHANGE" || intent==="START_ASSESSMENT" || intent==="GENERATE_PLAN";
 }

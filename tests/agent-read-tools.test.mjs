@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {
-  AGENT_READ_TOOLS, validateReadPlan, fallbackReadTools, isMutatingJourneyIntent
+  AGENT_READ_TOOLS, validateReadPlan, fallbackReadTools, isMutatingJourneyIntent, includeRequiredReadTool
 } from "../dist/lib/domain/agent-read-plan.js";
 
 test("read tools are explicit and never include mutation or arbitrary execution",()=>{
@@ -53,7 +53,9 @@ test("agent route cannot dispatch model-selected writes or substitute model user
   assert.match(service,/readAssessmentProof:async \(\)=>/);
   assert.match(service,/generator: readRun\?\.meta\.generator/);
   assert.match(orchestrator,/validateReadPlan\(result\)/);
-  assert.match(orchestrator,/timeoutMs:3500/);
+  assert.match(orchestrator,/timeoutMs:11000/);
+  assert.match(orchestrator,/plannerFailureKind\(error\)/);
+  assert.doesNotMatch(orchestrator,/console\.warn\([^;]*input\.message/);
   assert.match(orchestrator,/maxOutputTokens:220/);
   assert.match(orchestrator,/Promise\.all\(plan\.tools\.map\(/);
   assert.match(orchestrator,/where user_id=\$1::uuid/);
@@ -67,4 +69,13 @@ test("read execution keeps learner identity and factual synthesis on server",()=
   assert.match(source,/not a hiring probability/);
   assert.match(source,/never model-generated/);
   assert.match(source,/assessment reader uses exact assessment-ID matching/i);
+});
+
+test("mandatory evidence checks are preserved in model-selected plans without writes",()=>{
+  assert.deepEqual(includeRequiredReadTool(["get_next_tasks"],"get_role_gap"),["get_role_gap","get_next_tasks"]);
+  assert.deepEqual(includeRequiredReadTool(["get_role_gap","get_active_plan"],"get_role_gap"),
+    ["get_role_gap","get_active_plan"]);
+  assert.deepEqual(includeRequiredReadTool(["get_activity","get_next_tasks","get_active_plan"],"get_role_gap"),
+    ["get_role_gap","get_activity","get_next_tasks"]);
+  assert.deepEqual(includeRequiredReadTool(["get_activity"],null),["get_activity"]);
 });

@@ -218,7 +218,7 @@ const readAgent = read("lib/services/chat/agent-read-orchestrator.ts");
 const journeyChat = read("lib/services/chat/journey-chat-service.ts");
 assert(
   readAgent.includes("validateReadPlan(result)")
-  && readAgent.includes("timeoutMs:3500")
+  && readAgent.includes("timeoutMs:11000")
   && readAgent.includes("maxOutputTokens:220")
   && journeyChat.includes("!isMutatingJourneyIntent(intent)")
   && journeyChat.includes("getAgentReadOrchestrator().run("),

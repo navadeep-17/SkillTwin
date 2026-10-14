@@ -61,8 +61,9 @@ test("agent route cannot dispatch model-selected writes or substitute model user
   assert.match(provider,/generationConfig/);
   assert.ok(provider.includes('responseMimeType: "application/json"'));
   assert.ok(provider.includes('responseJsonSchema: input.jsonSchema'));
-  assert.doesNotMatch(provider,/temperature: 0/);
-  assert.doesNotMatch(provider,/thinkingConfig: \{ thinkingLevel: "minimal" \}/);
+  const selectorSource=provider.slice(provider.indexOf("async generateLowLatencyJson"),provider.indexOf("async generateJson"));
+  assert.doesNotMatch(selectorSource,/temperature:/);
+  assert.doesNotMatch(selectorSource,/thinkingConfig:/);
   assert.match(provider,/input\.validator\.parse\(JSON\.parse\(text\)\)/);
   assert.match(provider,/SKILLTWIN_READ_PLANNER_MODEL/);
   assert.match(orchestrator,/plannerFailureKind\(error\)/);

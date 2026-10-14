@@ -187,7 +187,7 @@ async function authenticatedChecks() {
   async function authRequest(path, init = {}) {
     const headers = new Headers(init.headers ?? {});
     headers.set("Cookie", cookie);
-    if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+    if (typeof init.body === "string" && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
     const response = await fetch(baseUrl + path, {
       redirect: "manual",
       ...init,

@@ -1,12 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Gift, Zap, Copy, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { Gift, Zap, Copy, ShieldCheck, RefreshCw } from "lucide-react";
 type Tx = { delta:number;reason:string;created_at:string };
-type Wallet = { balance:number;referralCode:string;welcomeSparks:number;rewardSparks:number;chargingEnabled:boolean;prices:Record<string,number>;transactions:Tx[] };
+type Wallet = { balance:number;referralCode:string;welcomeSparks:number;rewardSparks:number;chargingEnabled:boolean;prices:Record<string,number>;transactions:Tx[]; freeEnhancedRemaining:number;freeResumeRemaining:number; weeklyRefillAmount:number;weeklyRefillThreshold:number;weeklyRefillEligible:boolean;weeklyNextAt:string };
 export function SparksWalletView() {
   const [wallet,setWallet]=useState<Wallet|null>(null);
   const [error,setError]=useState("");
   const [copied,setCopied]=useState(false);
+  const [claiming,setClaiming]=useState(false);
+  const [notice,setNotice]=useState("");
   useEffect(()=>{
     let active=true;
     fetch("/api/sparks",{cache:"no-store"}).then(async res=>{
@@ -16,6 +19,17 @@ export function SparksWalletView() {
     }).catch(e=>{if(active)setError(e instanceof Error?e.message:"Unable to load wallet");});
     return ()=>{active=false;};
   },[]);
+  async function claimWeekly(){
+    setClaiming(true);setError("");setNotice("");
+    try{
+      const response=await fetch("/api/sparks/refill",{method:"POST"});
+      const body=await response.json();
+      if(!response.ok||!body.ok)throw new Error(body.error?.message??"Unable to claim Sparks");
+      setWallet(body.data.wallet as Wallet);
+      setNotice(body.data.granted?"20 Sparks added.":"Your weekly refill is not eligible yet.");
+    }catch(e){setError(e instanceof Error?e.message:"Unable to claim Sparks");}
+    finally{setClaiming(false);}
+  }
   async function copy() {
     if(!wallet)return;
     const url=new URL("/login",window.location.origin);
@@ -28,12 +42,14 @@ export function SparksWalletView() {
       <h1 className="mt-2 text-3xl font-semibold text-slate-950">Fuel your next breakthrough</h1>
       <p className="mt-2 text-sm text-slate-600">Your existing plans, learning tasks, skill progress and first career journey remain free.</p>
     </header>
+    {notice?<p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>:null}
     {error?<p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</p>:null}
     {!wallet?<div className="rounded-2xl border bg-white p-8 text-sm text-slate-500">Loading your Sparks wallet…</div>:<>
       <section className="rounded-2xl border border-indigo-100 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-2 text-indigo-700"><Zap size={20}/><span className="font-semibold">Available Sparks</span></div>
         <div className="mt-3 text-5xl font-semibold tracking-tight text-slate-950">{wallet.balance}</div>
         <p className="mt-2 text-sm text-slate-500">You started with {wallet.welcomeSparks} welcome Sparks.</p>
+        {wallet.balance<=wallet.weeklyRefillThreshold?<p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Low on Sparks? Invite a friend or claim a weekly refill. Your standard learning journey remains free.</p>:null}
       </section>
       <section className="rounded-2xl border bg-white p-6">
         <div className="flex items-center gap-2 font-semibold"><Gift size={20}/>Give a friend a head start</div>
@@ -44,13 +60,24 @@ export function SparksWalletView() {
         </div>
       </section>
       <section className="rounded-2xl border bg-white p-6">
+        <div className="flex items-center gap-2 font-semibold"><RefreshCw size={19}/> Weekly Sparks refill</div>
+        <p className="mt-2 text-sm text-slate-600">Earn {wallet.weeklyRefillAmount} Sparks without referring anyone. Claim once every 7 days when your balance is {wallet.weeklyRefillThreshold} or lower.</p>
+        <button type="button" className="btn-primary mt-4 disabled:opacity-50" disabled={claiming||!wallet.weeklyRefillEligible} onClick={()=>void claimWeekly()}>
+          {claiming?"Claiming…":wallet.weeklyRefillEligible?"Claim 20 Sparks":"Not available yet"}
+        </button>
+        {!wallet.weeklyRefillEligible?<p className="mt-2 text-xs text-slate-500">{wallet.balance>wallet.weeklyRefillThreshold?"Available at a balance of 30 or fewer Sparks.":"Next eligible date: "+new Date(wallet.weeklyNextAt).toLocaleDateString()}</p>:null}
+      </section>
+      <section className="rounded-2xl border bg-white p-6">
         <h2 className="font-semibold">Optional AI features</h2>
         {!wallet.chargingEnabled?<p className="mt-2 text-sm text-indigo-700">Sparks spending is in preview. No credits are deducted yet.</p>:null}
         <div className="mt-3 space-y-3 text-sm">
           <div className="flex justify-between"><span>Custom career creation</span><strong>{wallet.prices.CUSTOM_ROLE} Sparks</strong></div>
           <div className="flex justify-between"><span>Project defense evaluation</span><strong>{wallet.prices.PROJECT_DEFENSE} Sparks</strong></div>
+          <div className="flex justify-between gap-3"><span>Enhanced AI chat ({wallet.freeEnhancedRemaining} free replies left)</span><strong>{wallet.prices.ENHANCED_CHAT} Sparks after free replies</strong></div>
+          <div className="flex justify-between gap-3"><span>Additional resume analysis ({wallet.freeResumeRemaining} free left)</span><strong>{wallet.prices.RESUME_REANALYSIS} Sparks after free analysis</strong></div>
         </div>
-        <p className="mt-4 flex gap-2 text-xs leading-5 text-slate-500"><ShieldCheck size={16} className="shrink-0"/>Failed AI actions are refunded. Your core career learning journey is not metered.</p>
+        <p className="mt-4 flex gap-2 text-xs leading-5 text-slate-500"><ShieldCheck size={16} className="shrink-0"/>Unsuccessful AI operations are refunded. Standard chat, stored plans, routine assessment and progress are free.</p>
+        <Link href="/journey" className="mt-3 inline-block text-sm font-semibold text-indigo-700 underline">Use Enhanced AI in Journey Chat</Link>
       </section>
       <section className="rounded-2xl border bg-white p-6">
         <h2 className="font-semibold">Recent Sparks activity</h2>

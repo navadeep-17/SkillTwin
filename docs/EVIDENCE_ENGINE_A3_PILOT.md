@@ -44,10 +44,10 @@ An unmapped skill retains the original status with `RUBRIC_NOT_AVAILABLE`; the p
 
 ### Limitations / release gates
 
-- No automatic adapter currently maps existing stored assessment questions to the rubric criteria; the question bank's `concept_id` must be reviewed against each criterion, not guessed.
+- A deliberately limited, manually reviewed mapping from selected seeded MCQ IDs to knowledge criteria is implemented. It does not map every assessment question, nor does it establish practical proficiency.
 - No stored evidence is assumed to be checked merely because its `sourceType` string contains "VERIFIED". Independent validation records must be trusted and authenticated.
 - The six rubrics are illustrative drafts. They need domain expert review and coverage/importance annotation before being authoritative.
-- No staging or production API has been changed. No UI is modified. The overlay is **not yet automatically computed for users**.
+- A new **flag-gated**, read-only API and Skills verification preview page are implemented on this feature branch. They are NOT live, and remain disabled by default; existing production APIs and UI are unchanged.
 - No empirical external benchmark or inter-rater reliability study has been run.
 - The original A1 baseline numbers and role targets are unchanged; A2 remains separately flagged. This pilot does not integrate IRT.
 
@@ -64,9 +64,9 @@ CI runs this on PRs.
 ## Next engineering steps
 
 1. Review each rubric with skill experts and collect labelled examples of verified/contradictory performance.
-2. Map supported bank question/concept IDs to rubric criteria with a **reviewed mapping manifest**, store provenance and evaluation version, and reject unmapped questions.
-3. Implement trusted adapters reading per-question server-graded outcomes and independently reviewed artifact checks; ensure security boundaries and idempotency.
-4. Add a server-only `SKILLTWIN_EVIDENCE_A3_ENABLED` gate for a read-only gap verification endpoint and UI explanation. Keep both original A1 gap and A3 verification data visible for audit.
+2. Expand the existing reviewed bank mapping only when a question truly checks a published criterion; re-review each mapping and pin question versions/provenance.
+3. Extend the existing trusted read-only server-graded adapter with independent **practical** grading and authenticated artifact review; no learner-supplied verification flags.
+4. Authenticated-test the already implemented server-only `SKILLTWIN_EVIDENCE_A3_ENABLED` preview endpoint/UI against isolated staging, including ON/OFF and cross-user isolation.
 5. Run comparison fixtures and authenticated staging QA, then review whether to activate. Only later consider replacing A1 capability or gap status formulas.
 
 **No A3 production activation until these steps are satisfied.**

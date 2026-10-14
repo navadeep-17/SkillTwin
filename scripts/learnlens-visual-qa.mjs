@@ -33,7 +33,7 @@ try{
     await page.getByText("3 of 3 correct").waitFor();
     await page.getByRole("button",{name:"Try again"}).click();
     assert.equal(await page.getByRole("button",{name:"Check my answers"}).isDisabled(),true);
-    await page.getByLabel("Draft your SQL solution (not saved)").fill("SELECT c.name FROM customers c");
+    await page.getByLabel("Draft your solution (not saved)").fill("SELECT c.name FROM customers c");
     await page.getByRole("button",{name:"Reveal example solution"}).click();
     await page.locator("pre").filter({hasText:"LEFT JOIN orders o ON c.id = o.customer_id"}).last().waitFor();
     const chapters=page.getByRole("button",{name:/Play LEFT JOIN from 13:55/});
@@ -43,6 +43,27 @@ try{
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     assert.ok(overflow<=2,v.name+" LearnLens overflows horizontally: "+overflow);
     await page.screenshot({path:out+"/"+v.name+"-learnlens.png",fullPage:true,animations:"disabled"});
+    // Verify the sample toggles really select different skill-level lessons;
+    // no learner record is created and no unsupported transcript is shown.
+    const samples=[
+      {skill:"python",name:/Python: Variables/,level:"BASIC"},
+      {skill:"python",name:/Python: Reusable functions/,level:"STANDARD"},
+      {skill:"git",name:/Git: From working tree/,level:"BASIC"},
+      {skill:"git",name:/Git: Branches and pull requests/,level:"STANDARD"},
+      {skill:"docker",name:/Docker: Images/,level:"BASIC"},
+      {skill:"docker",name:/Docker: Build an image/,level:"STANDARD"}
+    ];
+    for(const sample of samples){
+      const response=await page.goto(base+"/learnlens-preview?skill="+sample.skill+"&level="+sample.level,
+        {waitUntil:"domcontentloaded",timeout:45000});
+      assert.equal(response?.status(),200,"Selected lesson must load");
+      await page.getByRole("heading",{name:sample.name}).waitFor();
+      assert.equal(await page.locator("fieldset").count(),3,"Lesson has three formative questions");
+      assert.equal(await page.locator("iframe").count(),0,"Video requires an explicit click");
+      assert.ok((await page.getByLabel("Draft your solution (not saved)").count())===1);
+      const width=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      assert.ok(width<=2,sample.skill+" "+sample.level+" overflows "+v.name+" by "+width+"px");
+    }
     assert.deepEqual(errors,[],v.name+" browser errors");
     assert.deepEqual(forbidden,[],v.name+" must not write learner state");
     await context.close();

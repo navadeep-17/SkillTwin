@@ -15,6 +15,8 @@ export interface TrustedPracticalReview {
   repositoryUrl:string;
   projectRepositoryUrl:string;
   commitSha:string;
+  reviewedSourcePath:string;
+  reviewedBlobSha:string;
   reviewMethod:string;
   verdict:string;
   reviewerActive:boolean;
@@ -37,6 +39,9 @@ export function verifiedPracticalReviewObservation(
     || record.repositoryUrl!==record.projectRepositoryUrl
     || !/^https:\/\/github\.com\/[A-Za-z0-9-]+\/[A-Za-z0-9_.-]+$/.test(record.repositoryUrl)
     || !/^[a-f0-9]{40}$/.test(record.commitSha)
+    || !record.reviewedSourcePath || record.reviewedSourcePath.includes("..")
+    || record.reviewedSourcePath.startsWith("/") || record.reviewedSourcePath.includes("\\")
+    || !/^[a-f0-9]{40}$/.test(record.reviewedBlobSha)
     || record.reviewMethod!=="OBSERVED_PRACTICAL_DEMO"
     || !["PASS","FAIL"].includes(record.verdict)
     || record.practicalTask.trim().length<50

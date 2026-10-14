@@ -20,7 +20,7 @@ export const JOB_SOURCES: readonly JobSource[] = [
   {id:"greenhouse:zenoti",provider:"greenhouse",token:"zenoti",company:"Zenoti",boardUrl:"https://job-boards.greenhouse.io/zenoti",enabled:true},
   {id:"lever:acceldata",provider:"lever",token:"acceldata",company:"Acceldata",boardUrl:"https://jobs.lever.co/acceldata",enabled:true},
   {id:"lever:saviynt",provider:"lever",token:"saviynt",company:"Saviynt",boardUrl:"https://jobs.lever.co/saviynt",enabled:true},
-  {id:"ashby:Astronomer",provider:"ashby",token:"Astronomer",company:"Astronomer",boardUrl:"https://jobs.ashbyhq.com/Astronomer",enabled:true}
+  {id:"ashby:astronomer",provider:"ashby",token:"astronomer",company:"Astronomer",boardUrl:"https://jobs.ashbyhq.com/astronomer",enabled:true}
 ] as const;
 
 const TOKEN_PATTERN=/^[A-Za-z0-9_-]{2,80}$/;

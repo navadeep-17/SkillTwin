@@ -61,3 +61,10 @@ jobs:
           docker build --progress plain -t skilltwin-standalone-qa .
           docker image inspect skilltwin-standalone-qa --format '{{.Size}}'
 
+
+  verify-a3-review-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute A3 reviewer migration against ephemeral PostgreSQL
+        run: bash scripts/evidence-a3-migration-db-smoke.sh

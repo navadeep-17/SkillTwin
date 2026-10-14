@@ -24,6 +24,51 @@ create table public.sparks_referrals (
   activated_at timestamptz not null default now(),
   check (invitee_user_id <> inviter_user_id)
 );
+-- Capture referral code exactly once on account creation.
+create table public.sparks_referral_claims (
+  invitee_user_id uuid primary key references auth.users(id) on delete cascade,
+  referral_code text not null check (referral_code ~ '^[A-F0-9]{12} on public.sparks_referrals (inviter_user_id, activated_at desc);
+-- Browser clients cannot mint, transfer, spend, or tamper with credits.
+alter table public.sparks_wallets enable row level security;
+alter table public.sparks_transactions enable row level security;
+alter table public.sparks_referrals enable row level security;
+alter table public.sparks_referral_claims enable row level security;
+alter table public.sparks_wallets force row level security;
+alter table public.sparks_transactions force row level security;
+alter table public.sparks_referrals force row level security;
+alter table public.sparks_referral_claims force row level security;
+revoke all on public.sparks_wallets, public.sparks_transactions, public.sparks_referrals, public.sparks_referral_claims from public, anon, authenticated;
+revoke all on sequence public.sparks_transactions_id_seq from public, anon, authenticated;
+commit;
+),
+  created_at timestamptz not null default now()
+);
+create or replace function public.capture_sparks_signup_referral()
+returns trigger language plpgsql security definer set search_path = '' as $
+declare supplied_code text;
+begin
+  supplied_code := new.raw_user_meta_data ->> 'sparks_referral';
+  if supplied_code ~ '^[A-F0-9]{12} on public.sparks_referrals (inviter_user_id, activated_at desc);
+-- Browser clients cannot mint, transfer, spend, or tamper with credits.
+alter table public.sparks_wallets enable row level security;
+alter table public.sparks_transactions enable row level security;
+alter table public.sparks_referrals enable row level security;
+alter table public.sparks_wallets force row level security;
+alter table public.sparks_transactions force row level security;
+alter table public.sparks_referrals force row level security;
+revoke all on public.sparks_wallets, public.sparks_transactions, public.sparks_referrals from public, anon, authenticated;
+revoke all on sequence public.sparks_transactions_id_seq from public, anon, authenticated;
+commit;
+ then
+    insert into public.sparks_referral_claims(invitee_user_id,referral_code)
+    values(new.id,supplied_code) on conflict do nothing;
+  end if;
+  return new;
+end;
+$;
+revoke all on function public.capture_sparks_signup_referral() from public,anon,authenticated;
+create trigger capture_sparks_signup_referral
+after insert on auth.users for each row execute function public.capture_sparks_signup_referral();
 create index sparks_referrals_inviter_month on public.sparks_referrals (inviter_user_id, activated_at desc);
 -- Browser clients cannot mint, transfer, spend, or tamper with credits.
 alter table public.sparks_wallets enable row level security;

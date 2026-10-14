@@ -10,6 +10,10 @@ export class InsufficientSparksError extends Error {
 export class DuplicateSparksOperationError extends Error {
   constructor() { super("SPARKS_OPERATION_ALREADY_USED"); }
 }
+// Off until migration and authenticated release QA complete.
+export function isSparksChargingEnabled() {
+  return process.env.SKILLTWIN_SPARKS_CHARGING_ENABLED === "true";
+}
 export async function ensureSparksWallet(userId: string) {
   const sql = getSql();
   await sql.begin(async tx => {
@@ -40,9 +44,10 @@ export async function getSparksWallet(userId: string) {
   ));
   return { balance: Number(wallet.balance), referralCode: String(wallet.referral_code),
     welcomeSparks: WELCOME_SPARKS, rewardSparks: REFERRAL_SPARKS,
-    prices: SPARKS_PRICES, transactions: ledger };
+    prices: SPARKS_PRICES, chargingEnabled: isSparksChargingEnabled(), transactions: ledger };
 }
 export async function spendSparks(userId: string, action: SparksAction, key: string) {
+  if (!isSparksChargingEnabled()) return;
   if (!/^[a-zA-Z0-9:_-]{8,120}$/.test(key)) throw new Error("INVALID_SPARKS_OPERATION_KEY");
   await ensureSparksWallet(userId);
   const cost = SPARKS_PRICES[action];
@@ -65,6 +70,7 @@ export async function spendSparks(userId: string, action: SparksAction, key: str
   });
 }
 export async function refundSparks(userId: string, action: SparksAction, key: string) {
+  if (!isSparksChargingEnabled()) return;
   const sql = getSql();
   await sql.begin(async tx => {
     await tx.unsafe("select balance from public.sparks_wallets where user_id=$1::uuid for update", [userId]);
@@ -89,7 +95,7 @@ export async function activateSparksReferral(userId: string) {
   await ensureSparksWallet(userId);
   const sql = getSql();
   const record = rows(await sql.unsafe(
-    "select email_confirmed_at, raw_user_meta_data->>'sparks_referral' as code from auth.users where id=$1::uuid",
+    "select u.email_confirmed_at, c.referral_code as code from auth.users u left join public.sparks_referral_claims c on c.invitee_user_id=u.id where u.id=$1::uuid",
     [userId]
   ))[0];
   const code = record?.code;
@@ -105,7 +111,7 @@ export async function activateSparksReferral(userId: string) {
     await tx.unsafe("select balance from public.sparks_wallets where user_id=$1::uuid for update", [inviterId]);
     await tx.unsafe("select balance from public.sparks_wallets where user_id=$1::uuid for update", [userId]);
     const goal = rows(await tx.unsafe(
-      "select 1 from public.career_goals where user_id=$1::uuid limit 1", [userId]
+      "select 1 from public.career_goals where user_id=$1::uuid and status='ACTIVE' limit 1", [userId]
     ));
     if (!goal.length) return false;
     const existing = rows(await tx.unsafe(

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Gift, Zap, Copy, ShieldCheck } from "lucide-react";
 type Tx = { delta:number;reason:string;created_at:string };
-type Wallet = { balance:number;referralCode:string;welcomeSparks:number;rewardSparks:number;prices:Record<string,number>;transactions:Tx[] };
+type Wallet = { balance:number;referralCode:string;welcomeSparks:number;rewardSparks:number;chargingEnabled:boolean;prices:Record<string,number>;transactions:Tx[] };
 export function SparksWalletView() {
   const [wallet,setWallet]=useState<Wallet|null>(null);
   const [error,setError]=useState("");
@@ -45,6 +45,7 @@ export function SparksWalletView() {
       </section>
       <section className="rounded-2xl border bg-white p-6">
         <h2 className="font-semibold">Optional AI features</h2>
+        {!wallet.chargingEnabled?<p className="mt-2 text-sm text-indigo-700">Sparks spending is in preview. No credits are deducted yet.</p>:null}
         <div className="mt-3 space-y-3 text-sm">
           <div className="flex justify-between"><span>Custom career creation</span><strong>{wallet.prices.CUSTOM_ROLE} Sparks</strong></div>
           <div className="flex justify-between"><span>Project defense evaluation</span><strong>{wallet.prices.PROJECT_DEFENSE} Sparks</strong></div>

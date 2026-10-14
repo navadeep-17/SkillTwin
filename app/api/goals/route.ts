@@ -6,6 +6,7 @@ import { getSql } from "@/lib/db/postgres";
 import { getGapAnalysisService } from "@/lib/services/gaps/gap-analysis-service";
 import { getInitialPlanService } from "@/lib/services/planner/initial-plan-service";
 import { getAdaptiveReplannerService } from "@/lib/services/replanner/adaptive-replanner-service";
+import { activateSparksReferral } from "@/lib/services/sparks/sparks-service";
 
 type Row = Record<string, unknown>;
 const rows = (value: unknown) => value as Row[];
@@ -144,6 +145,12 @@ export async function POST(request: Request) {
 
       return goal;
     });
+
+    // Referral awards are non-blocking: goal persistence always wins.
+    try { await activateSparksReferral(user.id); }
+    catch (error) {
+      console.error("sparks.goal.activation.failed",{requestId,error:error instanceof Error?error.message:"unknown"});
+    }
 
     const skillCount = rows(await sql.unsafe(
       "select count(*)::int as count from public.user_skills where user_id=$1::uuid",

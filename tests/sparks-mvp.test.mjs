@@ -24,6 +24,10 @@ test("Sparks ledger uses atomic server-only ownership and distinct operation key
   assert.match(service,/on conflict do nothing returning id/);
   assert.match(service,/MONTHLY_REWARDED_REFERRAL_LIMIT/);
   assert.match(service,/email_confirmed_at/);
+  assert.match(sql,/capture_sparks_signup_referral/);
+  assert.match(service,/sparks_referral_claims/);
+  assert.doesNotMatch(service,/raw_user_meta_data/);
+  assert.match(service,/SKILLTWIN_SPARKS_CHARGING_ENABLED/);
   assert.match(service,/public\.career_goals/);
 });
 test("Sparks APIs require auth and never expose credit mutation",()=>{

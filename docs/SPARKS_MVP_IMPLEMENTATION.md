@@ -13,7 +13,7 @@
 3. Auth: capture referral code when account is first created; wallet endpoint activates only verified goal-bearing invitees.
 4. Client: /sparks wallet, history, costs, and invitation link; desktop navigation.
 5. Meter advanced actions, return actionable 402 error when insufficient, refund on unsuccessful operation.
-6. CI: TS production build, sparks domain assertions, authorization and boundary checks. Keep production unchanged until migration deployed and authenticated acceptance tests pass.
+6. Pilot feature flag: metering is OFF by default (SKILLTWIN_SPARKS_CHARGING_ENABLED=true only after authenticated QA).\n7. CI: TS production build, sparks domain assertions, authorization and boundary checks. Keep production unchanged until migration deployed and authenticated acceptance tests pass.
 
 ## Operational constraints
 - Existing accounts also receive welcome Sparks when they first use the wallet.

@@ -5,9 +5,10 @@
  */
 export type JobRegion = "all" | "anywhere" | "apac" | "india";
 export type JobOpportunity = {
-  id: string; source: "Jobicy"; title: string; company: string;
+  id: string; source: "Jobicy" | "Greenhouse" | "Lever" | "Ashby"; title: string; company: string;
   url: string; region: string; level: string | null; employmentType: string | null;
   publishedAt: string; excerpt: string;
+  dateKind?: "PUBLISHED" | "FIRST_SEEN"; checkedAt?: string;
   signals: { role: string; knownSkills: string[]; exploreNext: string[]; seniorRole: boolean };
 };
 

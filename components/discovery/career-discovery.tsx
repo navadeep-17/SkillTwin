@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CareerComparisonPanel } from "@/components/discovery/career-comparison";
+import { LiveJobOpportunities } from "@/components/discovery/live-job-opportunities";
 import {
   ArrowRight, BookOpen, Compass, Database, Info, Search, ShieldAlert, Target
 } from "lucide-react";
@@ -72,6 +73,8 @@ export function CareerDiscovery({ roles }: Props) {
           Explore more professions <ArrowRight className="size-4" />
         </Link>
       </header>
+
+      <LiveJobOpportunities />
 
       <div className="mt-6 rounded-xl border border-brand-100 bg-brand-50/60 p-4 text-sm leading-6 text-slate-700">
         <div className="flex items-start gap-3">

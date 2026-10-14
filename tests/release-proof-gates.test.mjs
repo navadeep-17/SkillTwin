@@ -40,3 +40,12 @@ test("multipart upload smoke must not forge an application/json boundary", () =>
   assert.match(smoke, /const invalidPdf = new FormData\(\)/);
   assert.match(smoke, /invalidUpload\.response\.status === 415/);
 });
+
+test("isolated smoke enforces two-learner row-level and API ownership", () => {
+  assert.match(smoke, /SMOKE_VERIFY_TENANT_ISOLATION === "true"/);
+  assert.match(smoke, /SMOKE_SECONDARY_EMAIL/);
+  assert.match(smoke, /otherLearner\.from\(table\)\.select\("id"\)/);
+  assert.match(smoke, /otherRequest\("\/api\/assessments\/" \+ assessmentId\)/);
+  assert.match(smoke, /otherRequest\("\/api\/roadmap\/diffs\/" \+ applied\.id\)/);
+  assert.match(smoke, /TENANT_ISOLATION_PROOF=PASS/);
+});

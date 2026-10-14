@@ -321,6 +321,73 @@ async function authenticatedChecks() {
   const versionAfter = Number(roadmapAfter.payload.data.plan.version);
   assert(versionAfter >= versionBefore, "roadmap version regressed");
 
+  // Do not count completion alone as proof of the adaptive learner loop.
+  // RLS-scoped reads confirm the exact assessment's durable outcome and
+  // persisted replanning decision or applied PlanDiff.
+  const { data: persistedOutcome, error: outcomeError } = await supabase
+    .from("skill_assessment_outcomes")
+    .select("assessment_id,gap_snapshot_id,evidence_batch_result")
+    .eq("assessment_id", assessmentId)
+    .maybeSingle();
+  assert(!outcomeError && persistedOutcome?.assessment_id === assessmentId,
+    "completed assessment lacks a persisted, assessment-linked outcome");
+  assert(Boolean(persistedOutcome.gap_snapshot_id),
+    "completed assessment lacks a refreshed gap snapshot");
+
+  const { data: decisions, error: decisionError } = await supabase
+    .from("replan_decisions")
+    .select("trigger_ref,decision,reason_code,reason")
+    .eq("trigger_ref", assessmentId)
+    .eq("trigger_type", "ASSESSMENT_COMPLETED");
+  assert(!decisionError, "could not inspect assessment-linked replan decisions");
+
+  const { data: candidateDiffs, error: diffsError } = await supabase
+    .from("plan_diffs")
+    .select("id,status,trigger_type,trigger_refs,from_version,to_version,operations")
+    .eq("trigger_type", "ASSESSMENT_COMPLETED")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  assert(!diffsError, "could not inspect assessment-linked PlanDiffs");
+  const decode = value => {
+    for (let i = 0; i < 2 && typeof value === "string"; i += 1) {
+      try { value = JSON.parse(value); } catch { break; }
+    }
+    return value;
+  };
+  const exactRefs = value => {
+    const refs = decode(value);
+    return Array.isArray(refs) && refs.some(ref =>
+      ref === assessmentId ||
+      (ref && typeof ref === "object" && (ref.id === assessmentId || ref.ref === assessmentId))
+    );
+  };
+  const applied = (candidateDiffs ?? []).find(diff =>
+    diff.status === "APPLIED" && exactRefs(diff.trigger_refs)
+  );
+  const justifiedNoOp = (decisions ?? []).find(decision =>
+    decision.decision === "NO_OP" &&
+    String(decision.reason_code ?? "").trim() &&
+    String(decision.reason ?? "").trim()
+  );
+  assert(applied || justifiedNoOp,
+    "assessment has neither its own applied PlanDiff nor a justified persisted NO_OP");
+  if (applied) {
+    assert(Number(applied.from_version) === versionBefore
+      && Number(applied.to_version) === versionAfter
+      && versionAfter === versionBefore + 1,
+      "applied assessment PlanDiff does not match the roadmap version transition");
+    assert(Array.isArray(decode(applied.operations))
+      && decode(applied.operations).length > 0,
+      "applied assessment PlanDiff contains no operations");
+    console.log("ASSESSMENT_REPLAN_PROOF=APPLIED_PLAN_DIFF");
+  } else {
+    assert(versionAfter === versionBefore,
+      "roadmap version changed but no assessment-linked applied PlanDiff was found");
+    console.log("ASSESSMENT_REPLAN_PROOF=JUSTIFIED_NO_OP " + justifiedNoOp.reason_code);
+    assert(process.env.SMOKE_REQUIRE_APPLIED_DIFF !== "true",
+      "demo acceptance requires an applied PlanDiff, not a justified NO_OP");
+  }
+
   const chat = await authRequest("/api/chat", {
     method: "POST",
     body: JSON.stringify({ message: "How ready am I for my target role?" })

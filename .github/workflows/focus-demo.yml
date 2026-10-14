@@ -23,3 +23,13 @@ jobs:
       - run: npm run check
         working-directory: extensions/chrome-focus-demo
       - run: node -e 'const m=require("./extensions/chrome-focus-demo/manifest.json"); if(m.manifest_version!==3||!m.background?.service_worker||!m.web_accessible_resources?.some(r=>r.resources.includes("blocked.html"))) process.exit(1);'
+      - name: Package Chrome Web Store upload ZIP
+        run: |
+          cd extensions/chrome-focus-demo
+          zip -q -9 ../../SkillTwin_Focus_0.1.1_Chrome_Web_Store.zip manifest.json background.js blocked.html blocked.js core.mjs questions.mjs popup.html popup.js styles.css icon-128.png
+      - name: Publish downloadable QA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: skilltwin-focus-0.1.1-store-package
+          path: SkillTwin_Focus_0.1.1_Chrome_Web_Store.zip
+          retention-days: 90

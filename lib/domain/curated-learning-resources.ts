@@ -6,7 +6,7 @@
  * completion. URLs must never be generated from learner input or by an LLM.
  * Verified on 2026-10-14; periodically recheck and retire broken links.
  */
-import { EDITOR_REVIEWED_VIDEOS, reviewedVideoUrl } from "./editor-reviewed-videos.js";
+import { EDITOR_REVIEWED_VIDEOS, reviewedVideoUrl, videoFitsTaskTitle } from "./editor-reviewed-videos.js";
 
 export type LearningTaskType = "LEARN" | "PRACTICE" | "BUILD" | "VALIDATE";
 export type LearnerLevel = "BASIC" | "STANDARD" | "ADVANCED";
@@ -83,6 +83,7 @@ export function recommendCuratedResources(input: {
   taskType: LearningTaskType;
   difficulty: LearnerLevel;
   durationMinutes: number;
+  taskTitle?: string;
 }): RecommendedLearningResource[] {
   if (input.taskType === "VALIDATE") return [];
   const candidates = CURATED_LEARNING_RESOURCES.filter(r =>
@@ -115,6 +116,7 @@ export function recommendCuratedResources(input: {
   const matched=EDITOR_REVIEWED_VIDEOS.filter(v=>
     v.skillSlug===input.skillSlug && v.levels.includes(input.difficulty)
       && v.modes.includes(input.taskType as "LEARN"|"PRACTICE")
+      && videoFitsTaskTitle(v,input.taskTitle??"")
       && reviewedVideoUrl(v)!==null
   ).sort((a,b)=>b.quality-a.quality || a.id.localeCompare(b.id));
   const video=matched[0];

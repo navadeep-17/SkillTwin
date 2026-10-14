@@ -9,6 +9,7 @@ export interface PracticalReviewRequest {
   projectId:string;
   criterionId:string;
   commitSha:string;
+  reviewedSourcePath:string;
   verdict:"PASS"|"FAIL";
   practicalTask:string;
   observedResult:string;
@@ -54,6 +55,9 @@ export async function submitPracticalReview(input:PracticalReviewRequest,reviewe
   const inspected=await inspectPublicRepository(url);
   if(inspected.commitSha.toLowerCase()!==input.commitSha.toLowerCase())
     throw new PracticalReviewError("REPOSITORY_CHANGED_RESTART");
+  const reviewed=inspected.sources.find(s=>s.path===input.reviewedSourcePath);
+  if(!reviewed || !/^[a-f0-9]{40}$/i.test(reviewed.blobSha))
+    throw new PracticalReviewError("SOURCE_NOT_REVIEWABLE");
   const parts=parsePublicGitHubRepo(url)!;
   const pinnedUrl="https://github.com/"+parts.owner+"/"+parts.repo;
   if(url!==pinnedUrl)
@@ -86,21 +90,23 @@ export async function submitPracticalReview(input:PracticalReviewRequest,reviewe
     const inserted=rows(await tx.unsafe(
       `insert into public.competency_practical_reviews(
          learner_user_id,reviewer_user_id,project_id,project_version,skill_id,
-         criterion_id,rubric_version,repository_url,commit_sha,review_method,
+         criterion_id,rubric_version,repository_url,commit_sha,
+         reviewed_source_path,reviewed_blob_sha,review_method,
          practical_task,observed_result,test_procedure,verdict)
        values($1::uuid,$2::uuid,$3::uuid,$4,$5::uuid,$6,$7,$8,$9,
-         'OBSERVED_PRACTICAL_DEMO',$10,$11,$12,$13)
+         $10,$11,'OBSERVED_PRACTICAL_DEMO',$12,$13,$14,$15)
        on conflict do nothing returning id,reviewed_at`,
       [input.learnerUserId,reviewerId,input.projectId,Number(project.version),
         String(skillRows[0].id),input.criterionId,COMPETENCY_RUBRIC_VERSION,
-        pinnedUrl,input.commitSha.toLowerCase(),input.practicalTask,
-        input.observedResult,input.testProcedure,input.verdict]
+        pinnedUrl,input.commitSha.toLowerCase(),reviewed.path,reviewed.blobSha.toLowerCase(),
+        input.practicalTask,input.observedResult,input.testProcedure,input.verdict]
     ));
     if(!inserted[0])throw new PracticalReviewError("ALREADY_REVIEWED");
     return {
       reviewId:String(inserted[0].id),
       reviewedAt:String(inserted[0].reviewed_at),
       skillSlug:criterionSkill,criterionId:input.criterionId,
+      reviewedSourcePath:reviewed.path,
       verdict:input.verdict,
       disclaimer:"Independent reviewer-attested live practical demonstration. This does not establish code authorship, calibrated ability, or production readiness."
     };

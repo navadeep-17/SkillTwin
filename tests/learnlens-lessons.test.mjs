@@ -6,7 +6,7 @@ import { getLearnLensLesson, videoEmbedUrl } from "../lib/domain/learnlens-lesso
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
 test("video lessons are scoped to the known SQL skill and non-assessment tasks", () => {
-  assert.equal(getLearnLensLesson({skillSlug:"python",taskType:"LEARN",difficulty:"BASIC"}), null);
+  assert.ok(getLearnLensLesson({skillSlug:"python",taskType:"LEARN",difficulty:"BASIC"}));
   assert.equal(getLearnLensLesson({skillSlug:"sql' OR 1=1",taskType:"PRACTICE",difficulty:"STANDARD"}), null);
   assert.equal(getLearnLensLesson({skillSlug:"sql",taskType:"BUILD",difficulty:"STANDARD"}), null);
   assert.equal(getLearnLensLesson({skillSlug:"sql",taskType:"VALIDATE",difficulty:"STANDARD"}), null);
@@ -78,4 +78,31 @@ test("only the already authenticated owner may view the task detail lesson", () 
   assert.match(task,/<LearnLensLessonPanel/);
   assert.match(roadmap,/hasVideoLesson=\{Boolean\(getLearnLensLesson/);
   assert.match(roadmap,/#learnlens/);
+});
+
+test("skill-gap targeting provides six distinct grounded lessons, without claiming AI transcripts", async () => {
+  const {EXTENDED_LEARNLENS_LESSONS}=await import("../lib/domain/learnlens-multiskill.ts");
+  assert.equal(EXTENDED_LEARNLENS_LESSONS.length,6);
+  assert.equal(new Set(EXTENDED_LEARNLENS_LESSONS.map(x=>x.id)).size,6);
+  const reviewed={python:"K5KVEU3aaeQ",git:"vA5TTz6BXhY",docker:"b0HMimUb4f0"};
+  for (const skill of ["python","git","docker"]){
+    const beginner=getLearnLensLesson({skillSlug:skill,taskType:"LEARN",difficulty:"BASIC"});
+    const intermediate=getLearnLensLesson({skillSlug:skill,taskType:"PRACTICE",difficulty:"STANDARD"});
+    assert.ok(beginner && intermediate);
+    assert.notEqual(beginner.id,intermediate.id);
+    assert.equal(beginner.video.id,reviewed[skill]);
+    assert.equal(beginner.video.chaptersSource,"creator_description");
+    assert.equal(beginner.video.transcriptAvailable,false);
+    assert.ok(new URL(beginner.reference.url).protocol==="https:");
+    assert.ok(beginner.studyNotes.length>=3);
+    assert.equal(beginner.questions.length,3);
+    assert.equal(intermediate.questions.length,3);
+    assert.ok(intermediate.video.chapters.every(c=>Number.isInteger(c.seconds) && c.seconds>0));
+    assert.ok(beginner.exercise.sampleSolution.length>8);
+    assert.deepEqual(getLearnLensLesson({skillSlug:skill,taskType:"VALIDATE",difficulty:"BASIC"}),null);
+    assert.deepEqual(getLearnLensLesson({skillSlug:skill,taskType:"BUILD",difficulty:"BASIC"}),null);
+    assert.deepEqual(getLearnLensLesson({skillSlug:skill,taskType:"LEARN",difficulty:"ADVANCED"}),null);
+    assert.ok(videoEmbedUrl(intermediate,intermediate.video.chapters[0].seconds).includes("youtube-nocookie.com"));
+  }
+  assert.deepEqual(getLearnLensLesson({skillSlug:"docker;DROP",taskType:"LEARN",difficulty:"BASIC"}),null);
 });

@@ -22,7 +22,8 @@ test("every curated link is distinct, HTTPS and belongs to a checked provider", 
 test("recommendations match exact skill, task type and proficiency, not unrelated words", () => {
   const sqlPractice = recommendation("sql","PRACTICE","BASIC",30);
   assert.equal(sqlPractice[0]?.id, "sqlbolt-select");
-  assert.ok(sqlPractice.every(r => r.url.startsWith("https://sqlbolt.com/")));
+  assert.ok(sqlPractice.filter(r=>r.format!=="VIDEO").every(r => r.url.startsWith("https://sqlbolt.com/")));
+  assert.ok(sqlPractice.some(r => r.format==="VIDEO"));
 
   const joins = recommendation("sql","PRACTICE","STANDARD",30);
   assert.equal(joins[0]?.id,"sqlbolt-joins");

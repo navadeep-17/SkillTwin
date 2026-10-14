@@ -23,3 +23,10 @@ This release extends the already-deployed wallet and referral system. It does no
 
 ## Deliberately deferred
 Credit purchases, subscriptions, device fraud scoring, daily Spark streak incentives, custom AI assessment generation, and discretionary full roadmap regeneration are not in this release.
+
+
+## Refund recovery hardening
+- Credit refunds continue to work if metering is disabled while the request is in flight.
+- A signed-in wallet read or another metered reservation recovers abandoned RESERVE rows after 15 minutes, returning paid credits exactly once under a wallet row lock.
+- An abandoned free reservation is marked refunded so it no longer consumes a free allowance.
+- Live account-authenticated tests are still a release gate before enabling global deductions.

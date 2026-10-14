@@ -41,7 +41,7 @@ export default async function SkillVerificationPreviewPage(){
         </section>
       ):(
         <>
-          <section className="mt-7 grid gap-4 sm:grid-cols-3">
+          <section className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div className="surface-card p-5">
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Original A1 readiness</p>
               <p className="mt-2 text-3xl font-semibold text-slate-900">{preview.projection.originalReadiness}%</p>
@@ -53,6 +53,11 @@ export default async function SkillVerificationPreviewPage(){
               <p className="mt-1 text-xs text-slate-500">Trusted scored quiz attempts, not code proof</p>
             </div>
             <div className="surface-card p-5">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Reviewer-attested practical checks</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-900">{preview.practicalReviewObservationCount}</p>
+              <p className="mt-1 text-xs text-slate-500">Observed tasks, not automatic code execution</p>
+            </div>
+            <div className="surface-card p-5">
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Role skills inspected</p>
               <p className="mt-2 text-3xl font-semibold text-slate-900">{preview.projection.results.length}</p>
               <p className="mt-1 text-xs text-slate-500">Only six draft skill rubrics available</p>
@@ -62,7 +67,7 @@ export default async function SkillVerificationPreviewPage(){
             <AlertCircle className="mt-0.5 size-5 shrink-0"/>
             <p>
               A3 is an experimental interpretation, not a new readiness calculation.
-              A question about a concept can show knowledge without establishing that you can implement it.
+              A concept question checks knowledge, while an independently reviewed live demonstration provides stronger practical evidence.
               Your original A1 skill and gap records remain untouched.
             </p>
           </div>
@@ -142,7 +147,7 @@ export default async function SkillVerificationPreviewPage(){
           </section>
           <footer className="mt-7 rounded-lg bg-slate-50 p-4 text-xs leading-6 text-slate-500">
             <p className="flex items-start gap-2"><CheckCircle2 className="mt-1 size-4 shrink-0"/> Read-only A3 pilot, based on a whitelist of reviewed bank questions. {preview.unmappedOrUntrustedAttemptCount} of {preview.scannedAttemptCount} inspected attempts were unmapped or did not meet trust requirements.{preview.attemptsTruncated?" Only the latest 400 attempts were inspected.":""}</p>
-            <p className="mt-2">Other resume and project evidence is still retained in A1, but it is not automatically promoted to A3 competency proof. Source mappings and rubrics are drafts and need expert validation.</p>
+            <p className="mt-2">A3 inspected {preview.scannedReviewCount} reviewer attestation(s). Review decisions record an independently observed live task at a pinned commit, but do not prove code authorship. Other resume and project evidence is retained in A1 and not automatically promoted to A3. Rubrics remain drafts.</p>
           </footer>
         </>
       )}

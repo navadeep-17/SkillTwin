@@ -51,7 +51,7 @@ list requires reviewing each public board's identity and recruitment-site usage 
 
 ## Schedule and secrets
 
-1. Apply `supabase/migrations/0030_ats_job_collector.sql` to **staging** and
+1. Apply `supabase/migrations/0031_ats_job_collector.sql` to **staging** and
    verify row-level security and rollback compatibility. Do not reset user data.
 2. With a staging instance, configure a private `JOB_COLLECTOR_SECRET` of at
    least 32 random characters and invoke `POST /api/internal/jobs/collect`

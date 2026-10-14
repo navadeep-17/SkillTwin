@@ -19,7 +19,7 @@ export type JobicyRecord = {
 
 export function plain(value: unknown, max = 280): string {
   if (typeof value !== "string") return "";
-  return value.replace(/<[^>]*>/g, " ").replace(/&(?:nbsp|amp|lt|gt|quot|#39);/gi," ")
+  return value.replace(/<[^>]*>/g, " ").replace(/&amp;/gi,"&").replace(/&nbsp;/gi," ")\n    .replace(/&lt;/gi,"<").replace(/&gt;/gi,">").replace(/&quot;/gi,'"').replace(/&#39;/gi,"\'")
     .replace(/\s+/g, " ").trim().slice(0,max);
 }
 const normalized = (x: string) => x.toLowerCase().replace(/[^a-z0-9]+/g," ").trim();

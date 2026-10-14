@@ -3,6 +3,9 @@ name: Isolated Release Rehearsal
 on:
   pull_request:
     paths:
+      - 'supabase/migrations/**'
+      - 'supabase/seed.sql'
+      - 'supabase/config.toml'
       - 'scripts/release-smoke.mjs'
       - 'tests/release-proof-gates.test.mjs'
       - '.github/workflows/isolated-release-rehearsal.yml'

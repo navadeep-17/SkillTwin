@@ -30,6 +30,7 @@ jobs:
       - run: node --test tests/twin-challenge.test.mjs
       - run: node --test tests/journey-agent.test.mjs
       - run: node --test tests/agent-action-guard.test.mjs
+      - run: node --import tsx --test tests/gemini-planner-http-error.test.mjs
       - run: node --test tests/agent-read-tools.test.mjs
       - run: node --test tests/agent-thread-history.test.mjs
       - run: node --test tests/agent-phase4-evaluation.test.mjs

@@ -248,7 +248,7 @@ const chatRecovery=read("components/journey/journey-chat.tsx");
 const anonAgentSmoke=read("scripts/career-auth-guard-smoke.mjs");
 assert(
   chatRecovery.includes("if (!responseSaved)")
-  && chatRecovery.includes("if (threadId) await openThread(threadId)")
+  && chatRecovery.includes("if (threadId && !knownFailure) await openThread(threadId)")
   && anonAgentSmoke.includes("ANONYMOUS_AGENT_API_GUARD=PASS"),
   "Agent API release must reconcile optimistic send failures and enforce anonymous action safety"
 );

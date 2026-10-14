@@ -70,7 +70,7 @@ export async function GET(request:Request) {
       employerCheckedAt=recent instanceof Date?recent.toISOString()
         :typeof recent==="string"?recent:null;
       employerJobs=recommendEmployerJobs({
-        rows:rows as StoredEmployerJob[],
+        rows:rows as unknown as StoredEmployerJob[],
         role,recordedSkills:recorded,region:parsed.data.region,
         hideSenior:parsed.data.hideSenior==="true",limit:12
       });

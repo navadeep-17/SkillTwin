@@ -19,6 +19,9 @@ jobs:
       - run: npm run test:core
       - run: node --test tests/assessment-replay.test.mjs
       - run: node --test tests/assessment-scoring-guardrails.test.mjs
+      - run: node --test tests/evidence-a3-competency.test.mjs
+      - run: node --test tests/evidence-a3-real-assessment.test.mjs
+      - run: node --test tests/evidence-a3-baseline-benchmark.test.mjs
       - run: node --test tests/scoring-evidence-gap-integration.test.mjs
       - run: node --check scripts/scoring-a2-staging-auth-qa.mjs
       - run: node --test tests/scoring-staging-guard.test.mjs

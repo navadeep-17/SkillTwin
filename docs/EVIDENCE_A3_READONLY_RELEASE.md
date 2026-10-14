@@ -26,6 +26,22 @@ These fixtures are synthetic and labeled by our own engineering rules, NOT blind
 2. Inspect migrations and restore all core role, assessment and catalog structures without copying production user data. The Phase 1 read-only preview requires **no new A3 migration**.
 3. Start the Next.js application locally against staging-only connection values, and use two disposable learners. One needs a goal, saved gap snapshot, and completed seeded assessment with a reviewed question.
 4. Verify with flag OFF (404), flag ON (anonymous 401, authenticated 200, correct learner isolation). Confirm the A1 /api/gaps result is byte-for-byte unchanged after the read-only request. Validate that preview evidence matches the real user-owned assessment/question version.
+
+Run the guarded smoke test (from a second terminal) with staging-only `.env.local` and the app on localhost:
+
+```powershell
+$env:BASE_URL="http://127.0.0.1:3000"
+$env:SMOKE_ACCOUNTS_DISPOSABLE="true"
+$env:SMOKE_EMAIL="<FIRST_STAGING_ACCOUNT>"
+$env:SMOKE_PASSWORD="<FIRST_STAGING_PASSWORD>"
+$env:SMOKE_EMAIL_2="<SECOND_STAGING_ACCOUNT>"
+$env:SMOKE_PASSWORD_2="<SECOND_STAGING_PASSWORD>"
+$env:A3_EXPECTED_STATE="enabled"
+node --env-file=.env.local scripts/evidence-a3-auth-staging-qa.mjs
+```
+
+Test user 1 must have a saved role-gap snapshot and at least one mapped assessment MCQ. Stop the local app, switch `SKILLTWIN_EVIDENCE_A3_ENABLED=false`, restart it, set `A3_EXPECTED_STATE=disabled` and rerun to check the default 404 behavior. No production secrets may be loaded.
+
 5. Re-run CI and branch-diff review; merge only after the authenticated staging gate succeeds.
 
 ## Explicit exclusions

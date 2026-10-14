@@ -202,7 +202,7 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
         // an optimistic bubble masquerading as a confirmed stored message.
         setMessages(current => current.filter(message => message.id !== userMessage.id));
         setInput(current => current.trim() ? current : trimmed);
-        if (threadId) await openThread(threadId);
+        if (threadId && !knownFailure) await openThread(threadId);
         if(!knownFailure)setError("The response was not confirmed. Your question may already be in history. Check the conversation before resending.");
       }
       setPending(false);

@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { getServerEnv } from "@/lib/config/env";
+import { classifyGeminiPlannerHttpError } from "@/lib/domain/gemini-planner-http-error";
 
 type InteractionResponse = {
   status?: string;
@@ -119,19 +120,27 @@ export class GeminiStructuredClient {
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: input.systemInstruction }] },
           contents: [{ role: "user", parts: [{ text: input.prompt }] }],
+          // Keep the selector wire format deliberately minimal and compatible
+          // with the v1beta GenerateContent REST API. The strict output schema
+          // and subsequent Zod validation remain mandatory.
           generationConfig: {
-            temperature: 0,
             maxOutputTokens: input.maxOutputTokens ?? 220,
-            thinkingConfig: { thinkingLevel: "minimal" },
-            responseFormat: {
-              text: { mimeType: "application/json", schema: input.jsonSchema }
-            }
+            responseMimeType: "application/json",
+            responseJsonSchema: input.jsonSchema
           }
         })
       }
     );
     // Never surface provider response text or credential-bearing headers in logs.
-    if (!response.ok) throw new Error("GEMINI_FAST_PLANNER_FAILED:" + response.status);
+    if (!response.ok) {
+      // Classify in memory, never log or surface the provider's raw error.
+      let details: unknown = null;
+      if (response.status >= 400) {
+        details = await response.json().catch(() => null);
+      }
+      const reason = classifyGeminiPlannerHttpError(response.status, details);
+      throw new Error("GEMINI_FAST_PLANNER_FAILED:" + response.status + ":" + reason);
+    }
     const body = await response.json() as {
       candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
     };

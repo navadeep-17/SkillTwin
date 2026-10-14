@@ -59,7 +59,10 @@ test("agent route cannot dispatch model-selected writes or substitute model user
   assert.match(provider,/gemini-3\.5-flash-lite/);
   assert.match(provider,/:generateContent/);
   assert.match(provider,/generationConfig/);
-  assert.match(provider,/responseFormat/);
+  assert.match(provider,/responseMimeType: "application\\/json"/);
+  assert.match(provider,/responseJsonSchema: input\\.jsonSchema/);
+  assert.doesNotMatch(provider,/temperature: 0/);
+  assert.doesNotMatch(provider,/thinkingConfig: \{ thinkingLevel: "minimal" \}/);
   assert.match(provider,/input\.validator\.parse\(JSON\.parse\(text\)\)/);
   assert.match(provider,/SKILLTWIN_READ_PLANNER_MODEL/);
   assert.match(orchestrator,/plannerFailureKind\(error\)/);

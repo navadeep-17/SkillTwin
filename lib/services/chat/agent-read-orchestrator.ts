@@ -55,8 +55,8 @@ function readIntentRequires(intent:AgentReadIntent):AgentReadTool|null {
 function plannerFailureKind(error:unknown):string {
   if(!(error instanceof Error))return "unknown";
   if(error.name==="AbortError"||error.name==="TimeoutError")return "timeout";
-  const fast=error.message.match(/^GEMINI_FAST_PLANNER_FAILED:(\d{3})$/);
-  if(fast)return "upstream_http_"+fast[1];
+  const fast=error.message.match(/^GEMINI_FAST_PLANNER_FAILED:(\d{3}):([a-z_]+)$/);
+  if(fast)return "upstream_http_"+fast[1]+"_"+fast[2];
   const http=error.message.match(/^GEMINI_INTERACTION_FAILED:(\d{3}):/);
   if(http)return "upstream_http_"+http[1];
   if(error.message==="GEMINI_API_KEY_MISSING")return "provider_not_configured";

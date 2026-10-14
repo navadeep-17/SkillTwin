@@ -306,7 +306,9 @@ async function authenticatedChecks() {
     method: "POST",
     body: invalidPdf
   });
-  assert(invalidUpload.response.status === 415, "invalid PDF signature was not rejected");
+  assert(invalidUpload.response.status === 415,
+    "invalid PDF signature was not rejected (HTTP " + invalidUpload.response.status
+      + ", code " + String(invalidUpload.payload?.error?.code ?? "no_api_code") + ")");
   assert(invalidUpload.payload?.ok === false, "invalid PDF signature returned an ok envelope");
   console.log("UPLOAD_GUARD=PASS");
 

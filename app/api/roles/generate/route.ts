@@ -5,6 +5,7 @@ import { fail, ok } from "@/lib/api/responses";
 import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
 import { getSql } from "@/lib/db/postgres";
 import { getGeminiStructuredClient } from "@/lib/ai/gemini-interactions";
+import { spendSparks, refundSparks, InsufficientSparksError, DuplicateSparksOperationError } from "@/lib/services/sparks/sparks-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -85,6 +86,7 @@ export async function POST(request: Request) {
   const requestId = await getRequestId();
   let generationRunId: string | null = null;
   let generationUserId: string | null = null;
+  let sparksOperationKey: string | null = null;
 
   try {
     const { user } = await requireUser();
@@ -114,6 +116,21 @@ export async function POST(request: Request) {
       ].join(" | ")
     ).join("\n");
 
+    sparksOperationKey = "custom-role:" + generationRunId;
+    try { await spendSparks(user.id,"CUSTOM_ROLE",sparksOperationKey); }
+    catch(error) {
+      if (error instanceof InsufficientSparksError || error instanceof DuplicateSparksOperationError) {
+        await sql.unsafe(
+          "update public.role_generation_runs set status='FAILED',error_code=$1,completed_at=now() where id=$2::uuid and user_id=$3::uuid and status='RUNNING'",
+          [error.message,generationRunId,user.id]
+        );
+        sparksOperationKey=null;
+        return error instanceof InsufficientSparksError
+          ? fail(requestId,402,"INSUFFICIENT_SPARKS","You need 25 Sparks to create another custom career. Invite a friend from /sparks.")
+          : fail(requestId,409,"SPARKS_OPERATION_ALREADY_USED","This custom role request was already charged.");
+      }
+      throw error;
+    }
     const ai = getGeminiStructuredClient();
     const generated = await ai.generateJson({
       systemInstruction:
@@ -169,6 +186,8 @@ export async function POST(request: Request) {
     });
 
     if (!generated) {
+      await refundSparks(user.id,"CUSTOM_ROLE",sparksOperationKey);
+      sparksOperationKey=null;
       return fail(requestId, 503, "AI_ROLE_GENERATION_UNAVAILABLE", "AI role generation is not configured.");
     }
 
@@ -176,9 +195,13 @@ export async function POST(request: Request) {
     const seen = new Set<string>();
     for (const requirement of generated.requirements) {
       if (!catalogBySlug.has(requirement.skillSlug)) {
+        await refundSparks(user.id,"CUSTOM_ROLE",sparksOperationKey);
+        sparksOperationKey=null;
         return fail(requestId, 422, "ROLE_GENERATION_UNKNOWN_SKILL", "Generated role referenced a skill outside the canonical catalog.");
       }
       if (seen.has(requirement.skillSlug)) {
+        await refundSparks(user.id,"CUSTOM_ROLE",sparksOperationKey);
+        sparksOperationKey=null;
         return fail(requestId, 422, "ROLE_GENERATION_DUPLICATE_SKILL", "Generated role contained a duplicate skill.");
       }
       seen.add(requirement.skillSlug);
@@ -315,6 +338,7 @@ export async function POST(request: Request) {
       };
     });
 
+    sparksOperationKey=null;
     return ok(requestId, { role: saved }, {
       notifications: [{
         title: "Custom role generated",
@@ -328,6 +352,10 @@ export async function POST(request: Request) {
     }
 
     const message = error instanceof Error ? error.message : String(error);
+    if (sparksOperationKey && generationUserId) {
+      try { await refundSparks(generationUserId,"CUSTOM_ROLE",sparksOperationKey); }
+      catch(refundError) { console.error("sparks.role.refund.failed",{requestId,error:refundError instanceof Error?refundError.message:"unknown"}); }
+    }
 
     if (generationRunId && generationUserId) {
       try {

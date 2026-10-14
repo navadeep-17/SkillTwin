@@ -3,7 +3,7 @@
 import Link from "next/link";
 import "./orbit-preview-nav-extra.css";
 import { usePathname } from "next/navigation";
-import { BrainCircuit, Compass, Fingerprint, House, Route, Sparkles, ChevronDown, Award, MessageSquareText, Settings2, ArrowLeft, FolderKanban, FileCode2, ScrollText, Activity, TrendingUp, BookOpenText, Beaker } from "lucide-react";
+import { BrainCircuit, Compass, Fingerprint, House, Route, Sparkles, ChevronDown, Award, MessageSquareText, Settings2, ArrowLeft, FolderKanban, FileCode2, ScrollText, Activity, TrendingUp, BookOpenText, Beaker, Zap } from "lucide-react";
 import { LogoutButton } from "@/components/auth/logout-button";
 
 const items = [
@@ -54,6 +54,7 @@ export function OrbitPreviewNav() {
             <span className="orbit-preview-menu-heading">YOUR AGENT & ACCOUNT</span>
             <Link href="/journey"><MessageSquareText size={16}/> Ask SkillTwin</Link>
             <Link href="/orbit-activity"><Activity size={16}/> Agent Activity</Link>
+            <Link href="/sparks"><Zap size={16}/> Sparks wallet</Link>
             <Link href="/orbit-settings"><Settings2 size={16}/> Settings</Link>
             <Link href="/overview?classic=1"><ArrowLeft size={16}/> Classic interface</Link>
             <LogoutButton/>

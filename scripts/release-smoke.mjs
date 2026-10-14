@@ -98,7 +98,12 @@ async function publicChecks() {
   const healthPayload = jsonBody(health, "health endpoint");
   assert(healthPayload?.ok === true, "health endpoint did not return an ok API envelope");
   assert(healthPayload?.data?.status === "ok", "health endpoint did not report ok");
-  assert(healthPayload?.data?.platform === "railway", "health endpoint is not reporting Railway runtime");
+  const isolatedLocal = process.env.SMOKE_ISOLATED === "true"
+    && process.env.SMOKE_TEST_DB_REF === "local"
+    && new URL(baseUrl).hostname === "127.0.0.1"
+    && new URL(supabaseUrl ?? "http://invalid.local").hostname === "127.0.0.1";
+  assert(healthPayload?.data?.platform === (isolatedLocal ? "local" : "railway"),
+    "health endpoint is not reporting the expected isolated or Railway runtime");
 
   if (expectedCommitSha) {
     assert(
@@ -204,11 +209,16 @@ async function authenticatedChecks() {
   const isolatedRef = process.env.SMOKE_TEST_DB_REF?.trim() ?? "";
   assert(process.env.SMOKE_ISOLATED === "true",
     "destructive smoke requires SMOKE_ISOLATED=true");
-  assert(/^[a-z0-9]{20}$/.test(isolatedRef)
-    && isolatedRef !== "eozvilqmrhtujqtdmrri",
-    "destructive smoke requires an explicit NON-PRODUCTION Supabase project ref");
-  assert(new URL(supabaseUrl).hostname === isolatedRef + ".supabase.co",
-    "Supabase URL does not match the explicitly verified isolated project ref");
+  const localIsolatedTarget = isolatedRef === "local"
+    && new URL(baseUrl).hostname === "127.0.0.1"
+    && new URL(baseUrl).port === "3000"
+    && new URL(supabaseUrl).hostname === "127.0.0.1"
+    && new URL(supabaseUrl).port === "54321";
+  const hostedIsolatedTarget = /^[a-z0-9]{20}$/.test(isolatedRef)
+    && isolatedRef !== "eozvilqmrhtujqtdmrri"
+    && new URL(supabaseUrl).hostname === isolatedRef + ".supabase.co";
+  assert(localIsolatedTarget || hostedIsolatedTarget,
+    "destructive smoke requires verified local Supabase or an explicit NON-PRODUCTION Supabase project ref");
   const smokeHost = new URL(baseUrl).hostname;
   assert(smokeHost !== "skilltwin-production.up.railway.app"
     && smokeHost !== "skilltwin.vercel.app"

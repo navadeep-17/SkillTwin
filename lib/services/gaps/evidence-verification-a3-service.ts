@@ -95,6 +95,8 @@ export async function getEvidenceA3Preview(userId:string):Promise<EvidenceA3Prev
       join public.skill_assessments sa on sa.id=a.assessment_id and sa.user_id=a.user_id
       join public.skill_assessment_questions q on q.id=a.question_id and q.assessment_id=sa.id
       join public.assessment_question_bank b on b.id=q.bank_question_id and b.skill_id=sa.skill_id
+        and q.prompt=b.prompt and q.answer_key=b.answer_key
+        and q.options is not distinct from b.options
       join public.skills s on s.id=sa.skill_id
       where a.user_id=$1::uuid and sa.status='COMPLETED' and a.status='EVALUATED'
         and sa.skill_id=any($2::uuid[])

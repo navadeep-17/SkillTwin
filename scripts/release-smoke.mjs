@@ -98,7 +98,12 @@ async function publicChecks() {
   const healthPayload = jsonBody(health, "health endpoint");
   assert(healthPayload?.ok === true, "health endpoint did not return an ok API envelope");
   assert(healthPayload?.data?.status === "ok", "health endpoint did not report ok");
-  assert(healthPayload?.data?.platform === "railway", "health endpoint is not reporting Railway runtime");
+  const isolatedLocal = process.env.SMOKE_ISOLATED === "true"
+    && process.env.SMOKE_TEST_DB_REF === "local"
+    && new URL(baseUrl).hostname === "127.0.0.1"
+    && new URL(supabaseUrl ?? "http://invalid.local").hostname === "127.0.0.1";
+  assert(healthPayload?.data?.platform === (isolatedLocal ? "local" : "railway"),
+    "health endpoint is not reporting the expected isolated or Railway runtime");
 
   if (expectedCommitSha) {
     assert(
@@ -111,7 +116,16 @@ async function publicChecks() {
   assert(readiness.response.status === 200, "readiness endpoint is not 200");
   const readinessPayload = jsonBody(readiness, "readiness endpoint");
   assert(readinessPayload?.ok === true, "readiness endpoint did not return an ok API envelope");
-  assert(readinessPayload?.data?.status === "ready", "production readiness did not report ready");
+  if (readinessPayload?.data?.status !== "ready") {
+    // Safe diagnostic fields only. Never print connection strings, provider
+    // errors, cookies, learner records, JWTs, prompts, or raw response bodies.
+    console.error("READINESS_SAFE_CHECKS", JSON.stringify({
+      status: readinessPayload?.data?.status,
+      checks: readinessPayload?.data?.checks ?? null,
+      securityChecks: readinessPayload?.data?.security?.checks ?? null
+    }));
+  }
+  assert(readinessPayload?.data?.status === "ready", "database/security readiness did not report ready");
   assert(readinessPayload?.data?.checks?.database === "ready", "production database readiness is not ready");
   assert(readinessPayload?.data?.checks?.databaseSecurity === "ready", "production database security readiness is not ready");
 
@@ -173,7 +187,7 @@ async function authenticatedChecks() {
   async function authRequest(path, init = {}) {
     const headers = new Headers(init.headers ?? {});
     headers.set("Cookie", cookie);
-    if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+    if (typeof init.body === "string" && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
     const response = await fetch(baseUrl + path, {
       redirect: "manual",
       ...init,
@@ -199,6 +213,27 @@ async function authenticatedChecks() {
   }
 
   assert(Boolean(demoResetSecret), "DEMO_RESET_SECRET is required for destructive smoke");
+  // Hard safety boundary: no smoke runner may reset real production data,
+  // even if a production workflow accidentally enables the destructive flag.
+  const isolatedRef = process.env.SMOKE_TEST_DB_REF?.trim() ?? "";
+  assert(process.env.SMOKE_ISOLATED === "true",
+    "destructive smoke requires SMOKE_ISOLATED=true");
+  const localIsolatedTarget = isolatedRef === "local"
+    && new URL(baseUrl).hostname === "127.0.0.1"
+    && new URL(baseUrl).port === "3000"
+    && new URL(supabaseUrl).hostname === "127.0.0.1"
+    && new URL(supabaseUrl).port === "54321";
+  const hostedIsolatedTarget = /^[a-z0-9]{20}$/.test(isolatedRef)
+    && isolatedRef !== "eozvilqmrhtujqtdmrri"
+    && new URL(supabaseUrl).hostname === isolatedRef + ".supabase.co";
+  assert(localIsolatedTarget || hostedIsolatedTarget,
+    "destructive smoke requires verified local Supabase or an explicit NON-PRODUCTION Supabase project ref");
+  const smokeHost = new URL(baseUrl).hostname;
+  assert(smokeHost !== "skilltwin-production.up.railway.app"
+    && smokeHost !== "skilltwin.vercel.app"
+    && !smokeHost.startsWith("skilltwin-production."),
+    "destructive smoke must never run against the production application");
+
 
   const reset = await authRequest("/api/demo/reset", {
     method: "POST",
@@ -271,13 +306,35 @@ async function authenticatedChecks() {
     method: "POST",
     body: invalidPdf
   });
-  assert(invalidUpload.response.status === 415, "invalid PDF signature was not rejected");
+  assert(invalidUpload.response.status === 415,
+    "invalid PDF signature was not rejected (HTTP " + invalidUpload.response.status
+      + ", code " + String(invalidUpload.payload?.error?.code ?? "no_api_code") + ")");
   assert(invalidUpload.payload?.ok === false, "invalid PDF signature returned an ok envelope");
   console.log("UPLOAD_GUARD=PASS");
 
+  // Read the latest active plan AFTER the task-idempotency check. Completing
+  // a task may itself replan, so the earlier plan version is not a valid
+  // assessment baseline. Strict test mode selects a real future validation
+  // task whose canonical skill has a reviewed challenge bank.
+  const preAssessment = await authRequest("/api/roadmap");
+  assert(preAssessment.response.status === 200 && preAssessment.payload?.data?.plan,
+    "pre-assessment active roadmap is unavailable");
+  const assessmentBaselineVersion = Number(preAssessment.payload.data.plan.version);
+  const eligibleValidation = (preAssessment.payload.data.plan.weeks ?? [])
+    .flatMap(week => week.objectives ?? [])
+    .flatMap(objective => objective.tasks ?? [])
+    .find(task => task.type === "VALIDATE" && task.status === "PLANNED"
+      && task.validation_available === true);
+  if (process.env.SMOKE_REQUIRE_APPLIED_DIFF === "true") {
+    assert(Boolean(eligibleValidation?.id),
+      "strict PlanDiff proof requires an unfinished in-horizon validation task with a vetted question bank");
+  }
   const challenge = await authRequest("/api/assessments", {
     method: "POST",
-    body: JSON.stringify({ mode: "CHALLENGE_ME" })
+    body: JSON.stringify({
+      mode: "CHALLENGE_ME",
+      ...(eligibleValidation?.id ? { sourceTaskId: eligibleValidation.id } : {})
+    })
   });
   assert(challenge.response.status === 201 && challenge.payload?.ok === true, "challenge creation failed");
 
@@ -321,6 +378,73 @@ async function authenticatedChecks() {
   const versionAfter = Number(roadmapAfter.payload.data.plan.version);
   assert(versionAfter >= versionBefore, "roadmap version regressed");
 
+  // Do not count completion alone as proof of the adaptive learner loop.
+  // RLS-scoped reads confirm the exact assessment's durable outcome and
+  // persisted replanning decision or applied PlanDiff.
+  const { data: persistedOutcome, error: outcomeError } = await supabase
+    .from("skill_assessment_outcomes")
+    .select("assessment_id,gap_snapshot_id,evidence_batch_result")
+    .eq("assessment_id", assessmentId)
+    .maybeSingle();
+  assert(!outcomeError && persistedOutcome?.assessment_id === assessmentId,
+    "completed assessment lacks a persisted, assessment-linked outcome");
+  assert(Boolean(persistedOutcome.gap_snapshot_id),
+    "completed assessment lacks a refreshed gap snapshot");
+
+  const { data: decisions, error: decisionError } = await supabase
+    .from("replan_decisions")
+    .select("trigger_ref,decision,reason_code,reason")
+    .eq("trigger_ref", assessmentId)
+    .eq("trigger_type", "ASSESSMENT_COMPLETED");
+  assert(!decisionError, "could not inspect assessment-linked replan decisions");
+
+  const { data: candidateDiffs, error: diffsError } = await supabase
+    .from("plan_diffs")
+    .select("id,status,trigger_type,trigger_refs,from_version,to_version,operations")
+    .eq("trigger_type", "ASSESSMENT_COMPLETED")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  assert(!diffsError, "could not inspect assessment-linked PlanDiffs");
+  const decode = value => {
+    for (let i = 0; i < 2 && typeof value === "string"; i += 1) {
+      try { value = JSON.parse(value); } catch { break; }
+    }
+    return value;
+  };
+  const exactRefs = value => {
+    const refs = decode(value);
+    return Array.isArray(refs) && refs.some(ref =>
+      ref === assessmentId ||
+      (ref && typeof ref === "object" && (ref.id === assessmentId || ref.ref === assessmentId))
+    );
+  };
+  const applied = (candidateDiffs ?? []).find(diff =>
+    diff.status === "APPLIED" && exactRefs(diff.trigger_refs)
+  );
+  const justifiedNoOp = (decisions ?? []).find(decision =>
+    decision.decision === "NO_OP" &&
+    String(decision.reason_code ?? "").trim() &&
+    String(decision.reason ?? "").trim()
+  );
+  assert(applied || justifiedNoOp,
+    "assessment has neither its own applied PlanDiff nor a justified persisted NO_OP");
+  if (applied) {
+    assert(Number(applied.from_version) === assessmentBaselineVersion
+      && Number(applied.to_version) === versionAfter
+      && versionAfter === assessmentBaselineVersion + 1,
+      "applied assessment PlanDiff does not match the roadmap version transition");
+    assert(Array.isArray(decode(applied.operations))
+      && decode(applied.operations).length > 0,
+      "applied assessment PlanDiff contains no operations");
+    console.log("ASSESSMENT_REPLAN_PROOF=APPLIED_PLAN_DIFF");
+  } else {
+    assert(versionAfter === assessmentBaselineVersion,
+      "roadmap version changed but no assessment-linked applied PlanDiff was found");
+    console.log("ASSESSMENT_REPLAN_PROOF=JUSTIFIED_NO_OP " + justifiedNoOp.reason_code);
+    assert(process.env.SMOKE_REQUIRE_APPLIED_DIFF !== "true",
+      "demo acceptance requires an applied PlanDiff, not a justified NO_OP");
+  }
+
   const chat = await authRequest("/api/chat", {
     method: "POST",
     body: JSON.stringify({ message: "How ready am I for my target role?" })
@@ -329,6 +453,94 @@ async function authenticatedChecks() {
   assert(chat.payload?.data?.message?.intent === "READINESS", "Journey Chat did not classify readiness intent");
   assert((chat.payload?.data?.message?.refs?.length ?? 0) > 0, "Journey Chat readiness answer had no grounded references");
   console.log("GROUNDED_CHAT=PASS");
+
+  // Optional, explicit destructive test on the disposable smoke learner only.
+  // The confirmation route must execute exactly once and leave an audit event.
+  if (process.env.SMOKE_VERIFY_AGENT_ACTION === "true") {
+    const proposed = await authRequest("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ message: "Challenge me" })
+    });
+    assert(proposed.response.status === 200 && proposed.payload?.ok === true,
+      "agent challenge proposal request failed");
+    const proposal = proposed.payload?.data?.actionProposal;
+    assert(proposal?.actionType === "START_ASSESSMENT" && Boolean(proposal.id),
+      "agent did not propose an assessable skill challenge");
+    const actionPath = "/api/chat/actions/" + proposal.id + "/confirm";
+    const confirmed = await authRequest(actionPath, { method: "POST" });
+    assert(confirmed.response.status === 200 && confirmed.payload?.ok === true
+      && confirmed.payload?.data?.actionType === "START_ASSESSMENT",
+      "agent proposal was not confirmed and executed");
+    const duplicate = await authRequest(actionPath, { method: "POST" });
+    assert(duplicate.response.status === 409,
+      "duplicate agent confirmation did not fail closed");
+    const { data: actionEvents, error: actionError } = await supabase
+      .from("agent_events")
+      .select("event_type,trigger_ref")
+      .eq("event_type", "chat.action.executed")
+      .eq("trigger_ref", proposal.id);
+    assert(!actionError && actionEvents?.length === 1,
+      "agent action must have exactly one persisted, proposal-linked audit event");
+    console.log("AGENT_CONFIRMATION_PROOF=PASS");
+  }
+
+  // Cross-user isolation proof: a second disposable learner must not be
+  // able to see the first learner's committed evidence and execution trail.
+  if (process.env.SMOKE_VERIFY_TENANT_ISOLATION === "true") {
+    assert(process.env.SMOKE_ISOLATED === "true" && destructive,
+      "cross-user smoke is permitted only in the isolated destructive test");
+    const secondEmail = process.env.SMOKE_SECONDARY_EMAIL?.trim();
+    const secondPassword = process.env.SMOKE_SECONDARY_PASSWORD;
+    assert(secondEmail && secondPassword && secondEmail !== smokeEmail,
+      "two distinct disposable test credentials are required");
+
+    const secondJar = new Map();
+    const otherLearner = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return [...secondJar.entries()].map(([name, value]) => ({ name, value }));
+        },
+        setAll(cookies) {
+          for (const { name, value } of cookies) secondJar.set(name, value);
+        }
+      }
+    });
+    const { data: secondAuth, error: secondError } = await otherLearner.auth.signInWithPassword({
+      email: secondEmail, password: secondPassword
+    });
+    assert(!secondError && secondAuth?.user?.id && secondAuth.user.id !== data.user.id,
+      "second isolated learner could not authenticate independently");
+
+    const ownerData = [
+      "career_goals", "learning_plans", "skill_assessments", "plan_diffs",
+      "skill_evidence", "journey_chat_messages", "agent_events", "profile_projects"
+    ];
+    for (const table of ownerData) {
+      const owned = await supabase.from(table).select("id")
+        .eq("user_id", data.user.id).limit(1);
+      assert(!owned.error && (owned.data?.length ?? 0) > 0,
+        "isolation proof setup has no owner-side record for " + table);
+      const foreign = await otherLearner.from(table).select("id")
+        .eq("user_id", data.user.id).limit(1);
+      assert(!foreign.error && (foreign.data?.length ?? 0) === 0,
+        "cross-tenant row access was not blocked for " + table);
+    }
+
+    const otherCookies = [...secondJar.entries()]
+      .map(([name, value]) => name + "=" + value).join("; ");
+    async function otherRequest(path) {
+      const response = await fetch(baseUrl + path, {
+        redirect: "manual", headers: { Cookie: otherCookies }
+      });
+      return response.status;
+    }
+    assert(await otherRequest("/api/assessments/" + assessmentId) === 404,
+      "another learner could inspect an owner-only assessment through the API");
+    assert(Boolean(applied?.id), "cross-user PlanDiff API isolation requires an applied owner diff");
+    assert(await otherRequest("/api/roadmap/diffs/" + applied.id) === 404,
+      "another learner could inspect an owner-only PlanDiff through the API");
+    console.log("TENANT_ISOLATION_PROOF=PASS");
+  }
 
   const activity = await authRequest("/api/agent-events?limit=50");
   const eventTypes = new Set((activity.payload?.data?.events ?? []).map(event => event.event_type));

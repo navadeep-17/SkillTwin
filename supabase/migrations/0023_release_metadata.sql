@@ -1,4 +1,12 @@
 -- Advance reproducibility metadata after the P1 role-bank and product-completion migrations.
+-- Fresh installs must create metadata before writing its release markers.
+-- Existing projects already have this table; do not drop or replace it.
+create table if not exists public.system_metadata (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz not null default now()
+);
+
 insert into public.system_metadata(key,value,updated_at) values
   ('schema_contract_version','skilltwin-full-spec-v1','now'::timestamptz),
   ('seed_version','seed-2026-09-20-v3','now'::timestamptz),

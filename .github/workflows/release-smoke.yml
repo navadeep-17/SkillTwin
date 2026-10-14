@@ -36,5 +36,6 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SMOKE_SUPABASE_ANON_KEY }}
           SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
           SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
-          SMOKE_DESTRUCTIVE: ${{ secrets.SMOKE_DESTRUCTIVE }}
-          DEMO_RESET_SECRET: ${{ secrets.DEMO_RESET_SECRET }}
+          # Production smoke is always read-only; the isolated test runner
+          # owns its own disposable account and preview-only reset secret.
+          SMOKE_DESTRUCTIVE: "false"

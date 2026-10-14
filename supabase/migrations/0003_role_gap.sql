@@ -139,3 +139,22 @@ create policy "career_goals_insert_own" on public.career_goals for insert to aut
 create policy "career_goals_update_own" on public.career_goals for update to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
 create policy "gap_snapshots_select_own" on public.gap_snapshots for select to authenticated using (user_id=auth.uid());
 create policy "skill_gap_results_select_own" on public.skill_gap_results for select to authenticated using (user_id=auth.uid());
+
+-- Fresh-DB prerequisite for migrations 0014/0015/0016/0022: the assessed
+-- canonical skills must exist BEFORE question-bank FK inserts. The full
+-- reviewed reference catalog and role graph are still seeded by seed.sql.
+-- Idempotent bootstrap: never overwrite a previously reviewed skill definition.
+insert into public.skills(id,slug,canonical_name,category,description,taxonomy_version,is_active)
+values
+  ('10000000-0000-0000-0000-000000000001','python','Python','Programming','General-purpose programming language used in backend systems.',1,true),
+  ('10000000-0000-0000-0000-000000000004','sql','SQL','Databases','Relational querying and data manipulation.',1,true),
+  ('10000000-0000-0000-0000-000000000006','http','HTTP','Backend Fundamentals','HTTP methods, status codes, headers and semantics.',1,true),
+  ('10000000-0000-0000-0000-000000000008','authentication','Authentication','Backend Fundamentals','Authentication and authorization fundamentals.',1,true),
+  ('10000000-0000-0000-0000-000000000009','docker','Docker','Infrastructure','Container images, containers and Docker workflows.',1,true),
+  ('10000000-0000-0000-0000-000000000016','javascript','JavaScript','Programming','Browser and general JavaScript language fundamentals.',1,true),
+  ('10000000-0000-0000-0000-000000000018','react','React','Frontend','Component-based frontend application development.',1,true),
+  ('10000000-0000-0000-0000-000000000022','statistics','Statistics','Analytics','Descriptive statistics, inference and uncertainty fundamentals.',1,true),
+  ('10000000-0000-0000-0000-000000000027','machine-learning','Machine Learning','ML','Supervised/unsupervised learning concepts and workflow.',1,true),
+  ('10000000-0000-0000-0000-000000000029','model-evaluation','Model Evaluation','ML','Validation, metrics, leakage and generalization assessment.',1,true),
+  ('10000000-0000-0000-0000-000000000031','product-strategy','Product Strategy','Product','Product goals, value proposition and strategic framing.',1,true)
+on conflict (id) do nothing;

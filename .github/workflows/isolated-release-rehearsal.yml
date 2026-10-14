@@ -1,0 +1,92 @@
+name: Isolated Release Rehearsal
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/seed.sql'
+      - 'supabase/config.toml'
+      - 'scripts/release-smoke.mjs'
+      - 'tests/release-proof-gates.test.mjs'
+      - '.github/workflows/isolated-release-rehearsal.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skilltwin-isolated-rehearsal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  isolated-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install project dependencies
+        run: npm install
+      - name: Start disposable local Supabase stack
+        run: npx supabase start -x studio,imgproxy,analytics,inbucket,vector,edge-runtime
+      - name: Reset local schema and deterministic public seed
+        run: npx supabase db reset
+      - name: Build preview and execute real isolated learner flow
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(npx supabase status -o env)"
+          test "$API_URL" = "http://127.0.0.1:54321"
+          test -n "$ANON_KEY"
+          test -n "$SERVICE_ROLE_KEY"
+          test -n "$DB_URL"
+          export NEXT_PUBLIC_APP_URL="http://127.0.0.1:3000"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
+          export SUPABASE_DB_URL="$DB_URL"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          export DEMO_RESET_SECRET="$(openssl rand -hex 24)"
+          export DEMO_FALLBACK_ENABLED=true
+          export AI_PROVIDER=gemini
+          export BASE_URL="http://127.0.0.1:3000"
+          export SUPABASE_URL="$API_URL"
+          export SUPABASE_ANON_KEY="$ANON_KEY"
+          export SMOKE_EMAIL="skilltwin.release-smoke@example.org"
+          export SMOKE_PASSWORD="$(openssl rand -hex 20)"
+          export SMOKE_TEST_DB_REF="local"
+          export SMOKE_ISOLATED=true
+          export SMOKE_DESTRUCTIVE=true
+          export SMOKE_REQUIRE_APPLIED_DIFF=true
+          export SMOKE_VERIFY_AGENT_ACTION=true
+          export SMOKE_VERIFY_TENANT_ISOLATION=true
+          export SMOKE_SECONDARY_EMAIL="skilltwin.isolation-smoke@example.org"
+          export SMOKE_SECONDARY_PASSWORD="$(openssl rand -hex 20)"
+          node --input-type=module <<'NODE'
+          import {createClient} from "@supabase/supabase-js";
+          const api=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
+          for(const [email,password] of [
+            [process.env.SMOKE_EMAIL,process.env.SMOKE_PASSWORD],
+            [process.env.SMOKE_SECONDARY_EMAIL,process.env.SMOKE_SECONDARY_PASSWORD]
+          ]) {
+            const {error}=await api.auth.admin.createUser({email,password,email_confirm:true});
+            if(error)throw new Error("Could not create disposable local test account: "+error.code);
+          }
+          console.log("LOCAL_TEST_ACCOUNTS_CREATED=PASS");
+          NODE
+          npm run build
+          npm run start >/tmp/skilltwin-isolated-preview.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 45); do
+            if curl --silent --fail http://127.0.0.1:3000/api/health >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl --silent --fail http://127.0.0.1:3000/api/health >/dev/null
+          npm run smoke:release
+      - name: Stop isolated containers
+        if: always()
+        run: npx supabase stop --no-backup || true

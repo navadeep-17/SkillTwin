@@ -48,6 +48,7 @@ jobs:
       - run: node --test tests/orbit-preview.test.mjs
       - run: node --test tests/project-defense.test.mjs
       - run: node --test tests/judge-demo-integrity.test.mjs
+      - run: node --test tests/release-proof-gates.test.mjs
       - run: node --test tests/assessment-bank-boundary.test.mjs
       - run: node --test tests/occupation-mapping.test.mjs
       - run: node --test tests/reviewed-career-model.test.mjs

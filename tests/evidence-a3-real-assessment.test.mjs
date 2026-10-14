@@ -124,6 +124,8 @@ test("verification API requires auth and server flag, and its service only reads
   assert.match(api,/getEvidenceA3Preview\(user\.id\)/);
   assert.match(service,/where a\.user_id=\$1::uuid/);
   assert.match(service,/sa\.user_id=a\.user_id/);
+  assert.match(service,/q\.prompt=b\.prompt and q\.answer_key=b\.answer_key/);
+  assert.match(service,/q\.options is not distinct from b\.options/);
   assert.doesNotMatch(service,/update public\.|delete from public\.|insert into public\./i);
   assert.match(page,/SKILLTWIN_EVIDENCE_A3_ENABLED/);
 });

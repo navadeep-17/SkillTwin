@@ -60,16 +60,20 @@ jobs:
           export SMOKE_DESTRUCTIVE=true
           export SMOKE_REQUIRE_APPLIED_DIFF=true
           export SMOKE_VERIFY_AGENT_ACTION=true
+          export SMOKE_VERIFY_TENANT_ISOLATION=true
+          export SMOKE_SECONDARY_EMAIL="skilltwin.isolation-smoke@example.org"
+          export SMOKE_SECONDARY_PASSWORD="$(openssl rand -hex 20)"
           node --input-type=module <<'NODE'
           import {createClient} from "@supabase/supabase-js";
           const api=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
-          const {error}=await api.auth.admin.createUser({
-            email:process.env.SMOKE_EMAIL,
-            password:process.env.SMOKE_PASSWORD,
-            email_confirm:true
-          });
-          if(error)throw new Error("Could not create disposable local test account: "+error.code);
-          console.log("LOCAL_TEST_ACCOUNT_CREATED=PASS");
+          for(const [email,password] of [
+            [process.env.SMOKE_EMAIL,process.env.SMOKE_PASSWORD],
+            [process.env.SMOKE_SECONDARY_EMAIL,process.env.SMOKE_SECONDARY_PASSWORD]
+          ]) {
+            const {error}=await api.auth.admin.createUser({email,password,email_confirm:true});
+            if(error)throw new Error("Could not create disposable local test account: "+error.code);
+          }
+          console.log("LOCAL_TEST_ACCOUNTS_CREATED=PASS");
           NODE
           npm run build
           npm run start >/tmp/skilltwin-isolated-preview.log 2>&1 &

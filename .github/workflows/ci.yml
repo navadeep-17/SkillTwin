@@ -33,6 +33,7 @@ jobs:
       - run: node --import tsx --test tests/curated-learning-resources.test.mjs
       - run: node --import tsx --test tests/learnlens-lessons.test.mjs
       - run: node --import tsx --test tests/live-job-matching.test.mjs
+      - run: node --import tsx --test tests/ats-job-collector.test.mjs
       - run: node --test tests/certification-journey.test.mjs
       - run: node --test tests/certification-preparation.test.mjs
       - run: node --test tests/arena-duel.test.mjs

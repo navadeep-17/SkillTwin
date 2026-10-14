@@ -178,6 +178,9 @@ export default async function SkillsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {process.env.SKILLTWIN_EVIDENCE_A3_ENABLED === "true" ? (
+            <Link href="/skills/verification" className="btn-secondary">Verify skill evidence (preview)</Link>
+          ) : null}
           <Link href="/challenge-my-twin" className="btn-primary">Challenge My Twin</Link>
           <Link href="/onboarding" className="btn-secondary">Add evidence</Link>
         </div>

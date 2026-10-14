@@ -50,9 +50,19 @@ The test must fail closed if it detects the known production host or Supabase pr
 - Once the rehearsal is complete and approved, turn off the preview app and delete its test resources using the provider's normal lifecycle; do **not** merge Supabase test branch migrations into production unless deliberately reviewed.
 - Keep PRs on main unmerged until CI, authentication/authorization tests, and release owner review pass.
 
-## Known current blockers (14 October 2026)
+## Latest executed local rehearsal (14 October 2026)
 
-- Production currently has a persisted justified assessment NO_OP but no applied PlanDiff.
-- No persisted agent action proposals or execution events are recorded.
-- Supabase Auth leaked-password protection and elevated Arena functions need human review.
-- Railway production readiness latency and error spikes still need diagnostics.
+The GitHub Actions **Isolated Release Rehearsal** completed successfully at commit `0845139a043d1fd1950b69a3b63d63db79afaf72`, with:
+- `ASSESSMENT_REPLAN_PROOF=APPLIED_PLAN_DIFF`
+- `AGENT_CONFIRMATION_PROOF=PASS`
+- `TENANT_ISOLATION_PROOF=PASS`
+- `RELEASE_SMOKE=PASS`
+
+[Green isolated run](https://github.com/navadeep-17/SkillTwin/actions/runs/38541082662). No hosted Supabase branch or paid Railway preview was required for the automated rehearsal.
+
+## Remaining production release blockers
+
+- Production has a justified assessment NO_OP, but no verified APPLIED PlanDiff or executed chat action in its own learner dataset.
+- Supabase Auth leaked-password protection and four callable Arena SECURITY DEFINER functions need review.
+- Production 5xx spikes and readiness/AI latency need further operational testing.
+- Complete authenticated real-browser testing and deployment rollback rehearsal before unrestricted access.

@@ -1,5 +1,6 @@
 import "server-only";
 import { getSql } from "@/lib/db/postgres";
+import { sparksChargingAllowed } from "@/lib/domain/sparks-canary";
 import { getSparksConsumption, recoverStaleSparksUsage } from "@/lib/services/sparks/sparks-consumption";
 import { MONTHLY_REWARDED_REFERRAL_LIMIT, REFERRAL_SPARKS, SPARKS_PRICES, type SparksAction, WELCOME_SPARKS } from "@/lib/domain/sparks";
 
@@ -12,8 +13,12 @@ export class DuplicateSparksOperationError extends Error {
   constructor() { super("SPARKS_OPERATION_ALREADY_USED"); }
 }
 // Off until migration and authenticated release QA complete.
-export function isSparksChargingEnabled() {
-  return process.env.SKILLTWIN_SPARKS_CHARGING_ENABLED === "true";
+export function isSparksChargingEnabled(userId?: string) {
+  return sparksChargingAllowed({
+    globalFlag: process.env.SKILLTWIN_SPARKS_CHARGING_ENABLED,
+    canaryIds: process.env.SKILLTWIN_SPARKS_CANARY_USER_IDS,
+    userId
+  });
 }
 export async function ensureSparksWallet(userId: string) {
   const sql = getSql();
@@ -46,11 +51,11 @@ export async function getSparksWallet(userId: string) {
   ));
   return { balance: Number(wallet.balance), referralCode: String(wallet.referral_code),
     welcomeSparks: WELCOME_SPARKS, rewardSparks: REFERRAL_SPARKS,
-    prices: SPARKS_PRICES, chargingEnabled: isSparksChargingEnabled(), transactions: ledger,
+    prices: SPARKS_PRICES, chargingEnabled: isSparksChargingEnabled(userId), transactions: ledger,
     ...(await getSparksConsumption(userId,new Date(String(wallet.created_at)),Number(wallet.balance))) };
 }
 export async function spendSparks(userId: string, action: SparksAction, key: string) {
-  if (!isSparksChargingEnabled()) return;
+  if (!isSparksChargingEnabled(userId)) return;
   if (!/^[a-zA-Z0-9:_-]{8,120}$/.test(key)) throw new Error("INVALID_SPARKS_OPERATION_KEY");
   await ensureSparksWallet(userId);
   const cost = SPARKS_PRICES[action];

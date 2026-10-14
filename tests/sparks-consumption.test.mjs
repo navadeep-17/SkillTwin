@@ -22,7 +22,7 @@ test("all usage quota and wallet changes are server-only and transactional",()=>
   assert.match(sql,/sparks_usage_resume_single_active/);
   assert.match(sql,/force row level security/);
   assert.match(sql,/revoke all on public.sparks_usage/);
-  assert.match(svc,/if\(!isSparksChargingEnabled\(\)\) return/);
+  assert.match(svc,/if\(!isSparksChargingEnabled\(input.userId\)\) return/);
   assert.match(svc,/select balance from public.sparks_wallets where user_id=\$1::uuid for update/);
   assert.match(svc,/status in \('RESERVED','COMPLETED'\)/);
   assert.match(svc,/status='complete'/);

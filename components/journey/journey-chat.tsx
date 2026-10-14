@@ -2,7 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUp, CheckCircle2, History, LoaderCircle, Plus, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { ArrowUp, CheckCircle2, History, LoaderCircle, Plus, Sparkles, Zap } from "lucide-react";
 
 type Ref = { type: string; id: string; label: string };
 
@@ -47,6 +48,19 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
   const [pending, setPending] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState("");
+  const [enhanced,setEnhanced] = useState(false);
+  const [sparkInfo,setSparkInfo]=useState<{balance:number;chargingEnabled:boolean;freeEnhancedRemaining:number;prices:{ENHANCED_CHAT:number}}|null>(null);
+  const refreshSparks=useCallback(async()=>{
+    try{
+      const response=await fetch("/api/sparks",{cache:"no-store"});
+      const body=await response.json();
+      if(response.ok&&body.ok)setSparkInfo(body.data);
+    }catch{/* Chat remains usable in standard mode if wallet is unavailable. */}
+  },[]);
+  useEffect(()=>{void refreshSparks();},[refreshSparks]);
+  const nextCost=enhanced&&sparkInfo?.chargingEnabled&&sparkInfo.freeEnhancedRemaining===0
+    ?sparkInfo.prices.ENHANCED_CHAT:0;
+  const canAfford=!enhanced||!sparkInfo?.chargingEnabled||!nextCost||sparkInfo.balance>=nextCost;
 
   const openThread = useCallback(async (id:string) => {
     const ticket=++historyTicket.current;
@@ -123,6 +137,7 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
   async function sendText(text: string) {
     const trimmed = text.trim();
     if (!trimmed || pending || confirming || loadingHistory) return;
+    if(!canAfford){setError("Not enough Sparks for Enhanced AI. Switch to Standard or visit your Sparks wallet.");return;}
 
     const userMessage: Message = {
       id: "local-" + Date.now(),
@@ -136,6 +151,7 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
     setError("");
     setPending(true);
     let responseSaved = false;
+    let knownFailure = false;
 
     try {
       const response = await fetch("/api/chat", {
@@ -143,12 +159,15 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: trimmed,
+          enhanced,
+          operationId: crypto.randomUUID(),
           threadId
         })
       });
       const payload = await response.json();
 
       if (!response.ok || !payload.ok) {
+        knownFailure=true;
         setError(payload.error?.message ?? "Journey Chat could not answer.");
         return;
       }
@@ -173,6 +192,7 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
       ]);
       setProposal(payload.data.actionProposal ?? null);
       responseSaved = true;
+      void refreshSparks();
     } catch {
       setError("Journey Chat could not confirm the response.");
     } finally {
@@ -182,8 +202,8 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
         // an optimistic bubble masquerading as a confirmed stored message.
         setMessages(current => current.filter(message => message.id !== userMessage.id));
         setInput(current => current.trim() ? current : trimmed);
-        if (threadId) await openThread(threadId);
-        setError("The response was not confirmed. Your question may already be in history. Check the conversation before resending.");
+        if (threadId && !knownFailure) await openThread(threadId);
+        if(!knownFailure)setError("The response was not confirmed. Your question may already be in history. Check the conversation before resending.");
       }
       setPending(false);
     }
@@ -375,6 +395,25 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
       </div>
 
       <form onSubmit={submit} className="border-t border-slate-100 bg-white p-3.5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div role="group" aria-label="Chat response mode" className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+            <button type="button" aria-pressed={!enhanced} onClick={()=>setEnhanced(false)}
+              className={"rounded-lg px-3 py-1.5 text-xs font-semibold "+(!enhanced?"bg-white text-slate-900 shadow-sm":"text-slate-500")}>
+              Standard · Free
+            </button>
+            <button type="button" aria-pressed={enhanced} onClick={()=>setEnhanced(true)}
+              className={"flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold "+(enhanced?"bg-white text-indigo-700 shadow-sm":"text-slate-500")}>
+              <Zap size={13}/> Enhanced AI
+            </button>
+          </div>
+          {enhanced?<span className="text-xs text-slate-600">{!sparkInfo?"Checking Sparks…":!sparkInfo.chargingEnabled
+            ?"Preview · Free":sparkInfo.freeEnhancedRemaining>0
+              ?sparkInfo.freeEnhancedRemaining+" free replies left"
+              :nextCost+" Sparks · Balance "+sparkInfo.balance}</span>:null}
+        </div>
+        {enhanced&&sparkInfo?.chargingEnabled&&sparkInfo.balance<=15?<p className="mb-2 text-xs text-amber-800">
+          Low balance. <Link href="/sparks" className="font-semibold underline">Earn Sparks or claim a weekly refill</Link>.
+        </p>:null}
         <div className="flex items-end gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-1.5 transition focus-within:border-brand-200 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-50">
           <textarea
             disabled={loadingHistory || pending || confirming}
@@ -393,7 +432,7 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
           />
           <button
             type="submit"
-            disabled={!input.trim() || pending || confirming || loadingHistory}
+            disabled={!input.trim() || pending || confirming || loadingHistory || !canAfford}
             className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-500 text-white transition hover:bg-brand-600 disabled:opacity-40"
             aria-label="Send message"
           >
@@ -401,7 +440,7 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
           </button>
         </div>
         <p className="mt-2 px-1 text-[11px] text-slate-400">
-          Read-only by default. Any mutation requires explicit confirmation.
+          Standard answers remain free; Enhanced AI uses Sparks only for successful AI tool selection after your free allowance. Mutations still require confirmation.
         </p>
       </form>
     </section>

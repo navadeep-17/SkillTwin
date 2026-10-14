@@ -8,7 +8,8 @@ test("chat failure never leaves an unconfirmed optimistic bubble",()=>{
   assert.match(ui,/let responseSaved = false/);
   assert.match(ui,/if \(!responseSaved\)/);
   assert.match(ui,/message\.id !== userMessage\.id/);
-  assert.match(ui,/if \(threadId\) await openThread\(threadId\)/);
+  assert.match(ui,/if \(threadId && !knownFailure\) await openThread\(threadId\)/);
+  assert.match(ui,/if\(!knownFailure\)setError\(/);
   assert.match(ui,/Check the conversation before resending/);
   assert.match(ui,/setInput\(current => current\.trim\(\) \? current : trimmed\)/);
 });

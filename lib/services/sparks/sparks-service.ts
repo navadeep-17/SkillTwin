@@ -1,5 +1,6 @@
 import "server-only";
 import { getSql } from "@/lib/db/postgres";
+import { getSparksConsumption } from "@/lib/services/sparks/sparks-consumption";
 import { MONTHLY_REWARDED_REFERRAL_LIMIT, REFERRAL_SPARKS, SPARKS_PRICES, type SparksAction, WELCOME_SPARKS } from "@/lib/domain/sparks";
 
 type Row = Record<string, unknown>;
@@ -35,7 +36,7 @@ export async function getSparksWallet(userId: string) {
   await ensureSparksWallet(userId);
   const sql = getSql();
   const wallet = rows(await sql.unsafe(
-    "select balance,referral_code from public.sparks_wallets where user_id=$1::uuid",
+    "select balance,referral_code,created_at from public.sparks_wallets where user_id=$1::uuid",
     [userId]
   ))[0];
   const ledger = rows(await sql.unsafe(
@@ -44,7 +45,8 @@ export async function getSparksWallet(userId: string) {
   ));
   return { balance: Number(wallet.balance), referralCode: String(wallet.referral_code),
     welcomeSparks: WELCOME_SPARKS, rewardSparks: REFERRAL_SPARKS,
-    prices: SPARKS_PRICES, chargingEnabled: isSparksChargingEnabled(), transactions: ledger };
+    prices: SPARKS_PRICES, chargingEnabled: isSparksChargingEnabled(), transactions: ledger,
+    ...(await getSparksConsumption(userId,new Date(String(wallet.created_at)),Number(wallet.balance))) };
 }
 export async function spendSparks(userId: string, action: SparksAction, key: string) {
   if (!isSparksChargingEnabled()) return;

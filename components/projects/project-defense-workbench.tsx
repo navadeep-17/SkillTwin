@@ -1,6 +1,7 @@
 "use client";
 import {useState} from "react";
 import Link from "next/link";
+import { SparksActionPrice } from "@/components/sparks/sparks-action-price";
 import {
   ArrowRight, BookOpenCheck, CheckCircle2, ChevronRight,
   FileCode2, GitCommitHorizontal, Github, LoaderCircle,
@@ -44,6 +45,7 @@ export function ProjectDefenseWorkbench(){
       const result=await fetch("/api/project-defense/evaluate",{
         method:"POST",headers:{"Content-Type":"application/json"},cache:"no-store",
         body:JSON.stringify({repoUrl:url.trim(),commitSha:snapshot.commitSha,
+          operationId:crypto.randomUUID(),
           answers:snapshot.questions.map(q=>({questionId:q.id,answer:answers[q.id]??""}))})
       });
       const payload=await result.json() as Response<{review:ProjectDefenseReview|null;status:string}>;
@@ -152,6 +154,7 @@ export function ProjectDefenseWorkbench(){
             <p className="mt-2 text-xs text-slate-500">
               {(answers[current.id]??"").trim().length} characters · 40 minimum per question. Your explanation is not proof of authorship.
             </p>
+            <SparksActionPrice action="PROJECT_DEFENSE" label="Evaluate your project defense" />
             <div className="mt-5 flex flex-wrap items-center gap-3">
               {questionIndex<2?<button type="button" className="btn-secondary"
                 onClick={()=>setQuestionIndex(i=>Math.min(2,i+1))}>Next question <ChevronRight className="size-4"/></button>:null}

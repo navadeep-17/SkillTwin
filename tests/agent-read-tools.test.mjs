@@ -49,7 +49,7 @@ test("agent route cannot dispatch model-selected writes or substitute model user
   const read=(p)=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
   const orchestrator=read("lib/services/chat/agent-read-orchestrator.ts");
   const service=read("lib/services/chat/journey-chat-service.ts");
-  assert.match(service,/if \(!isMutatingJourneyIntent\(intent\)\)/);
+  assert.match(service,/if \(input.enhanced && !isMutatingJourneyIntent\(intent\)\)/);
   assert.match(service,/readAssessmentProof:async \(\)=>/);
   assert.match(service,/generator: readRun\?\.meta\.generator/);
   assert.match(orchestrator,/validateReadPlan\(result\)/);

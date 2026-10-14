@@ -48,7 +48,7 @@ function ref(type: JourneyReference["type"], row: Row, label: string): JourneyRe
 }
 
 export class JourneyChatService {
-  async send(input: { userId: string; message: string; threadId?: string | null }) {
+  async send(input: { userId: string; message: string; threadId?: string | null; enhanced?: boolean }) {
     const startedAt=Date.now();
     const sql = getSql();
     const intent = classifyJourneyIntent(input.message);
@@ -68,7 +68,7 @@ export class JourneyChatService {
     // Model selection only applies to read-only requests. Every mutation still
     // uses the existing confirmation-gated deterministic proposal workflow.
     let readRun: Awaited<ReturnType<ReturnType<typeof getAgentReadOrchestrator>["run"]>> | null = null;
-    if (!isMutatingJourneyIntent(intent)) {
+    if (input.enhanced && !isMutatingJourneyIntent(intent)) {
       try {
         readRun = await getAgentReadOrchestrator().run({
           userId:input.userId,

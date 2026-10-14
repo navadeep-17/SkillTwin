@@ -89,6 +89,58 @@ export class GeminiStructuredClient {
     return input.validator.parse(parsed);
   }
 
+  /** Dedicated low-latency structured selector. Other SkillTwin AI calls
+   * continue using the Interactions API and their existing model settings.
+   * Only bounded, validated tool names are returned to the read orchestrator.
+   */
+  async generateLowLatencyJson<T>(input: {
+    systemInstruction: string;
+    prompt: string;
+    jsonSchema: Record<string, unknown>;
+    validator: z.ZodType<T>;
+    timeoutMs?: number;
+    maxOutputTokens?: number;
+  }): Promise<T | null> {
+    const env = getServerEnv();
+    if (!env.GEMINI_API_KEY) return null;
+    const model = process.env.SKILLTWIN_READ_PLANNER_MODEL?.trim() || "gemini-3.5-flash-lite";
+    if (!/^[A-Za-z0-9._-]{5,80}$/.test(model)) throw new Error("GEMINI_READ_PLANNER_MODEL_INVALID");
+
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/"
+        + encodeURIComponent(model) + ":generateContent",
+      {
+        method: "POST",
+        signal: AbortSignal.timeout(input.timeoutMs ?? 9000),
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": env.GEMINI_API_KEY
+        },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: input.systemInstruction }] },
+          contents: [{ role: "user", parts: [{ text: input.prompt }] }],
+          generationConfig: {
+            temperature: 0,
+            maxOutputTokens: input.maxOutputTokens ?? 220,
+            thinkingConfig: { thinkingLevel: "minimal" },
+            responseFormat: {
+              text: { mimeType: "application/json", schema: input.jsonSchema }
+            }
+          }
+        })
+      }
+    );
+    // Never surface provider response text or credential-bearing headers in logs.
+    if (!response.ok) throw new Error("GEMINI_FAST_PLANNER_FAILED:" + response.status);
+    const body = await response.json() as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    };
+    const text = (body.candidates?.[0]?.content?.parts ?? [])
+      .map(part => part.text ?? "").join("");
+    if (!text) throw new Error("GEMINI_EMPTY_OUTPUT");
+    return input.validator.parse(JSON.parse(text));
+  }
+
   async generateJson<T>(input: {
     systemInstruction: string;
     prompt: string;

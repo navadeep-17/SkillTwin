@@ -28,4 +28,9 @@ test("release smoke does not destroy production without explicit smoke setting",
   assert.match(smoke, /SMOKE_DESTRUCTIVE === "true"/);
   assert.match(smoke, /if \(!destructive\)/);
   assert.match(smoke, /DEMO_RESET_SECRET is required/);
+  assert.match(smoke, /SMOKE_ISOLATED === "true"/);
+  assert.match(smoke, /SMOKE_TEST_DB_REF/);
+  assert.match(smoke, /isolatedRef !== "eozvilqmrhtujqtdmrri"/);
+  assert.match(smoke, /hostname === isolatedRef \+ "\.supabase\.co"/);
+  assert.match(smoke, /skilltwin-production\.up\.railway\.app/);
 });

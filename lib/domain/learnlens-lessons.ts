@@ -1,4 +1,5 @@
 import type { LearnerLevel, LearningTaskType } from "./curated-learning-resources.js";
+import { getExtendedLearnLensLesson } from "./learnlens-multiskill.js";
 
 /**
  * LearnLens pilot: editor-reviewed lesson notes grounded in official PostgreSQL
@@ -19,7 +20,7 @@ export type LessonQuestion = {
 export type LearnLensLesson = {
   id: string;
   title: string;
-  skillSlug: "sql";
+  skillSlug: "sql" | "python" | "git" | "docker";
   level: "BASIC" | "STANDARD";
   objective: string;
   estimatedMinutes: number;
@@ -126,7 +127,8 @@ export function getLearnLensLesson(input: {
   taskType: LearningTaskType | string;
   difficulty: LearnerLevel | string;
 }): LearnLensLesson | null {
-  if (input.skillSlug !== "sql" || (input.taskType !== "LEARN" && input.taskType !== "PRACTICE")) return null;
+  if (input.taskType !== "LEARN" && input.taskType !== "PRACTICE") return null;
+  if (input.skillSlug !== "sql") return getExtendedLearnLensLesson(input);
   if (input.difficulty === "BASIC") return basic;
   if (input.difficulty === "STANDARD") return standard;
   return null;

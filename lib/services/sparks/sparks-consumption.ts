@@ -9,7 +9,7 @@ export class SparksActionInProgressError extends Error {
   constructor(){super("SPARKS_ACTION_IN_PROGRESS");}
 }
 const validKey=(v:string)=>/^[a-zA-Z0-9:_-]{8,120}$/.test(v);
-async function freeQuotaRemaining(tx:{unsafe:(query:string,params?:unknown[])=>Promise<unknown>},userId:string,action:MeteredSparksAction) {
+async function freeQuotaRemaining(tx:Pick<ReturnType<typeof getSql>,"unsafe">,userId:string,action:MeteredSparksAction) {
   const used=rows(await tx.unsafe(
     "select count(*)::integer as n from public.sparks_usage where user_id=$1::uuid and action=$2 and cost=0 and status in ('RESERVED','COMPLETED')",
     [userId,action]

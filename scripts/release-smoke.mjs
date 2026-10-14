@@ -484,6 +484,64 @@ async function authenticatedChecks() {
     console.log("AGENT_CONFIRMATION_PROOF=PASS");
   }
 
+  // Cross-user isolation proof: a second disposable learner must not be
+  // able to see the first learner's committed evidence and execution trail.
+  if (process.env.SMOKE_VERIFY_TENANT_ISOLATION === "true") {
+    assert(process.env.SMOKE_ISOLATED === "true" && destructive,
+      "cross-user smoke is permitted only in the isolated destructive test");
+    const secondEmail = process.env.SMOKE_SECONDARY_EMAIL?.trim();
+    const secondPassword = process.env.SMOKE_SECONDARY_PASSWORD;
+    assert(secondEmail && secondPassword && secondEmail !== smokeEmail,
+      "two distinct disposable test credentials are required");
+
+    const secondJar = new Map();
+    const otherLearner = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return [...secondJar.entries()].map(([name, value]) => ({ name, value }));
+        },
+        setAll(cookies) {
+          for (const { name, value } of cookies) secondJar.set(name, value);
+        }
+      }
+    });
+    const { data: secondAuth, error: secondError } = await otherLearner.auth.signInWithPassword({
+      email: secondEmail, password: secondPassword
+    });
+    assert(!secondError && secondAuth?.user?.id && secondAuth.user.id !== data.user.id,
+      "second isolated learner could not authenticate independently");
+
+    const ownerData = [
+      "career_goals", "learning_plans", "skill_assessments", "plan_diffs",
+      "skill_evidence", "journey_chat_messages", "agent_events", "profile_projects"
+    ];
+    for (const table of ownerData) {
+      const owned = await supabase.from(table).select("id")
+        .eq("user_id", data.user.id).limit(1);
+      assert(!owned.error && (owned.data?.length ?? 0) > 0,
+        "isolation proof setup has no owner-side record for " + table);
+      const foreign = await otherLearner.from(table).select("id")
+        .eq("user_id", data.user.id).limit(1);
+      assert(!foreign.error && (foreign.data?.length ?? 0) === 0,
+        "cross-tenant row access was not blocked for " + table);
+    }
+
+    const otherCookies = [...secondJar.entries()]
+      .map(([name, value]) => name + "=" + value).join("; ");
+    async function otherRequest(path) {
+      const response = await fetch(baseUrl + path, {
+        redirect: "manual", headers: { Cookie: otherCookies }
+      });
+      return response.status;
+    }
+    assert(await otherRequest("/api/assessments/" + assessmentId) === 404,
+      "another learner could inspect an owner-only assessment through the API");
+    assert(Boolean(applied?.id), "cross-user PlanDiff API isolation requires an applied owner diff");
+    assert(await otherRequest("/api/roadmap/diffs/" + applied.id) === 404,
+      "another learner could inspect an owner-only PlanDiff through the API");
+    console.log("TENANT_ISOLATION_PROOF=PASS");
+  }
+
   const activity = await authRequest("/api/agent-events?limit=50");
   const eventTypes = new Set((activity.payload?.data?.events ?? []).map(event => event.event_type));
   for (const required of ["career.goal.updated","project.evidence.processed","assessment.started","assessment.completed"]) {

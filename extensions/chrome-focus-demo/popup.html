@@ -1,0 +1,9 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SkillTwin Focus</title><link rel="stylesheet" href="styles.css"></head>
+<body><main class="shell"><p class="eyebrow">SkillTwin Focus</p><h1>Learn to unlock</h1><p class="muted">Choose distracting websites, then earn extra browsing time through a quick learning challenge.</p>
+  <section class="panel"><div class="inline"><strong>Focus Mode</strong><label><input type="checkbox" id="enabled"> Enabled</label></div><hr><div class="small">Available today</div><div class="stat" id="remaining">--:--</div><div class="small" id="status">Checking your focus session…</div></section>
+  <section><label>Websites</label><div class="site-picker" style="margin-top:9px"><label><input type="checkbox" value="youtube" name="site"> YouTube</label><label><input type="checkbox" value="instagram" name="site"> Instagram</label><label><input type="checkbox" value="reddit" name="site"> Reddit</label><label><input type="checkbox" value="x" name="site"> X / Twitter</label></div></section>
+  <section class="row"><div style="flex:1"><label for="allowance">Allowance (minutes)</label><input class="field" id="allowance" type="number" min="1" max="60" value="1"></div><div style="flex:1"><label for="reward">Quiz reward (minutes)</label><input class="field" id="reward" type="number" min="1" max="30" value="1"></div></section>
+  <button id="save" class="btn block">Save focus settings</button><p id="error" class="error" role="status"></p>
+  <div class="inline"><button id="bypass" class="btn link">5-minute emergency bypass</button><button id="reset" class="btn link">Reset demo</button></div>
+  <p class="small">Local browser-only demo. No browsing history is sent to SkillTwin. You can disable Focus Mode any time.</p>
+</main><script type="module" src="popup.js"></script></body></html>

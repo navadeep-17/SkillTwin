@@ -50,10 +50,50 @@ export const EDITOR_REVIEWED_VIDEOS: readonly ReviewedSkillVideo[] = [
   {id:"video-system-design-framework",skillSlug:"system-design",title:"System Design Interview: A Step-By-Step Guide",creator:"ByteByteGo",videoId:"i7twT3x5yv8",startSeconds:0,focus:"Structured approach to a system-design problem",levels:["STANDARD"],modes:["LEARN"],studyBlockMinutes:25,quality:.95,reviewedOn:"2026-10-14",referenceUrl:"https://roadmap.sh/system-design"}
 ];
 
+/**
+ * Conservative topic guard: a narrowly focused roadmap task should not be
+ * pointed to a different chapter merely because the skill slug matches.
+ * A generic task title (without a recognized specialty) can use the reviewed
+ * level-specific introduction.
+ */
+const focusedKeywords: Readonly<Record<string,readonly string[]>>={
+  "video-sql-joins-basic":["join","joins"],
+  "video-sql-joins-applied":["join","joins"],
+  "video-python-variables":["variable","variables","loop","loops"],
+  "video-python-functions":["function","functions","method","methods"],
+  "video-git-commits":["commit","commits","staging","stage"],
+  "video-git-branches":["branch","branches","merge","merging"],
+  "video-docker-images":["image","images","container","containers"],
+  "video-docker-compose":["compose"],
+  "video-java-hello-world":["setup","jdk","hello","program"],
+  "video-javascript-basics":["variable","variables","expression","expressions"],
+  "video-javascript-functions":["function","functions"],
+  "video-nodejs-setup":["module","modules","setup","package","packages"],
+  "video-nodejs-http":["http","server","api","apis"],
+  "video-linux-navigation":["file","files","directory","directories","navigation"],
+  "video-linux-pipes":["pipeline","pipelines","pipe","pipes","grep","filter","filtering"],
+  "video-system-design-framework":["interview","framework","design"]
+};
+const specialtyWords=new Set([
+  ...Object.values(focusedKeywords).flat(),
+  "index","indexes","indexing","transaction","transactions","normalization",
+  "arrays","array","promises","promise","async","authentication","security",
+  "deploy","deployment","dockerfile","testing","tests","database","databases",
+  "react","closures","inheritance","generics"
+]);
+
+export function videoFitsTaskTitle(video:ReviewedSkillVideo,taskTitle:string):boolean{
+  const tokens=taskTitle.toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  const specialty=tokens.filter(t=>specialtyWords.has(t));
+  if(!specialty.length)return true;
+  const allowed=new Set(focusedKeywords[video.id]??[]);
+  return specialty.some(t=>allowed.has(t));
+}
+
 const idPattern=/^[A-Za-z0-9_-]{11}$/;
 export function reviewedVideoUrl(video:ReviewedSkillVideo):string|null {
   if(!idPattern.test(video.videoId)||!Number.isSafeInteger(video.startSeconds)||video.startSeconds<0)return null;
-  if(video.reviewedOn!=="2026-10-14"||video.quality<.9||video.quality>1)return null;
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(video.reviewedOn)||video.quality<.9||video.quality>1)return null;
   const url=new URL("https://www.youtube.com/watch");
   url.searchParams.set("v",video.videoId);
   if(video.startSeconds)url.searchParams.set("t",String(video.startSeconds)+"s");

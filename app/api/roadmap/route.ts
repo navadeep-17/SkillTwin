@@ -106,7 +106,8 @@ export async function GET() {
                 skillSlug: String((objective.skills as {slug?:string} | null)?.slug ?? ""),
                 taskType: task.type as LearningTaskType,
                 difficulty: task.difficulty as LearnerLevel,
-                durationMinutes: Number(task.duration_minutes)
+                durationMinutes: Number(task.duration_minutes),
+                taskTitle: String(task.title ?? "")
               })
             }))
         }))

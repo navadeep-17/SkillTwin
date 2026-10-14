@@ -6,9 +6,11 @@
  * completion. URLs must never be generated from learner input or by an LLM.
  * Verified on 2026-10-14; periodically recheck and retire broken links.
  */
+import { EDITOR_REVIEWED_VIDEOS, reviewedVideoUrl, videoFitsTaskTitle } from "./editor-reviewed-videos.js";
+
 export type LearningTaskType = "LEARN" | "PRACTICE" | "BUILD" | "VALIDATE";
 export type LearnerLevel = "BASIC" | "STANDARD" | "ADVANCED";
-export type LearningFormat = "DOCS" | "INTERACTIVE" | "ARTICLE";
+export type LearningFormat = "DOCS" | "INTERACTIVE" | "ARTICLE" | "VIDEO";
 
 interface CuratedResource {
   id: string;
@@ -33,6 +35,10 @@ export interface RecommendedLearningResource {
   format: LearningFormat;
   suggested_minutes: number;
   reason: string;
+  /** Only supplied for editorially reviewed video segments. */
+  video_focus?: string;
+  video_start_seconds?: number;
+  reviewed_on?: string;
 }
 
 /** Deliberately bounded catalog: exact canonical skill slug, not text search. */
@@ -77,6 +83,7 @@ export function recommendCuratedResources(input: {
   taskType: LearningTaskType;
   difficulty: LearnerLevel;
   durationMinutes: number;
+  taskTitle?: string;
 }): RecommendedLearningResource[] {
   if (input.taskType === "VALIDATE") return [];
   const candidates = CURATED_LEARNING_RESOURCES.filter(r =>
@@ -90,7 +97,7 @@ export function recommendCuratedResources(input: {
   }).filter(item => item.modeFit === 1)
     .sort((a,b)=>b.score-a.score || b.resource.quality-a.resource.quality || a.resource.id.localeCompare(b.resource.id));
 
-  return ranked.slice(0,2).map(({resource}) => ({
+  const readingAndPractice = ranked.slice(0,2).map(({resource}) => ({
     id:resource.id,
     title:resource.title,
     provider:resource.provider,
@@ -101,4 +108,27 @@ export function recommendCuratedResources(input: {
       ? "Introductory material for this skill gap; use it in your planned "+input.taskType.toLowerCase()+" session."
       : "Matches your "+input.difficulty.toLowerCase()+" "+input.taskType.toLowerCase()+" task without restarting from the basics."
   }));
+
+  // One relevant, publisher-hosted video segment per learning/practice task.
+  // Do not displace a reference or interactive exercise; never suggest video
+  // for BUILD/VALIDATE activities, where doing and demonstrating matter most.
+  if(input.taskType!=="LEARN" && input.taskType!=="PRACTICE")return readingAndPractice;
+  const matched=EDITOR_REVIEWED_VIDEOS.filter(v=>
+    v.skillSlug===input.skillSlug && v.levels.includes(input.difficulty)
+      && v.modes.includes(input.taskType as "LEARN"|"PRACTICE")
+      && videoFitsTaskTitle(v,input.taskTitle??"")
+      && reviewedVideoUrl(v)!==null
+  ).sort((a,b)=>b.quality-a.quality || a.id.localeCompare(b.id));
+  const video=matched[0];
+  if(!video)return readingAndPractice;
+  const url=reviewedVideoUrl(video);
+  if(!url)return readingAndPractice;
+  return [...readingAndPractice,{
+    id:video.id,title:video.title,provider:video.creator,url,
+    format:"VIDEO" as const,
+    suggested_minutes:Math.min(video.studyBlockMinutes,Math.max(10,input.durationMinutes)),
+    reason:"Watch the focused "+video.focus+" segment of this creator-hosted video. This is a suggested study block, not the full course runtime.",
+    video_focus:video.focus,video_start_seconds:video.startSeconds,
+    reviewed_on:video.reviewedOn
+  }];
 }

@@ -117,7 +117,7 @@ test("employer ranking highlights real overlap, preserves local India locations 
 test("collector access is secret-only, not learner-triggered, and persisted records use RLS",()=>{
   const route=read("app/api/internal/jobs/collect/route.ts");
   const refresh=read("lib/jobs/persist-board.ts");
-  const schema=read("supabase/migrations/0030_ats_job_collector.sql");
+  const schema=read("supabase/migrations/0031_ats_job_collector.sql");
   const api=read("app/api/jobs/recommendations/route.ts");
   assert.match(route,/timingSafeEqual/);
   assert.match(route,/JOB_COLLECTOR_SECRET/);

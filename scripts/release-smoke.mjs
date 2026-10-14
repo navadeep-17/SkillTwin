@@ -116,7 +116,16 @@ async function publicChecks() {
   assert(readiness.response.status === 200, "readiness endpoint is not 200");
   const readinessPayload = jsonBody(readiness, "readiness endpoint");
   assert(readinessPayload?.ok === true, "readiness endpoint did not return an ok API envelope");
-  assert(readinessPayload?.data?.status === "ready", "production readiness did not report ready");
+  if (readinessPayload?.data?.status !== "ready") {
+    // Safe diagnostic fields only. Never print connection strings, provider
+    // errors, cookies, learner records, JWTs, prompts, or raw response bodies.
+    console.error("READINESS_SAFE_CHECKS", JSON.stringify({
+      status: readinessPayload?.data?.status,
+      checks: readinessPayload?.data?.checks ?? null,
+      securityChecks: readinessPayload?.data?.security?.checks ?? null
+    }));
+  }
+  assert(readinessPayload?.data?.status === "ready", "database/security readiness did not report ready");
   assert(readinessPayload?.data?.checks?.database === "ready", "production database readiness is not ready");
   assert(readinessPayload?.data?.checks?.databaseSecurity === "ready", "production database security readiness is not ready");
 

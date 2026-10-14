@@ -16,6 +16,8 @@ export interface VerifiedGapProjection {
   verificationStatus: VerificationStatus;
   missingCriteria: Array<{id:string;description:string}>;
   failedCriteria: Array<{id:string;description:string}>;
+  knowledgeCheckedCriteria: Array<{id:string;description:string}>;
+  knowledgeGapCriteria: Array<{id:string;description:string}>;
   demonstratedCoverage: number | null;
   claimCoverage: number | null;
   evidenceIds: string[];
@@ -53,6 +55,8 @@ export function addCompetencyVerification(input: {
         verificationStatus:"RUBRIC_NOT_AVAILABLE" as const,
         missingCriteria:[],
         failedCriteria:[],
+        knowledgeCheckedCriteria:[],
+        knowledgeGapCriteria:[],
         demonstratedCoverage:null,
         claimCoverage:null,
         evidenceIds:[],
@@ -72,17 +76,23 @@ export function addCompetencyVerification(input: {
       : gap.status==="STRONG" ? "NEEDS_VALIDATION" as const : gap.status;
     const recommendedAction: GapResult["recommendedAction"] =
       isSupported ? gap.recommendedAction
-      : isFailed ? "LEARN"
+      : isFailed || assessment.validationState==="KNOWLEDGE_GAP" ? "LEARN"
       : gap.status==="STRONG" || assessment.validationState==="CLAIMED_ONLY" || assessment.validationState==="NO_EVIDENCE"
         ? "VALIDATE_FIRST"
         : gap.recommendedAction;
 
     const relevant=assessment.criteria.filter(c => c.tier <= assessment.targetTier);
     const missingCriteria=relevant
-      .filter(c => c.status==="UNOBSERVED" || c.status==="CLAIMED" || c.status==="DISPUTED_CLAIM")
+      .filter(c => c.status==="UNOBSERVED" || c.status==="CLAIMED" || c.status==="DISPUTED_CLAIM" || c.status==="KNOWLEDGE_CHECKED" || c.status==="KNOWLEDGE_GAP")
       .map(c => ({id:c.id,description:c.description}));
     const failedCriteria=relevant
       .filter(c => c.status==="NOT_DEMONSTRATED" || c.status==="CONFLICTED")
+      .map(c => ({id:c.id,description:c.description}));
+    const knowledgeCheckedCriteria=relevant
+      .filter(c => c.status==="KNOWLEDGE_CHECKED")
+      .map(c => ({id:c.id,description:c.description}));
+    const knowledgeGapCriteria=relevant
+      .filter(c => c.status==="KNOWLEDGE_GAP")
       .map(c => ({id:c.id,description:c.description}));
     const evidenceIds=[...new Set(relevant.flatMap(c => [...c.supportingEvidenceIds,...c.contradictingEvidenceIds]))].sort();
     const reasonCodes=[...gap.reasonCodes];
@@ -90,6 +100,8 @@ export function addCompetencyVerification(input: {
     if (gap.status==="STRONG" && !isSupported) reasonCodes.push("NUMERICALLY_STRONG_BUT_UNVERIFIED");
     if (assessment.validationState==="CLAIMED_ONLY") reasonCodes.push("ONLY_SELF_REPORTED_COMPETENCIES");
     if (isFailed) reasonCodes.push("CONTRADICTING_EVALUATED_EVIDENCE");
+    if (assessment.validationState==="KNOWLEDGE_ONLY") reasonCodes.push("QUIZ_KNOWLEDGE_NOT_PRACTICAL_PROOF");
+    if (assessment.validationState==="KNOWLEDGE_GAP") reasonCodes.push("GRADED_KNOWLEDGE_CHECK_NEEDS_REVIEW");
 
     return {
       requirementId:gap.requirementId,
@@ -102,6 +114,8 @@ export function addCompetencyVerification(input: {
       verificationStatus:assessment.validationState,
       missingCriteria,
       failedCriteria,
+      knowledgeCheckedCriteria,
+      knowledgeGapCriteria,
       demonstratedCoverage:assessment.demonstratedCoverage,
       claimCoverage:assessment.evidenceCoverage,
       evidenceIds,

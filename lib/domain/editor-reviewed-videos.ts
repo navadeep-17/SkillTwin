@@ -93,7 +93,7 @@ export function videoFitsTaskTitle(video:ReviewedSkillVideo,taskTitle:string):bo
 const idPattern=/^[A-Za-z0-9_-]{11}$/;
 export function reviewedVideoUrl(video:ReviewedSkillVideo):string|null {
   if(!idPattern.test(video.videoId)||!Number.isSafeInteger(video.startSeconds)||video.startSeconds<0)return null;
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(video.reviewedOn)||video.quality<.9||video.quality>1)return null;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(video.reviewedOn)||video.quality<.9||video.quality>1)return null;
   const url=new URL("https://www.youtube.com/watch");
   url.searchParams.set("v",video.videoId);
   if(video.startSeconds)url.searchParams.set("t",String(video.startSeconds)+"s");

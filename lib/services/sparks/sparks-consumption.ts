@@ -34,8 +34,8 @@ export async function getSparksConsumption(userId:string,createdAt:Date,balance:
   return {
     freeEnhancedRemaining:chatFree,
     freeResumeRemaining:resumeFree,
-    enhancedReplyCostNow:isSparksChargingEnabled()&&chatFree===0?SPARKS_PRICES.ENHANCED_CHAT:0,
-    resumeCostNow:isSparksChargingEnabled()&&resumeFree===0?SPARKS_PRICES.RESUME_REANALYSIS:0,
+    enhancedReplyCostNow:isSparksChargingEnabled(userId)&&chatFree===0?SPARKS_PRICES.ENHANCED_CHAT:0,
+    resumeCostNow:isSparksChargingEnabled(userId)&&resumeFree===0?SPARKS_PRICES.RESUME_REANALYSIS:0,
     weeklyRefillAmount:WEEKLY_REFILL_SPARKS,
     weeklyRefillThreshold:WEEKLY_REFILL_THRESHOLD,
     weeklyRefillEligible:balance<=WEEKLY_REFILL_THRESHOLD&&nextAt.getTime()<=Date.now(),
@@ -43,7 +43,7 @@ export async function getSparksConsumption(userId:string,createdAt:Date,balance:
   };
 }
 export async function reserveSparksUsage(input:{userId:string;action:MeteredSparksAction;key:string;referenceId?:string}) {
-  if(!isSparksChargingEnabled()) return {enabled:false,cost:0,free:true};
+  if(!isSparksChargingEnabled(input.userId)) return {enabled:false,cost:0,free:true};
   if(!validKey(input.key)) throw new Error("INVALID_SPARKS_OPERATION_KEY");
   if(input.referenceId&&!/^[0-9a-f-]{36}$/i.test(input.referenceId)) throw new Error("INVALID_SPARKS_REFERENCE");
   await ensureSparksWallet(input.userId);

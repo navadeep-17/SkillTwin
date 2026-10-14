@@ -17,12 +17,13 @@ export interface CompetencyObservation {
   criterionId: string;
   sourceType: EvidenceSource;
   outcome: "SUPPORTS" | "CONTRADICTS";
-  evaluationKind?: "SERVER_EVALUATED" | "INDEPENDENT_ARTIFACT_REVIEW";
+  evaluationKind?: "SERVER_EVALUATED" | "INDEPENDENT_ARTIFACT_REVIEW" | "KNOWLEDGE_CHECK";
 }
 
 export type CriterionStatus =
   | "UNOBSERVED" | "CLAIMED" | "DISPUTED_CLAIM"
-  | "DEMONSTRATED" | "REVIEWED" | "NOT_DEMONSTRATED" | "CONFLICTED";
+  | "DEMONSTRATED" | "REVIEWED" | "NOT_DEMONSTRATED" | "CONFLICTED"
+  | "KNOWLEDGE_CHECKED" | "KNOWLEDGE_GAP";
 
 export interface CriterionResult extends CompetencyCriterion {
   status: CriterionStatus;
@@ -32,7 +33,8 @@ export interface CriterionResult extends CompetencyCriterion {
 
 export type ValidationState =
   | "NOT_REQUIRED" | "NO_EVIDENCE" | "CLAIMED_ONLY"
-  | "PARTIALLY_DEMONSTRATED" | "CONTRADICTED" | "SUPPORTED";
+  | "PARTIALLY_DEMONSTRATED" | "CONTRADICTED" | "SUPPORTED"
+  | "KNOWLEDGE_ONLY" | "KNOWLEDGE_GAP";
 
 export interface CompetencyAssessment {
   version: typeof EVIDENCE_ESTIMATOR_A3_VERSION;
@@ -58,6 +60,10 @@ const validated = (n: Tier) => n >= 1;
 const statusValid = (s: CriterionStatus) => s === "DEMONSTRATED" || s === "REVIEWED";
 
 function evidenceTier(row: CompetencyObservation): Tier {
+  if (row.evaluationKind === "KNOWLEDGE_CHECK") {
+    if (row.sourceType !== "ASSESSMENT_QUESTION") throw new Error("INVALID_VERIFICATION_PROVENANCE");
+    return 0; // A graded conceptual quiz does not prove implemented capability.
+  }
   if (row.evaluationKind === "INDEPENDENT_ARTIFACT_REVIEW") {
     if (row.sourceType !== "PROJECT_ARTIFACT_VERIFIED") throw new Error("INVALID_VERIFICATION_PROVENANCE");
     return 2;
@@ -79,7 +85,8 @@ function deduplicateObservations(rows: readonly CompetencyObservation[]) {
       throw new Error("INVALID_COMPETENCY_OUTCOME");
     if (item.evaluationKind &&
       item.evaluationKind !== "SERVER_EVALUATED" &&
-      item.evaluationKind !== "INDEPENDENT_ARTIFACT_REVIEW")
+      item.evaluationKind !== "INDEPENDENT_ARTIFACT_REVIEW" &&
+      item.evaluationKind !== "KNOWLEDGE_CHECK")
       throw new Error("INVALID_VERIFICATION_PROVENANCE");
     const tier = evidenceTier(item);
     const key = item.criterionId + ":" + item.sourceGroupId;
@@ -108,7 +115,11 @@ function evaluateCriterion(criterion: CompetencyCriterion,
   else if (demonstratedFailure) status = "NOT_DEMONSTRATED";
   else if (demonstratedSupport) {
     status = positive.some(row => row.tier === 2) ? "REVIEWED" : "DEMONSTRATED";
-  } else if (positive.length && negative.length) status = "DISPUTED_CLAIM";
+  } else if (negative.some(row => row.item.evaluationKind === "KNOWLEDGE_CHECK"))
+    status = "KNOWLEDGE_GAP";
+  else if (positive.some(row => row.item.evaluationKind === "KNOWLEDGE_CHECK"))
+    status = "KNOWLEDGE_CHECKED";
+  else if (positive.length && negative.length) status = "DISPUTED_CLAIM";
   else if (positive.length) status = "CLAIMED";
 
   return {
@@ -160,6 +171,8 @@ export function assessSkillCompetencies(input: {
     : conflicted.length || failed.length ? "CONTRADICTED"
     : demonstrated.length === required.length ? "SUPPORTED"
     : demonstrated.length ? "PARTIALLY_DEMONSTRATED"
+    : required.some(c => c.status === "KNOWLEDGE_GAP") ? "KNOWLEDGE_GAP"
+    : required.some(c => c.status === "KNOWLEDGE_CHECKED") ? "KNOWLEDGE_ONLY"
     : asserted.length ? "CLAIMED_ONLY"
     : "NO_EVIDENCE";
 

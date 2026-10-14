@@ -54,10 +54,10 @@ test("Lever parsing maps canonical hosted posting URL and employment metadata",(
 
 test("Ashby honors isListed and refuses unrelated or non-HTTPS job URLs",()=>{
   const records=normalizeAtsResponse(ash,{jobs:[
-    {title:"Engineer",jobUrl:"https://jobs.ashbyhq.com/Astronomer/a1",
+    {title:"Engineer",jobUrl:"https://jobs.ashbyhq.com/astronomer/a1",
       isListed:true,location:"Remote - India",workplaceType:"Remote",
       employmentType:"FullTime",publishedAt:"2026-10-12T00:00:00Z"},
-    {title:"Unlisted",jobUrl:"https://jobs.ashbyhq.com/Astronomer/a2",isListed:false},
+    {title:"Unlisted",jobUrl:"https://jobs.ashbyhq.com/astronomer/a2",isListed:false},
     {title:"Bad link",jobUrl:"https://bad.example/apply",isListed:true},
     {title:"Bad protocol",jobUrl:"javascript:alert(1)",isListed:true}
   ]});

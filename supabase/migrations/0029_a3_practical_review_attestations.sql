@@ -19,7 +19,73 @@ create table if not exists public.competency_practical_reviews (
   criterion_id text not null check (length(criterion_id) between 3 and 100),
   rubric_version text not null,
   repository_url text not null,
-  commit_sha text not null check (commit_sha ~ '^[a-f0-9]{40}$'),
+  commit_sha text not null check (commit_sha ~ '^[a-f0-9]{40}
+  review_method text not null default 'OBSERVED_PRACTICAL_DEMO'
+    check (review_method = 'OBSERVED_PRACTICAL_DEMO'),
+  practical_task text not null check (length(trim(practical_task)) between 50 and 2000),
+  observed_result text not null check (length(trim(observed_result)) between 50 and 2000),
+  test_procedure text not null check (length(trim(test_procedure)) between 30 and 2000),
+  verdict text not null check (verdict in ('PASS','FAIL')),
+  reviewed_at timestamptz not null default now(),
+  constraint independent_competency_reviewer check (reviewer_user_id <> learner_user_id),
+  unique (reviewer_user_id, project_id, project_version, criterion_id, commit_sha)
+);
+
+create index if not exists ix_competency_reviews_learner_skill
+on public.competency_practical_reviews(learner_user_id, skill_id, reviewed_at desc);
+
+create index if not exists ix_competency_reviews_reviewer
+on public.competency_practical_reviews(reviewer_user_id, reviewed_at desc);
+
+alter table public.competency_reviewers enable row level security;
+alter table public.competency_practical_reviews enable row level security;
+
+-- Strict server-only access via getSql(). No anon/authenticated grants;
+-- user's session is authenticated by the app before any privileged SQL runs.
+revoke all on public.competency_reviewers from anon, authenticated;
+revoke all on public.competency_practical_reviews from anon, authenticated;
+revoke all on public.competency_reviewers from public;
+revoke all on public.competency_practical_reviews from public;
+
+comment on table public.competency_reviewers is
+  'Admin-provisioned independent project demonstration reviewers. Never user writable.';
+comment on table public.competency_practical_reviews is
+  'Immutable reviewer attestation of observed practical work at pinned public commit; NOT code execution or authorship proof.';
+),
+  reviewed_source_path text not null check (length(reviewed_source_path) between 1 and 250),
+  reviewed_blob_sha text not null check (reviewed_blob_sha ~ '^[a-f0-9]{40}
+  review_method text not null default 'OBSERVED_PRACTICAL_DEMO'
+    check (review_method = 'OBSERVED_PRACTICAL_DEMO'),
+  practical_task text not null check (length(trim(practical_task)) between 50 and 2000),
+  observed_result text not null check (length(trim(observed_result)) between 50 and 2000),
+  test_procedure text not null check (length(trim(test_procedure)) between 30 and 2000),
+  verdict text not null check (verdict in ('PASS','FAIL')),
+  reviewed_at timestamptz not null default now(),
+  constraint independent_competency_reviewer check (reviewer_user_id <> learner_user_id),
+  unique (reviewer_user_id, project_id, project_version, criterion_id, commit_sha)
+);
+
+create index if not exists ix_competency_reviews_learner_skill
+on public.competency_practical_reviews(learner_user_id, skill_id, reviewed_at desc);
+
+create index if not exists ix_competency_reviews_reviewer
+on public.competency_practical_reviews(reviewer_user_id, reviewed_at desc);
+
+alter table public.competency_reviewers enable row level security;
+alter table public.competency_practical_reviews enable row level security;
+
+-- Strict server-only access via getSql(). No anon/authenticated grants;
+-- user's session is authenticated by the app before any privileged SQL runs.
+revoke all on public.competency_reviewers from anon, authenticated;
+revoke all on public.competency_practical_reviews from anon, authenticated;
+revoke all on public.competency_reviewers from public;
+revoke all on public.competency_practical_reviews from public;
+
+comment on table public.competency_reviewers is
+  'Admin-provisioned independent project demonstration reviewers. Never user writable.';
+comment on table public.competency_practical_reviews is
+  'Immutable reviewer attestation of observed practical work at pinned public commit; NOT code execution or authorship proof.';
+),
   review_method text not null default 'OBSERVED_PRACTICAL_DEMO'
     check (review_method = 'OBSERVED_PRACTICAL_DEMO'),
   practical_task text not null check (length(trim(practical_task)) between 50 and 2000),

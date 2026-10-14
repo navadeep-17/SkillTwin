@@ -1,6 +1,6 @@
 # Evidence Engine A3 — competency verification pilot
 
-**Status:** Experimental, branch-only, read-only pilot. No production activation, database changes, new API, historical rescoring, or readiness rewrites.
+**Status:** Experimental feature-branch pilot. No production activation, historical rescoring, or readiness rewrites. The read-only preview is supplemented by an opt-in reviewer-only write API and new staging-only migration 0029; neither is deployed.
 
 ## What the current A1 + A2 system does
 
@@ -65,7 +65,7 @@ CI runs this on PRs.
 
 1. Review each rubric with skill experts and collect labelled examples of verified/contradictory performance.
 2. Expand the existing reviewed bank mapping only when a question truly checks a published criterion; re-review each mapping and pin question versions/provenance.
-3. Extend the existing trusted read-only server-graded adapter with independent **practical** grading and authenticated artifact review; no learner-supplied verification flags.
+3. Validate the new independently authenticated, pinned-source **human-attested practical review** path and eventually add isolated automated code-task grading; no learner-supplied verification flags.
 4. Authenticated-test the already implemented server-only `SKILLTWIN_EVIDENCE_A3_ENABLED` preview endpoint/UI against isolated staging, including ON/OFF and cross-user isolation.
 5. Run comparison fixtures and authenticated staging QA, then review whether to activate. Only later consider replacing A1 capability or gap status formulas.
 
@@ -91,7 +91,7 @@ The pilot now has an explicit path from historical **completed, user-scoped, ser
 - Numeric MCQ score must be exactly 0 or 1 and evaluator confidence at least 0.99; anything else is omitted from A3 rather than silently trusted.
 - \`lib/services/gaps/evidence-verification-a3-service.ts\` queries the latest user-owned persisted A1 gap snapshot and a bounded 400 latest completed assessment attempts, joining on matching user IDs and bank question identity. No raw answer keys or submitted answer payloads are returned.
 - Legacy \`skill_evidence\` rows are counted but **not auto-promoted** to rubric proof, because claims lack a reliable, reviewed criterion mapping.
-- No schema changes or write queries are introduced.
+- The **read-only preview** itself does not write. A separate reviewer-only attestation API and migration 0029 add protected, auditable practical-review records on the feature branch; no production DB changes are made.
 
 ### Server API and user-facing UI
 
@@ -112,8 +112,21 @@ The pilot now has an explicit path from historical **completed, user-scoped, ser
 ### Known remaining work
 
 1. Independently review the rubric criteria and importance with subject experts.
-2. Add actual, task-specific code/practical grading and independently authenticated artifact review, retaining explicit evaluation version/provenance. MCQs alone cannot complete the practical tiers.
+2. Validate the new human-observed practical-review attestation against realistic cases; add secure isolated **automated** code-task execution only after sandbox threat-modeling. MCQs alone cannot complete practical tiers.
 3. Collect an expert-labelled benchmark of project claims, graded tasks and contradictory evidence to measure agreement, false-positive rate, unknown handling and coverage.
 4. Enable the A3 preview only in isolated staging, verify user/tenant isolation, rollback and no database writes, and separately decide on rollout to production.
 
 **No automatic promotion of A3 to the authoritative scoring model is justified yet.**
+
+
+## P3 update — privileged reviewer attestation and two-user staging gate
+
+- New staging-only migration \`0029_a3_practical_review_attestations.sql\` creates an admin-provisioned reviewer allowlist and immutable \`competency_practical_reviews\`. Authenticated and anonymous direct table privileges are revoked; no reviewer self-provisioning.
+- The reviewer-only \`POST /api/skills/verification/reviews\` derives the reviewer identity from Supabase Auth, verifies allowlist membership **before** user-project lookup or public-source access, checks project ownership and an independently observed live task, fetches a bounded canonical public GitHub project snapshot, and pins the commit **and reviewed source-file blob SHA**. It rejects self-reviews, duplicate entries, noncanonical project links, project/version changes and unsupported rubric criterion IDs. No arbitrary code is executed.
+- The A3 **read-only** preview now includes these reviewer-attested observations in addition to conceptual MCQ evidence. Only active, authorized independent reviewers on the correct learner, project/version and rubric can contribute.
+- The human attestation is not objective automated code execution, proof of individual authorship, a validated psychometric assessment, or professional certification. Such distinctions must remain visible to users.
+- \`scripts/evidence-a3-auth-staging-qa.mjs\` enforces localhost and the dedicated staging project, requires two disposable staging users, checks feature-flag behavior, no cross-user evidence IDs, and unchanged A1 gap snapshots.
+- **Live authenticated staging remains BLOCKED**: the current Supabase connector reports insufficient permission for the separate staging project; neither migration 0028/0029 nor the test-user flow has been run there. No credentials are reused from production.
+- Setup, reviewer provisioning, required data and commands: \`docs/EVIDENCE_A3_PRACTICAL_STAGING_QA.md\`.
+
+A3 must remain a draft/opt-in pilot until full staging authentication, RLS, negative tests and independent reviewer quality evaluation are complete.

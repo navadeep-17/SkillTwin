@@ -58,3 +58,12 @@ test("weekly earn is authenticated, only server may mint, and cannot be triggere
   assert.doesNotMatch(wallet,/claimWeeklySparks/);
   assert.doesNotMatch(refill,/request.json\(/);
 });
+
+test("project defense refunds a graceful unavailable response, retries use fresh operation IDs",()=>{
+  const route=read("app/api/project-defense/evaluate/route.ts");
+  const view=read("components/projects/project-defense-workbench.tsx");
+  assert.match(route,/result.status==="AI_UNAVAILABLE"/);
+  assert.match(route,/refundSparks\(user.id,"PROJECT_DEFENSE",operationKey\)/);
+  assert.match(route,/operationId:z.string\(\).uuid\(\).optional\(\)/);
+  assert.match(view,/operationId:crypto.randomUUID\(\)/);
+});

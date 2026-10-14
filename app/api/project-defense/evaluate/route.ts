@@ -1,3 +1,4 @@
+import {randomUUID} from "node:crypto";
 import {z} from "zod";
 import {getRequestId} from "@/lib/api/request-context";
 import {fail,ok} from "@/lib/api/responses";
@@ -7,6 +8,7 @@ import {evaluatePublicRepositoryDefense} from "@/lib/services/projects/project-d
 
 const schema=z.object({
   repoUrl:z.string().max(250),
+  operationId:z.string().uuid().optional(),
   commitSha:z.string().regex(/^[a-f0-9]{40}$/i),
   answers:z.array(z.object({
     questionId:z.string().max(40),
@@ -21,8 +23,7 @@ export async function POST(request:Request){
     const {user}=await requireUser();
     const input=schema.safeParse(await request.json());
     if(!input.success)return fail(requestId,400,"INVALID_INPUT","Answer all three code-grounded questions (at least 40 characters each).");
-    const operationKey = "project-defense:" + input.data.commitSha + ":" +
-      (await import("node:crypto")).createHash("sha256").update(JSON.stringify(input.data.answers)).digest("hex").slice(0,24);
+    const operationKey = "project-defense:" + input.data.commitSha.slice(0,12) + ":" + (input.data.operationId ?? randomUUID());
     try { await spendSparks(user.id,"PROJECT_DEFENSE",operationKey); }
     catch(error) {
       if(error instanceof InsufficientSparksError) return fail(requestId,402,"INSUFFICIENT_SPARKS","Not enough Sparks for Project Defense. Invite a friend from /sparks.");
@@ -31,6 +32,8 @@ export async function POST(request:Request){
     }
     try {
       const result=await evaluatePublicRepositoryDefense(input.data);
+      // An AI_UNAVAILABLE response has no actual evaluation and must be free.
+      if(result.status==="AI_UNAVAILABLE")await refundSparks(user.id,"PROJECT_DEFENSE",operationKey);
       return ok(requestId,result);
     } catch(error) {
       await refundSparks(user.id,"PROJECT_DEFENSE",operationKey);

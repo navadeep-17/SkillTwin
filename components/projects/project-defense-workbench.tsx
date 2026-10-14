@@ -45,6 +45,7 @@ export function ProjectDefenseWorkbench(){
       const result=await fetch("/api/project-defense/evaluate",{
         method:"POST",headers:{"Content-Type":"application/json"},cache:"no-store",
         body:JSON.stringify({repoUrl:url.trim(),commitSha:snapshot.commitSha,
+          operationId:crypto.randomUUID(),
           answers:snapshot.questions.map(q=>({questionId:q.id,answer:answers[q.id]??""}))})
       });
       const payload=await result.json() as Response<{review:ProjectDefenseReview|null;status:string}>;

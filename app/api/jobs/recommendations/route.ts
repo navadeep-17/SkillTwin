@@ -3,6 +3,8 @@ import { requireUser, UnauthenticatedError } from "@/lib/auth/require-user";
 import { getRequestId } from "@/lib/api/request-context";
 import { fail, ok } from "@/lib/api/responses";
 import { rankLiveJobs, type JobicyRecord } from "@/lib/domain/live-job-matching";
+import { getSql } from "@/lib/db/postgres";
+import { recommendEmployerJobs, type StoredEmployerJob } from "@/lib/jobs/recommend-employer-jobs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -50,9 +52,39 @@ export async function GET(request:Request) {
       .map(x=>single(x.skills as SkillJoin|SkillJoin[]|null)?.canonical_name??"")
       .filter(Boolean);
 
+    // Employer ATS listings are collected periodically, not fetched during user page views.
+    // Gracefully fall back to Jobicy until the additive ATS migration is installed.
+    let employerJobs: ReturnType<typeof rankLiveJobs>=[];
+    let employerCheckedAt: string|null=null;
+    let employerCatalogAvailable=false;
+    try{
+      const rows=await getSql().unsafe(`
+        select provider,board,external_id,title,company,location,workplace_type,
+          employment_type,description,posting_url,published_at,first_seen_at,last_seen_at
+        from public.ats_job_postings
+        where is_active=true and last_seen_at>now()-interval '30 hours'
+        order by last_seen_at desc limit 600
+      `);
+      employerCatalogAvailable=rows.length>0;
+      const recent=rows[0]?.last_seen_at;
+      employerCheckedAt=recent instanceof Date?recent.toISOString()
+        :typeof recent==="string"?recent:null;
+      employerJobs=recommendEmployerJobs({
+        rows:rows as unknown as StoredEmployerJob[],
+        role,recordedSkills:recorded,region:parsed.data.region,
+        hideSenior:parsed.data.hideSenior==="true",limit:12
+      });
+    }catch(err){
+      // Migration not yet installed or database temporarily unavailable.
+      // Do not report fabricated employer vacancies.
+      console.warn("jobs.ats_catalog.unavailable",{
+        requestId,reason:err instanceof Error?err.name:"unknown"
+      });
+    }
+
     let sourceUpdatedAt: string|null=null;
     let jobs: ReturnType<typeof rankLiveJobs>=[];
-    let available=false;
+    let available=employerCatalogAvailable;
     try{
       // Use a fixed provider endpoint: never interpolate client/profile text in a fetch URL.
       // Cached once per hour across learners (not once per learner). The API itself is private.
@@ -79,14 +111,17 @@ export async function GET(request:Request) {
       console.warn("jobs.feed.unavailable",{requestId,reason:err instanceof Error?err.message:"unknown"});
     }
 
+    // Prefer original employer postings; Jobicy remains a useful broader fallback.
+    const combined=[...employerJobs,...jobs].slice(0,12);
     return ok(requestId,{
-      jobs,available,roleUsed:role,
+      jobs:combined,available,roleUsed:role,
       basedOnActiveGoal:!explicit&&Boolean(activeRole),
       recordedSkillCount:recorded.length,
       filter:{region:parsed.data.region,hideSenior:parsed.data.hideSenior==="true"},
-      source:{name:"Jobicy",url:"https://jobicy.com/jobs-rss-feed",
-        coverage:"Remote listings from Jobicy's recent public feed (not all companies or local jobs).",
-        sourceUpdatedAt,refreshIntervalMinutes:60},
+      source:{name:employerCatalogAvailable?"Company boards + Jobicy":"Jobicy",
+        url:"https://jobicy.com/jobs-rss-feed",
+        coverage:"Verified employer job boards (Greenhouse, Lever, Ashby) when refreshed; Jobicy supplements remote coverage. Not every company or campus drive is covered.",
+        sourceUpdatedAt:employerCheckedAt??sourceUpdatedAt,refreshIntervalMinutes:60},
       disclaimer:"Keyword-based relevance only. Recorded skills can be self-reported. Verify location, experience, eligibility and availability with the employer."
     });
   }catch(error){

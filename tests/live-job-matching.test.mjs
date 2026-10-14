@@ -84,7 +84,9 @@ test("endpoint is authenticated, provider endpoint is fixed and failures never e
   assert.match(route,/\.eq\("user_id",user\.id\)/);
   assert.match(route,/https:\/\/jobicy\.com\/api\/v2\/remote-jobs\?count=100/);
   assert.match(route,/revalidate:3600/);
-  assert.match(route,/available=false/);
+  assert.match(route,/available=employerCatalogAvailable/);
+  assert.match(route,/let employerCatalogAvailable=false/);
+  assert.match(route,/jobs:combined/);
   assert.match(route,/jobs: ReturnType<typeof rankLiveJobs>\s*=\s*\[\]/);
   assert.match(parent,/<LiveJobOpportunities/);
   assert.match(view,/noopener noreferrer/);

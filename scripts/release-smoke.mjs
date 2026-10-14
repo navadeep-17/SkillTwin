@@ -291,9 +291,29 @@ async function authenticatedChecks() {
   assert(invalidUpload.payload?.ok === false, "invalid PDF signature returned an ok envelope");
   console.log("UPLOAD_GUARD=PASS");
 
+  // Read the latest active plan AFTER the task-idempotency check. Completing
+  // a task may itself replan, so the earlier plan version is not a valid
+  // assessment baseline. Strict test mode selects a real future validation
+  // task whose canonical skill has a reviewed challenge bank.
+  const preAssessment = await authRequest("/api/roadmap");
+  assert(preAssessment.response.status === 200 && preAssessment.payload?.data?.plan,
+    "pre-assessment active roadmap is unavailable");
+  const assessmentBaselineVersion = Number(preAssessment.payload.data.plan.version);
+  const eligibleValidation = (preAssessment.payload.data.plan.weeks ?? [])
+    .flatMap(week => week.objectives ?? [])
+    .flatMap(objective => objective.tasks ?? [])
+    .find(task => task.type === "VALIDATE" && task.status === "PLANNED"
+      && task.validation_available === true);
+  if (process.env.SMOKE_REQUIRE_APPLIED_DIFF === "true") {
+    assert(Boolean(eligibleValidation?.id),
+      "strict PlanDiff proof requires an unfinished in-horizon validation task with a vetted question bank");
+  }
   const challenge = await authRequest("/api/assessments", {
     method: "POST",
-    body: JSON.stringify({ mode: "CHALLENGE_ME" })
+    body: JSON.stringify({
+      mode: "CHALLENGE_ME",
+      ...(eligibleValidation?.id ? { sourceTaskId: eligibleValidation.id } : {})
+    })
   });
   assert(challenge.response.status === 201 && challenge.payload?.ok === true, "challenge creation failed");
 
@@ -388,16 +408,16 @@ async function authenticatedChecks() {
   assert(applied || justifiedNoOp,
     "assessment has neither its own applied PlanDiff nor a justified persisted NO_OP");
   if (applied) {
-    assert(Number(applied.from_version) === versionBefore
+    assert(Number(applied.from_version) === assessmentBaselineVersion
       && Number(applied.to_version) === versionAfter
-      && versionAfter === versionBefore + 1,
+      && versionAfter === assessmentBaselineVersion + 1,
       "applied assessment PlanDiff does not match the roadmap version transition");
     assert(Array.isArray(decode(applied.operations))
       && decode(applied.operations).length > 0,
       "applied assessment PlanDiff contains no operations");
     console.log("ASSESSMENT_REPLAN_PROOF=APPLIED_PLAN_DIFF");
   } else {
-    assert(versionAfter === versionBefore,
+    assert(versionAfter === assessmentBaselineVersion,
       "roadmap version changed but no assessment-linked applied PlanDiff was found");
     console.log("ASSESSMENT_REPLAN_PROOF=JUSTIFIED_NO_OP " + justifiedNoOp.reason_code);
     assert(process.env.SMOKE_REQUIRE_APPLIED_DIFF !== "true",

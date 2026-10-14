@@ -18,7 +18,7 @@ The existing \`/project-defense\` tool analyzes bounded public files and gives p
 - \`competency_practical_reviews\`: immutable independent practical-review events (learner, reviewer, project/version, criterion, pinned commit, task, test procedure, observed result and PASS/FAIL).
 - RLS on both tables and explicit denial of direct access by \`anon\`/\`authenticated\`. Only the **server's privileged database connection** can write after authenticated reviewer authorization.
 
-Apply migration **only to the separate SkillTwin-Staging Supabase project** (\`wkbxwcspgzvvhbjhtxan\`) after reviewing it. **Do not** apply it to production project \`eozvilqmrhtujqtdmrri\`. No historical data copy.
+If staging has migrations only through 0027, apply the reviewed canonical **0028** migration first and then **0029**, in version order.\n\nApply migration **only to the separate SkillTwin-Staging Supabase project** (\`wkbxwcspgzvvhbjhtxan\`) after reviewing it. **Do not** apply it to production project \`eozvilqmrhtujqtdmrri\`. No historical data copy.
 
 Staging project permission must be reconnected or restored first: connected Supabase currently rejects staging SQL with \`You do not have permission to perform this action\`. No migration was applied during this phase.
 
@@ -94,6 +94,7 @@ The reviewer-only \`POST /api/skills/verification/reviews\` accepts a strict JSO
   "projectId": "<UUID of project owned by learner>",
   "criterionId": "rest-api.resource-routing",
   "commitSha": "<40-character Git commit SHA>",
+  "reviewedSourcePath": "<one of the source file paths returned by public repository inspection>",
   "verdict": "PASS",
   "practicalTask": "<at least 50 characters describing the live task the learner performed>",
   "observedResult": "<at least 50 characters describing the result the reviewer independently observed>",
@@ -102,7 +103,7 @@ The reviewer-only \`POST /api/skills/verification/reviews\` accepts a strict JSO
 }
 \`\`\`
 
-The server derives the reviewer ID from the authenticated session, ensures active reviewer allowlist membership, verifies the project belongs to another learner, checks its repository is canonical public GitHub and currently pinned at the supplied HEAD SHA, validates the exact skill rubric criterion and version, and adds an immutable event. Duplicate events return conflict. Revoked reviewers do not supply new authoritative A3 evidence. All input is bounded; repository source code is never run by the SkillTwin server.
+The server derives the reviewer ID from the authenticated session, ensures active reviewer allowlist membership, verifies the project belongs to another learner, checks its repository is canonical public GitHub and currently pinned at the supplied HEAD SHA, confirms the selected file and Git blob SHA from the bounded server-side inspection, validates the exact skill rubric criterion and version, and adds an immutable event. Duplicate events return conflict. Revoked reviewers do not supply new authoritative A3 evidence. All input is bounded; repository source code is never run by the SkillTwin server.
 
 A verdict becomes \`REVIEWED\` or \`NOT_DEMONSTRATED\` for **that exact criterion only** after the read-only preview queries the persisted and currently authorized review. Two or more unrelated criteria and tiers still require their own reviewed observations. Reviewers remain responsible for assessing actual behavior, independent performance and ambiguous outcomes. A reviewer can be mistaken; no authorship or probabilistic correctness claim is made.
 

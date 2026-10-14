@@ -49,7 +49,7 @@ test("Lever parsing maps canonical hosted posting URL and employment metadata",(
   assert.equal(records[0].employmentType,"Full-time");
   assert.equal(records[0].workplaceType,"hybrid");
   assert.equal(records[0].url,"https://jobs.lever.co/acceldata/abc");
-  assert.ok(records[0].publishedAt);
+  assert.equal(records[0].publishedAt,null); // Creation does not establish publish time
 });
 
 test("Ashby honors isListed and refuses unrelated or non-HTTPS job URLs",()=>{

@@ -33,3 +33,9 @@ Run from this folder:
     npm run check
 
 The automated tests cover policy state, domains, timers, midnight reset, replay limits, Chrome background-worker message logic, grants and bypass. See the repository's docs/FOCUS_MODE_90_MINUTE_IMPLEMENTATION_PLAN.md for the build/release plan.
+
+## Early-access distribution
+
+Use the `SkillTwin_Focus_0.1.1_Chrome_Web_Store.zip` release package for Chrome Web Store upload; `manifest.json` is at its root. Until approved, install the extracted folder via Developer mode → Load unpacked. The privacy policy is [PRIVACY.md](PRIVACY.md), and the store listing draft is in [docs/focus/STORE_LISTING.md](../../docs/focus/STORE_LISTING.md).
+
+Version 0.1.1 improves handling of previously opened background tabs, narrows web-accessible resources to supported sites, and uses the existing SkillTwin app icon.

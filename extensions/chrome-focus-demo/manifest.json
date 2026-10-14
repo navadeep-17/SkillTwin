@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "SkillTwin Focus - Demo",
-  "description": "Opt-in website focus timer; learn to unlock. Local demo, not device-wide protection.",
-  "version": "0.1.0",
+  "name": "SkillTwin Focus",
+  "description": "Opt-in website limits and short learning quizzes to earn more browsing time.",
+  "version": "0.1.1",
   "minimum_chrome_version": "120",
   "permissions": [
     "storage",
@@ -31,7 +31,8 @@
   },
   "action": {
     "default_title": "SkillTwin Focus",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": "icon-128.png"
   },
   "web_accessible_resources": [
     {
@@ -42,8 +43,25 @@
         "styles.css"
       ],
       "matches": [
-        "<all_urls>"
+        "*://youtube.com/*",
+        "*://*.youtube.com/*",
+        "*://youtu.be/*",
+        "*://*.youtu.be/*",
+        "*://instagram.com/*",
+        "*://*.instagram.com/*",
+        "*://reddit.com/*",
+        "*://*.reddit.com/*",
+        "*://x.com/*",
+        "*://*.x.com/*",
+        "*://twitter.com/*",
+        "*://*.twitter.com/*"
       ]
     }
-  ]
+  ],
+  "icons": {
+    "16": "icon-128.png",
+    "32": "icon-128.png",
+    "48": "icon-128.png",
+    "128": "icon-128.png"
+  }
 }

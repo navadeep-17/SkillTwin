@@ -48,12 +48,12 @@ async function reconcile() {
   observed.site = siteForUrl(observed.url,policy.sites);
   state = sampleUsage(state,policy,now,observed.site);
   const blocked = shouldBlock(state,policy,now);
-  const newBlock = blocked && !state.wasBlocked;
   state.wasBlocked = blocked;
   if (blocked && observed.site) state.lastBlockedSite = observed.site;
   await save(policy,state);
   await applyRule(blocked,policy);
-  if (newBlock && observed.site && Number.isInteger(observed.tabId)) {
+  // Catch previously open tabs when they become foreground while blocked.
+  if (blocked && observed.site && Number.isInteger(observed.tabId)) {
     try { await chrome.tabs.update(observed.tabId,{url:chrome.runtime.getURL('blocked.html')}); } catch { /* tab closed during update */ }
   }
   return {policy,state,blocked,remaining:remainingSeconds(state,policy)};

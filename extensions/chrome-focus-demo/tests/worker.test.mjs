@@ -47,3 +47,14 @@ test('emergency bypass is available without successful quiz completion',async()=
   assert.equal(bypass.blocked,false);
   assert.ok(bypass.state.bypassUntil>Date.now());
 });
+
+test('reblocking also catches a previously opened tab after the site became blocked',async()=>{
+  store.focusState={...store.focusState,usedMs:120_000,bypassUntil:0,activeSite:null,lastSampleAt:Date.now(),wasBlocked:false};
+  tab.url='chrome-extension://demo/blocked.html';
+  await send({type:'STATUS'});
+  assert.equal(rules.length,1);
+  assert.equal(store.focusState.wasBlocked,true);
+  tab.url='https://www.youtube.com/watch?v=background-tab';
+  await send({type:'STATUS'});
+  assert.equal(tab.url,'chrome-extension://demo/blocked.html');
+});

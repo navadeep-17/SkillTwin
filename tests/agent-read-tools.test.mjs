@@ -53,7 +53,15 @@ test("agent route cannot dispatch model-selected writes or substitute model user
   assert.match(service,/readAssessmentProof:async \(\)=>/);
   assert.match(service,/generator: readRun\?\.meta\.generator/);
   assert.match(orchestrator,/validateReadPlan\(result\)/);
-  assert.match(orchestrator,/timeoutMs:11000/);
+  assert.match(orchestrator,/timeoutMs:9000/);
+  assert.match(orchestrator,/generateLowLatencyJson/);
+  const provider=read("lib/ai/gemini-interactions.ts");
+  assert.match(provider,/gemini-3\.5-flash-lite/);
+  assert.match(provider,/:generateContent/);
+  assert.match(provider,/generationConfig/);
+  assert.match(provider,/responseFormat/);
+  assert.match(provider,/input\.validator\.parse\(JSON\.parse\(text\)\)/);
+  assert.match(provider,/SKILLTWIN_READ_PLANNER_MODEL/);
   assert.match(orchestrator,/plannerFailureKind\(error\)/);
   assert.doesNotMatch(orchestrator,/console\.warn\([^;]*input\.message/);
   assert.match(orchestrator,/maxOutputTokens:220/);

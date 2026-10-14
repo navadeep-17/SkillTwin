@@ -6,7 +6,8 @@ import { ArrowUpRight, BriefcaseBusiness, Clock3, ExternalLink, LoaderCircle, Re
 type Job = {
   id:string; title:string; company:string; url:string;
   region:string; level:string|null; employmentType:string|null; publishedAt:string;
-  excerpt:string; source:"Jobicy";
+  excerpt:string; source:"Jobicy"|"Greenhouse"|"Lever"|"Ashby";
+  dateKind?:"PUBLISHED"|"FIRST_SEEN"; checkedAt?:string;
   signals:{role:string;knownSkills:string[];exploreNext:string[];seniorRole:boolean};
 };
 type Filters={q:string;region:"all"|"anywhere"|"apac"|"india";hideSenior:boolean};
@@ -75,11 +76,11 @@ export function LiveJobOpportunities() {
               Jobs related to your learning goal
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Recent remote vacancies from a published job feed, ranked against your selected career and recorded skills. These are leads to review, not confirmed eligibility.
+              Employer career-board vacancies and recent remote jobs, ranked against your selected career and recorded skills. These are leads to review, not confirmed eligibility.
             </p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs text-slate-600 ring-1 ring-slate-200">
-            <Clock3 aria-hidden="true" className="size-3.5"/> Provider feed · hourly cache
+            <Clock3 aria-hidden="true" className="size-3.5"/> Employer boards + remote feed
           </span>
         </div>
       </div>
@@ -98,12 +99,12 @@ export function LiveJobOpportunities() {
             </span>
           </label>
           <label className="block min-w-0">
-            <span className="mb-1.5 block text-xs font-semibold text-slate-600">Remote hiring region</span>
+            <span className="mb-1.5 block text-xs font-semibold text-slate-600">Hiring region</span>
             <select value={region} onChange={e=>setRegion(e.target.value as Filters["region"])}
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500">
-              <option value="all">All regions (check eligibility)</option>
+              <option value="all">All locations (check eligibility)</option>
               <option value="anywhere">Global / anywhere only</option>
-              <option value="apac">APAC or globally listed</option>
+              <option value="apac">APAC, India or globally listed</option>
               <option value="india">India or globally listed</option>
             </select>
           </label>
@@ -151,7 +152,7 @@ export function LiveJobOpportunities() {
                 <span>Exploring: <strong className="text-slate-900">{data.roleUsed}</strong></span>
                 {!data.basedOnActiveGoal && !applied.q ? <span className="text-xs text-slate-500">(starter query)</span> : null}
               </div>
-              <span className="text-xs text-slate-500">{data.jobs.length} relevant {data.jobs.length===1?"listing":"listings"} · source: Jobicy</span>
+              <span className="text-xs text-slate-500">{data.jobs.length} relevant {data.jobs.length===1?"listing":"listings"} · original employer/source links</span>
             </div>
             {data.jobs.length ? (
               <div className="mt-4 grid gap-3 lg:grid-cols-2">
@@ -162,13 +163,13 @@ export function LiveJobOpportunities() {
                         <h3 className="text-base font-semibold text-slate-900">{job.title}</h3>
                         <p className="mt-1 text-sm text-slate-600">{job.company}</p>
                       </div>
-                      <span className="rounded-md bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-800">Jobicy</span>
+                      <span className="rounded-md bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-800">{job.source}</span>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-600">
                       <span className="rounded-md bg-slate-100 px-2 py-1">{job.region}</span>
                       {job.level ? <span className="rounded-md bg-slate-100 px-2 py-1">{job.level}</span> : null}
                       {job.employmentType ? <span className="rounded-md bg-slate-100 px-2 py-1">{job.employmentType}</span> : null}
-                      <span className="rounded-md bg-slate-100 px-2 py-1">{posted(job.publishedAt)}</span>
+                      <span className="rounded-md bg-slate-100 px-2 py-1">{job.dateKind==="FIRST_SEEN"?"First verified: "+posted(job.publishedAt).toLowerCase():posted(job.publishedAt)}</span>
                     </div>
                     <p className="mt-3 text-xs leading-5 text-slate-600">{job.signals.role}</p>
                     {job.excerpt ? <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{job.excerpt}</p> : null}
@@ -196,14 +197,14 @@ export function LiveJobOpportunities() {
                 <p className="text-sm font-semibold text-slate-800">No closely matching roles in this feed right now.</p>
                 <p className="mt-1 text-sm leading-6 text-slate-600">
                   Try a broader job title, another region, or untick the senior-role filter.
-                  This provider does not include every employer or local/campus vacancy.
+                  These sources do not include every employer or local/campus vacancy.
                 </p>
               </div>
             )}
             <div className="mt-5 border-t border-slate-100 pt-4 text-xs leading-6 text-slate-500">
-              <p>Job data: <a className="font-semibold text-blue-700 hover:underline" target="_blank" rel="noopener noreferrer" href={data.source.url}>Jobicy public API <ExternalLink aria-hidden="true" className="inline size-3"/></a>
+              <p>Job data: employer career boards (Greenhouse, Lever, Ashby) and <a className="font-semibold text-blue-700 hover:underline" target="_blank" rel="noopener noreferrer" href={data.source.url}>Jobicy public API <ExternalLink aria-hidden="true" className="inline size-3"/></a>
                 {data.source.sourceUpdatedAt ? " · Source update: "+new Date(data.source.sourceUpdatedAt).toLocaleString(): ""}
-                {" · "}Refreshable approximately hourly; individual postings can close between checks.</p>
+                {" · "}Employer data is collected by a scheduled worker when configured; Jobicy is cached hourly. Individual postings may close between checks.</p>
               <p className="mt-1">{data.disclaimer} Keyword mentions are not necessarily mandatory skills. Regional filters do not verify an individual applicant's hiring eligibility.</p>
             </div>
           </>

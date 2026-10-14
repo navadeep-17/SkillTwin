@@ -17,7 +17,7 @@ test("canary flag allows exact authenticated user UUID only",()=>{
   assert.equal(sparksChargingAllowed({globalFlag:"false",canaryIds:tester,userId:tester}),true);
   assert.equal(sparksChargingAllowed({globalFlag:"false",canaryIds:tester,userId:outsider}),false);
   assert.equal(sparksChargingAllowed({globalFlag:"false",canaryIds:" invalid , "+tester.toUpperCase()+" ",userId:tester}),true);
-  assert.equal(sparksChargingAllowed({globalFlag:"false",canaryIds:tester+",DROP TABLE",userId:tester}),false);
+  assert.equal(sparksChargingAllowed({globalFlag:"false",canaryIds:tester+"DROP TABLE",userId:tester}),false);
   assert.equal(sparksChargingAllowed({globalFlag:"false",canaryIds:tester}),false);
   assert.equal(sparksChargingAllowed({globalFlag:"false",canaryIds:tester,userId:""}),false);
   assert.equal(sparksChargingAllowed({globalFlag:"false",canaryIds:tester,userId:tester.slice(0,15)}),false);

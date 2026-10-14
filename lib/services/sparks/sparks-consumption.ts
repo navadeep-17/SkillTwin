@@ -77,7 +77,7 @@ export async function reserveSparksUsage(input:{userId:string;action:MeteredSpar
   });
 }
 export async function finishSparksUsage(userId:string,key:string,success:boolean){
-  if(!isSparksChargingEnabled())return;
+  // Always settle existing reservations, even if charging is disabled mid-flight.
   const sql=getSql();
   await sql.begin(async tx=>{
     await tx.unsafe("select 1 from public.sparks_wallets where user_id=$1::uuid for update",[userId]);

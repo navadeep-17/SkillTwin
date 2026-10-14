@@ -1,6 +1,7 @@
 "use client";
 import {useState} from "react";
 import Link from "next/link";
+import { SparksActionPrice } from "@/components/sparks/sparks-action-price";
 import {
   ArrowRight, BookOpenCheck, CheckCircle2, ChevronRight,
   FileCode2, GitCommitHorizontal, Github, LoaderCircle,
@@ -152,6 +153,7 @@ export function ProjectDefenseWorkbench(){
             <p className="mt-2 text-xs text-slate-500">
               {(answers[current.id]??"").trim().length} characters · 40 minimum per question. Your explanation is not proof of authorship.
             </p>
+            <SparksActionPrice action="PROJECT_DEFENSE" label="Evaluate your project defense" />
             <div className="mt-5 flex flex-wrap items-center gap-3">
               {questionIndex<2?<button type="button" className="btn-secondary"
                 onClick={()=>setQuestionIndex(i=>Math.min(2,i+1))}>Next question <ChevronRight className="size-4"/></button>:null}

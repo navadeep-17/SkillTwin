@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ResumeAnalyzer } from "@/components/onboarding/resume-analyzer";
+import { SparksActionPrice } from "@/components/sparks/sparks-action-price";
 import { UnresolvedSkillTerms } from "@/components/onboarding/unresolved-skill-terms";
 import { ManualProfileEvidence } from "@/components/onboarding/manual-profile-evidence";
 import { OnboardingProgress } from "@/components/onboarding/onboarding-progress";
@@ -334,6 +335,7 @@ export function OnboardingFlow({ initialRoleVersionId }: { initialRoleVersionId?
             Describe the role you want. SkillTwin will map it only to skills in the canonical catalog,
             validate the dependency graph, and create a versioned AI-generated role model.
           </p>
+          <SparksActionPrice action="CUSTOM_ROLE" label="Custom AI career generation" />
           <div className="mt-4 grid gap-3 lg:grid-cols-[.8fr_1.5fr_auto] lg:items-end">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Role name</span>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowRight, CheckCircle2, FileText, LoaderCircle, ShieldCheck, UploadCloud } from "lucide-react";
 
 type AnalysisResponse = {
@@ -36,6 +37,17 @@ export function ResumeAnalyzer({
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<AnalysisResponse["data"]>();
   const [hintIndex, setHintIndex] = useState(0);
+  const [sparkInfo,setSparkInfo]=useState<{balance:number;chargingEnabled:boolean;freeResumeRemaining:number;prices:{RESUME_REANALYSIS:number}}|null>(null);
+  useEffect(()=>{
+    let active=true;
+    fetch("/api/sparks",{cache:"no-store"}).then(r=>r.json()).then(body=>{
+      if(active&&body.ok)setSparkInfo(body.data);
+    }).catch(()=>{});
+    return ()=>{active=false;};
+  },[]);
+  const resumeCost=sparkInfo?.chargingEnabled&&sparkInfo.freeResumeRemaining===0
+    ?sparkInfo.prices.RESUME_REANALYSIS:0;
+  const canAfford=resumeCost===0||!sparkInfo||sparkInfo.balance>=resumeCost;
 
   useEffect(() => {
     if (stage !== "analyzing") return;
@@ -47,6 +59,7 @@ export function ResumeAnalyzer({
 
   async function run() {
     if (!file) return;
+    if(!canAfford){setMessage("You need more Sparks for another resume analysis. Visit your wallet for a refill or referral.");setStage("error");return;}
     setMessage("");
     setResult(undefined);
     setHintIndex(0);
@@ -78,6 +91,7 @@ export function ResumeAnalyzer({
 
       setResult(analyzed.data);
       setStage("done");
+      void fetch("/api/sparks",{cache:"no-store"}).then(r=>r.json()).then(body=>{if(body.ok)setSparkInfo(body.data);}).catch(()=>{});
       onAnalysisComplete?.({
         readiness: analyzed.data?.result?.gapAnalysis?.readiness,
         evidenceCoverage: analyzed.data?.result?.gapAnalysis?.evidenceCoverage,
@@ -136,7 +150,12 @@ export function ResumeAnalyzer({
                 <ShieldCheck className="size-4 text-emerald-600" />
                 Private upload. Skill conclusions are made only through the Evidence Engine.
               </div>
-              <button className="btn-primary" disabled={!file} onClick={run}>
+              {sparkInfo?<p className="text-xs text-slate-600">
+                {resumeCost===0?"Resume analysis: Free":"Additional analysis: "+resumeCost+" Sparks (balance: "+sparkInfo.balance+")"}
+                {sparkInfo.chargingEnabled?"":" · Preview pricing; charges disabled"}
+              </p>:null}
+              {!canAfford?<p className="text-xs text-amber-800"><Link href="/sparks" className="font-semibold underline">Earn more Sparks</Link> to analyze another resume.</p>:null}
+              <button className="btn-primary" disabled={!file || !canAfford} onClick={run}>
                 Analyze resume <ArrowRight className="size-4" />
               </button>
             </div>

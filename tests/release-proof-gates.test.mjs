@@ -34,3 +34,9 @@ test("release smoke does not destroy production without explicit smoke setting",
   assert.match(smoke, /hostname === isolatedRef \+ "\.supabase\.co"/);
   assert.match(smoke, /skilltwin-production\.up\.railway\.app/);
 });
+
+test("multipart upload smoke must not forge an application/json boundary", () => {
+  assert.match(smoke, /typeof init\.body === "string" && !headers\.has\("Content-Type"\)/);
+  assert.match(smoke, /const invalidPdf = new FormData\(\)/);
+  assert.match(smoke, /invalidUpload\.response\.status === 415/);
+});

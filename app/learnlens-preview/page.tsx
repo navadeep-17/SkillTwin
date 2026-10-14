@@ -11,8 +11,20 @@ export const metadata: Metadata = {
 };
 
 /** Public fixture for visual QA. No actual learner task, grade or evidence. */
-export default function LearnLensPreviewPage() {
-  const lesson = getLearnLensLesson({skillSlug:"sql",taskType:"LEARN",difficulty:"BASIC"});
+const fixtures = [
+  {skill:"sql",label:"SQL JOINs"},
+  {skill:"python",label:"Python"},
+  {skill:"git",label:"Git"},
+  {skill:"docker",label:"Docker"}
+];
+
+export default async function LearnLensPreviewPage({searchParams}:{
+  searchParams:Promise<{skill?:string;level?:string}>
+}) {
+  const selected = await searchParams;
+  const skill = fixtures.some(x=>x.skill===selected.skill)?selected.skill!:"sql";
+  const level = selected.level==="STANDARD"?"STANDARD":"BASIC";
+  const lesson = getLearnLensLesson({skillSlug:skill,taskType:"LEARN",difficulty:level});
   if (!lesson) return null;
 
   return (
@@ -30,7 +42,26 @@ export default function LearnLensPreviewPage() {
           </p>
         </div>
       </div>
-      <LearnLensLessonPanel lesson={lesson} taskMinutes={45}/>
+      <nav aria-label="Sample lesson selection" className="mt-5 flex flex-wrap items-center gap-2">
+        {fixtures.map(item=>(
+          <Link key={item.skill} href={"/learnlens-preview?skill="+item.skill+"&level="+level}
+            aria-current={skill===item.skill?"page":undefined}
+            className={"rounded-lg border px-3 py-2 text-xs font-semibold transition " +
+              (skill===item.skill?"border-blue-300 bg-blue-50 text-blue-800":"border-slate-200 bg-white text-slate-700 hover:border-blue-300")}>
+            {item.label}
+          </Link>
+        ))}
+        <span className="mx-1 text-slate-300" aria-hidden="true">|</span>
+        {(["BASIC","STANDARD"] as const).map(value=>(
+          <Link key={value} href={"/learnlens-preview?skill="+skill+"&level="+value}
+            aria-current={level===value?"page":undefined}
+            className={"rounded-lg border px-3 py-2 text-xs font-semibold transition " +
+              (level===value?"border-blue-300 bg-blue-50 text-blue-800":"border-slate-200 bg-white text-slate-700 hover:border-blue-300")}>
+            {value==="BASIC"?"Beginner":"Intermediate"}
+          </Link>
+        ))}
+      </nav>
+      <LearnLensLessonPanel key={lesson.id} lesson={lesson} taskMinutes={45}/>
     </main>
   );
 }

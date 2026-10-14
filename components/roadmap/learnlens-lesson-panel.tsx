@@ -105,7 +105,7 @@ export function LearnLensLessonPanel({ lesson, taskMinutes }: {
           <p className="mt-1 text-xs leading-6 text-amber-900">
             A full transcript has not been licensed or retrieved for this video. Below are original SkillTwin
             study notes based on the linked PostgreSQL documentation, not a verbatim transcript or a claim
-            that every sentence was spoken in the video. YouTube may offer a transcript on the video page.
+            that every sentence was spoken in the video. If the video publisher offers captions or a transcript, use the original video page to access them.
           </p>
         </div>
 
@@ -184,7 +184,7 @@ export function LearnLensLessonPanel({ lesson, taskMinutes }: {
           </h3>
           <p className="mt-2 text-sm leading-6 text-slate-600">{lesson.exercise.prompt}</p>
           <label className="mt-4 block text-xs font-semibold text-slate-700" htmlFor={"learnlens-sql-" + lesson.id}>
-            Draft your SQL solution (not saved)
+            Draft your solution (not saved)
           </label>
           <textarea id={"learnlens-sql-" + lesson.id} value={attempt} onChange={event => setAttempt(event.target.value)}
             placeholder={lesson.exercise.starter} rows={5} spellCheck={false}

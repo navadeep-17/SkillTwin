@@ -11,6 +11,7 @@ const schema=z.object({
   projectId:z.string().uuid(),
   criterionId:z.string().max(100).regex(/^[a-z0-9-]+\.[a-z0-9-]+$/),
   commitSha:z.string().regex(/^[a-f0-9]{40}$/),
+  reviewedSourcePath:z.string().trim().min(1).max(250),
   verdict:z.enum(["PASS","FAIL"]),
   practicalTask:z.string().trim().min(50).max(2000),
   observedResult:z.string().trim().min(50).max(2000),
@@ -36,7 +37,7 @@ export async function POST(request:Request){
     if(error instanceof PracticalReviewError){
       const status=error.code==="REVIEWER_NOT_AUTHORIZED"?403
         :["ALREADY_REVIEWED","REPOSITORY_CHANGED_RESTART","PROJECT_CHANGED_RESTART"].includes(error.code)?409
-        :["PROJECT_NOT_ELIGIBLE","INVALID_REVIEW","CRITERION_NOT_REVIEWED","RUBRIC_SKILL_NOT_FOUND"].includes(error.code)?422
+        :["PROJECT_NOT_ELIGIBLE","INVALID_REVIEW","CRITERION_NOT_REVIEWED","RUBRIC_SKILL_NOT_FOUND","SOURCE_NOT_REVIEWABLE"].includes(error.code)?422
         :404;
       return fail(requestId,status,error.code,"The independent practical review could not be accepted.");
     }

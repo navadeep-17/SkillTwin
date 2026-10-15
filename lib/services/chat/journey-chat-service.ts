@@ -30,7 +30,7 @@ function arrayOfStrings(value: unknown): string[] {
 }
 
 export interface JourneyReference {
-  type: "skill" | "gap_snapshot" | "learning_plan" | "learning_task" | "plan_diff" | "assessment";
+  type: "skill" | "gap_snapshot" | "learning_plan" | "learning_task" | "plan_diff" | "assessment" | "profile_project";
   id: string;
   label: string;
 }

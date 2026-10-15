@@ -15,6 +15,7 @@ jobs:
           node-version: 22
       - run: npm install
       - run: node --check scripts/career-feature-qa.mjs
+      - run: node --check scripts/agent-rag-auth-qa.mjs
       - run: npm run typecheck:core
       - run: npm run test:core
       - run: node --test tests/assessment-replay.test.mjs
@@ -32,6 +33,8 @@ jobs:
       - run: node --test tests/agent-action-guard.test.mjs
       - run: node --import tsx --test tests/gemini-planner-http-error.test.mjs
       - run: node --test tests/agent-read-tools.test.mjs
+      - run: node --test tests/agent-rag.test.mjs
+      - run: node --test tests/agent-rag-integration.test.mjs
       - run: node --test tests/agent-thread-history.test.mjs
       - run: node --test tests/agent-phase4-evaluation.test.mjs
       - run: node --test tests/agent-release-readiness.test.mjs

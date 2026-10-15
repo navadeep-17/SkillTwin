@@ -36,6 +36,25 @@ const starters = [
   "Explain my biggest skill gap"
 ];
 
+
+/** Only source citation lines can become clickable links.
+ * Never auto-link URLs appearing in untrusted code excerpts.
+ */
+function RagCitedText({content}:{content:string}) {
+  const pinned=/^https:\/\/github\.com\/[A-Za-z0-9-]+\/[A-Za-z0-9_.-]+\/blob\/[a-f0-9]{40}\/[A-Za-z0-9_~.%+@/-]+#L\d+-L\d+$/i;
+  return <span className="whitespace-pre-wrap break-words">
+    {content.split("\n").map((line,index)=>
+      <span key={index}>
+        {index>0?"\n":""}
+        {pinned.test(line)
+          ? <a href={line} target="_blank" rel="noopener noreferrer"
+              className="font-medium text-indigo-700 underline underline-offset-2 hover:text-indigo-900">{line}</a>
+          : line}
+      </span>
+    )}
+  </span>;
+}
+
 export function JourneyChat({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const [threadId, setThreadId] = useState<string | null>(null);
@@ -327,7 +346,7 @@ export function JourneyChat({ compact = false }: { compact?: boolean }) {
                   : "rounded-2xl rounded-bl-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700"
               }
             >
-              {message.content}
+              {message.role === "ASSISTANT" && (message.agentMode === "source-rag-fallback-v1" || message.agentMode === "source-rag-gemini-v1") ? <RagCitedText content={message.content}/> : message.content}
             </div>
             {message.role === "ASSISTANT" && message.readTools?.length ? (
               <p className="mt-1.5 text-[11px] text-slate-500">

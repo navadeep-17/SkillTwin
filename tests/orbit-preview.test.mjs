@@ -462,3 +462,24 @@ test("Orbit rollout gives authenticated and public auth screens a single accessi
  assert.ok(dockCSS.includes("prefers-reduced-motion"));
  assert.ok(qa.includes("orbit-auth-root"),"verify auth route in the actual browser");
 });
+
+
+test("Global SkillTwin assistant is available on mobile and safely handles activity failures", () => {
+  const dock = read("components/shell/global-assistant-dock.tsx");
+  const css = read("components/shell/orbit-assistant-dock.css");
+  assert.doesNotMatch(dock, /z-40 hidden items-center gap-2 lg:flex/);
+  assert.doesNotMatch(dock, /z-50 hidden lg:block/);
+  assert.match(dock, /h-\[min\(85dvh,760px\)\]/);
+  assert.match(dock, /role="dialog"/);
+  assert.match(dock, /aria-modal="true"/);
+  assert.match(dock, /Escape/);
+  assert.match(dock, /event.key !== "Tab"/);
+  assert.match(dock, /closeButtonRef.current\?\.focus\(\)/);
+  assert.match(dock, /document.body.style.overflow = "hidden"/);
+  assert.match(dock, /controller.abort\(\)/);
+  assert.match(dock, /response.ok/);
+  assert.match(dock, /Retry activity/);
+  assert.match(dock, /orbitDefault \? "\/orbit-activity" : "\/activity"/);
+  assert.match(css, /@media\(max-width:1023px\)/);
+  assert.match(css, /prefers-reduced-motion/);
+});
